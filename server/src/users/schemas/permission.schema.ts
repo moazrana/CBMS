@@ -1,10 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type PermissionDocument = Permission & Document;
 
-@Schema({ _id: false })
+@Schema({ timestamps: true })
 export class Permission {
+  _id: Types.ObjectId;
+  
   @Prop({ required: true })
   name: string;
 

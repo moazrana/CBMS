@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Input from './Input';
 import { useApiRequest } from '../hooks/useApiRequest';
 import './LoginForm.css';
@@ -14,10 +15,12 @@ interface LoginResponse {
     id: string;
     email: string;
     name?: string;
+    role: string;
   };
 }
 
 const LoginForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -69,12 +72,14 @@ const LoginForm = () => {
         console.log('Login successful:', response);
         
         // Store the token in localStorage
-        if (response.token) {
-          localStorage.setItem('token', response.token);
+        if (response.access_token) {
+          localStorage.setItem('token', response.access_token);
+          // Store user info if needed
+          localStorage.setItem('user', JSON.stringify(response.user));
         }
         
-        // You can redirect to dashboard or home page here
-        // For example: navigate('/dashboard');
+        // Redirect to role management page
+        navigate('/role-management');
       } catch (error) {
         // Error is already handled by the useApiRequest hook
         console.error('Login error:', error);

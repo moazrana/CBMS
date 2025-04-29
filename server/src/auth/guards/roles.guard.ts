@@ -1,34 +1,41 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolePermissionService } from '../../users/services/role-permission.service';
+import { RolePermissionService } from '../../roles/role-permission.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private rolePermissionService: RolePermissionService,
+    private rolePermissionService: RolePermissionService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndOverride<{ resource: string; action: string }[]>(
-      'permissions',
-      [context.getHandler(), context.getClass()],
-    );
-
-    if (!requiredPermissions) {
+    const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
+    if (!requiredRoles) {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
     
-    // Check if user has all required permissions
+    if (!user || !user.role) {
+      return false;
+    }
+
+    // Check if user has required role
+    if (!requiredRoles.includes(user.role)) {
+      return false;
+    }
+
+    // Get required permissions from metadata if any
+    const requiredPermissions = this.reflector.get<string[]>('permissions', context.getHandler());
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      return true;
+    }
+
+    // Check if user's role has all required permissions
     for (const permission of requiredPermissions) {
-      const hasPermission = await this.rolePermissionService.hasPermission(
-        user.role._id,
-        permission.resource,
-        permission.action,
-      );
-      
+      const hasPermission = await this.rolePermissionService.hasPermission(user.role, permission);
       if (!hasPermission) {
         return false;
       }

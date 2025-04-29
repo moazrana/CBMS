@@ -16,6 +16,6 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['student', 'teacher', 'staff', 'parent'])
+  @IsIn(['student', 'teacher', 'staff', 'parent','admin'])
   userType: string;
 } 
