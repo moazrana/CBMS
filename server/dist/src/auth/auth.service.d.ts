@@ -8,10 +8,10 @@ export declare class AuthService {
     login(loginDto: LoginDto): Promise<{
         access_token: string;
         user: {
-            id: import("mongoose").Types.ObjectId;
+            id: any;
             name: string;
             email: string;
-            role: import("../users/schemas/role.schema").Role;
+            role: string;
         };
     }>;
 }

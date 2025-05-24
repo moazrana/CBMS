@@ -19,6 +19,7 @@ const permission_schema_1 = require("./users/schemas/permission.schema");
 const role_schema_1 = require("./users/schemas/role.schema");
 const roles_module_1 = require("./roles/roles.module");
 const permissions_module_1 = require("./permissions/permissions.module");
+const certificates_module_1 = require("./certificates/certificates.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -49,7 +50,8 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             roles_module_1.RolesModule,
-            permissions_module_1.PermissionsModule
+            permissions_module_1.PermissionsModule,
+            certificates_module_1.CertificatesModule,
         ],
         providers: [seed_permissions_command_1.SeedPermissionsCommand, permissions_seeder_1.PermissionsSeeder, roles_seeder_1.RolesSeeder],
     })

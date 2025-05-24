@@ -1,13 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Role } from './role.schema';
+import { UserDocument as UserDocumentType } from './document.schema';
 
-export type UserDocument = User & Document;
+export enum CertificateStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
 
 @Schema({ timestamps: true })
-export class User {
-  _id: Types.ObjectId;
-
+export class User extends Document {
   @Prop({ required: true })
   name: string;
 
@@ -17,8 +20,57 @@ export class User {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Role' })
   role: Role;
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date;
+
+  @Prop([{
+    fileName: String,
+    filePath: String,
+    fileType: String,
+    fileSize: Number,
+    status: {
+      type: String,
+      enum: Object.values(CertificateStatus),
+      default: CertificateStatus.PENDING
+    },
+    approvedBy: {
+      type: Types.ObjectId,
+      ref: 'User'
+    },
+    rejectionReason: String,
+    uploadedAt: Date
+  }])
+  certificates: Array<{
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    fileSize: number;
+    status: CertificateStatus;
+    approvedBy?: Types.ObjectId;
+    rejectionReason?: string;
+    uploadedAt: Date;
+  }>;
+
+  @Prop([{
+    _id: Types.ObjectId,
+    fileName: String,
+    filePath: String,
+    fileType: String,
+    fileSize: Number,
+    documentType: String,
+    status: String,
+    approvedBy: {
+      type: Types.ObjectId,
+      ref: 'User'
+    },
+    rejectionReason: String,
+    uploadedAt: Date
+  }])
+  documents: UserDocumentType[];
 }
 
+export type UserDocument = User & Document;
 export const UserSchema = SchemaFactory.createForClass(User); 

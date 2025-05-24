@@ -28,20 +28,7 @@ let RolesGuard = class RolesGuard {
         if (!user || !user.role) {
             return false;
         }
-        if (!requiredRoles.includes(user.role)) {
-            return false;
-        }
-        const requiredPermissions = this.reflector.get('permissions', context.getHandler());
-        if (!requiredPermissions || requiredPermissions.length === 0) {
-            return true;
-        }
-        for (const permission of requiredPermissions) {
-            const hasPermission = await this.rolePermissionService.hasPermission(user.role, permission);
-            if (!hasPermission) {
-                return false;
-            }
-        }
-        return true;
+        return requiredRoles.includes(user.role);
     }
 };
 exports.RolesGuard = RolesGuard;

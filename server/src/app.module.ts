@@ -10,6 +10,7 @@ import { Permission, PermissionSchema } from './users/schemas/permission.schema'
 import { Role, RoleSchema } from './users/schemas/role.schema';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { CertificatesModule } from './certificates/certificates.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -39,7 +40,8 @@ import { PermissionsModule } from './permissions/permissions.module';
     AuthModule,
     UsersModule,
     RolesModule,
-    PermissionsModule
+    PermissionsModule,
+    CertificatesModule,
   ],
   providers: [SeedPermissionsCommand, PermissionsSeeder, RolesSeeder],
 })

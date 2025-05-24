@@ -9,11 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserSchema = exports.User = void 0;
+exports.UserSchema = exports.User = exports.CertificateStatus = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const role_schema_1 = require("./role.schema");
-let User = class User {
+var CertificateStatus;
+(function (CertificateStatus) {
+    CertificateStatus["PENDING"] = "pending";
+    CertificateStatus["APPROVED"] = "approved";
+    CertificateStatus["REJECTED"] = "rejected";
+})(CertificateStatus || (exports.CertificateStatus = CertificateStatus = {}));
+let User = class User extends mongoose_2.Document {
 };
 exports.User = User;
 __decorate([
@@ -29,9 +35,51 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'Role', required: true }),
+    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'Role' }),
     __metadata("design:type", role_schema_1.Role)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Date, default: null }),
+    __metadata("design:type", Date)
+], User.prototype, "deletedAt", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([{
+            fileName: String,
+            filePath: String,
+            fileType: String,
+            fileSize: Number,
+            status: {
+                type: String,
+                enum: Object.values(CertificateStatus),
+                default: CertificateStatus.PENDING
+            },
+            approvedBy: {
+                type: mongoose_2.Types.ObjectId,
+                ref: 'User'
+            },
+            rejectionReason: String,
+            uploadedAt: Date
+        }]),
+    __metadata("design:type", Array)
+], User.prototype, "certificates", void 0);
+__decorate([
+    (0, mongoose_1.Prop)([{
+            _id: mongoose_2.Types.ObjectId,
+            fileName: String,
+            filePath: String,
+            fileType: String,
+            fileSize: Number,
+            documentType: String,
+            status: String,
+            approvedBy: {
+                type: mongoose_2.Types.ObjectId,
+                ref: 'User'
+            },
+            rejectionReason: String,
+            uploadedAt: Date
+        }]),
+    __metadata("design:type", Array)
+], User.prototype, "documents", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);

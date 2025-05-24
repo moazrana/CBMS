@@ -29,21 +29,21 @@ export class PermissionsSeeder {
         
         const updateUserPermission = new this.permissionModel({
           name: 'update_user',
-          description: 'Permission to create new users',
+          description: 'Permission to update user',
           module: 'users',
           action: 'update',
         });
         
         const readUserPermission = new this.permissionModel({
           name: 'read_user',
-          description: 'Permission to create new users',
+          description: 'Permission to view user',
           module: 'users',
           action: 'read',
         });
         
         const deleteUserPermission = new this.permissionModel({
           name: 'delete_user',
-          description: 'Permission to create new users',
+          description: 'Permission to delete user',
           module: 'users',
           action: 'delete',
         });

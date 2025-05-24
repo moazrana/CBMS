@@ -11,7 +11,6 @@ import { Permission, PermissionSchema } from './schemas/permission.schema';
 import { PermissionsSeeder } from './seeders/permissions.seeder';
 import { SeedPermissionsCommand } from './seeders/seed-permissions.command';
 import { RolesModule } from '../roles/roles.module';
-import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -28,8 +27,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
     RolePermissionService, 
     RolesService, 
     PermissionsSeeder,
-    SeedPermissionsCommand,
-    RolesGuard
+    SeedPermissionsCommand
   ],
   exports: [UsersService, RolePermissionService, RolesService],
 })

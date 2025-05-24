@@ -23,24 +23,6 @@ export class RolesGuard implements CanActivate {
     }
 
     // Check if user has required role
-    if (!requiredRoles.includes(user.role)) {
-      return false;
-    }
-
-    // Get required permissions from metadata if any
-    const requiredPermissions = this.reflector.get<string[]>('permissions', context.getHandler());
-    if (!requiredPermissions || requiredPermissions.length === 0) {
-      return true;
-    }
-
-    // Check if user's role has all required permissions
-    for (const permission of requiredPermissions) {
-      const hasPermission = await this.rolePermissionService.hasPermission(user.role, permission);
-      if (!hasPermission) {
-        return false;
-      }
-    }
-
-    return true;
+    return requiredRoles.includes(user.role);
   }
 } 

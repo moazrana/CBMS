@@ -28,14 +28,21 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const payload = { email: user.email, sub: user._id, role: user.role };
+        const userWithRole = await this.usersService.findOne(user._id.toString());
+        console.log(userWithRole.role);
+        const payload = {
+            email: userWithRole.email,
+            sub: userWithRole._id,
+            role: userWithRole.role.name
+        };
+        console.log('logging in....');
         return {
             access_token: this.jwtService.sign(payload),
             user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
+                id: userWithRole._id,
+                name: userWithRole.name,
+                email: userWithRole.email,
+                role: userWithRole.role.name
             },
         };
     }
