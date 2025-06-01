@@ -22,11 +22,32 @@ let RolesService = class RolesService {
         this.roleModel = roleModel;
     }
     async create(createRoleDto) {
-        const role = new this.roleModel(createRoleDto);
+        const role = new this.roleModel({
+            name: createRoleDto.name,
+            description: createRoleDto.description,
+            permissions: createRoleDto.permissions
+        });
         return role.save();
     }
-    async findAll() {
-        return this.roleModel.find().populate('permissions');
+    async findAll(sort, order, search, page, perPage) {
+        return this.roleModel.find({ deletedAt: null })
+            .sort({ [sort]: order === 'DESC' ? -1 : 1 })
+            .where({
+            $or: [
+                { name: { $regex: search || '', $options: 'i' } },
+                { email: { $regex: search || '', $options: 'i' } }
+            ]
+        })
+            .skip((page - 1) * perPage)
+            .limit(perPage)
+            .lean()
+            .exec()
+            .then(roles => {
+            return roles.map((role, index) => ({
+                ...role,
+                id: ((page - 1) * perPage) + index + 1
+            }));
+        });
     }
     async findOne(id) {
         const role = await this.roleModel.findById(id).populate('permissions');

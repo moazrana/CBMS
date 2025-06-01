@@ -21,6 +21,8 @@
 
     .search-box {
       input {
+        background-color: var(--main-bg);
+        color: var(--main-text);
         padding: 8px 12px;
         border: 1px solid $border-color;
         border-radius: 4px;
@@ -104,6 +106,7 @@
     }
   }
   #edit{
+    background-color: var(--edit-bg);
     border: 1px solid rgb(60, 60, 245);
     color: rgb(92, 92, 241);
     &:hover{
@@ -112,6 +115,7 @@
     }
   }
   #delete{
+    background-color: var(--delete-bg);
     border: 1px solid red;
     color: rgb(223, 92, 92);
     &:hover{
@@ -138,8 +142,8 @@
     align-items: center;
     margin-top: 12px;
     gap: 5px;
-    
     .pagination-button {
+      color: var(--border-color);
       padding: 4px 8px;
       border: 1px solid $border-color;
       background-color: $bg-white;
@@ -190,7 +194,8 @@
       gap: 10px;
     }
     #itemsPerPage{
-      border: 1px solid $border-color;
+      background-color: var(--main-bg);
+      border: 1px solid var(--border-color);
       border-radius: 6px;
       padding: 4px 4px;
       font-size: 10px;

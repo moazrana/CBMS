@@ -44,6 +44,11 @@ export function useApiRequest<T = any>() {
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
+        console.log(error.response.status);
+        if(error.response.status === 401){
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
         errorMessage = error.response.data.message || 'Server error';
       } else if (error.request) {
         // The request was made but no response was received

@@ -1,14 +1,17 @@
-import React from 'react';
-import './Popup.css';
+import React, { ReactNode } from 'react';
+import './Popup.scss';
 
 interface PopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   title: string;
-  message: string;
+  message?: string;
   confirmText?: string;
   cancelText?: string;
+  children?: ReactNode;
+  width?: string;
+  height?: string;
 }
 
 const Popup: React.FC<PopupProps> = ({
@@ -18,27 +21,37 @@ const Popup: React.FC<PopupProps> = ({
   title,
   message,
   confirmText = 'Confirm',
-  cancelText = 'Cancel'
+  cancelText = 'Cancel',
+  children,
+  width = '500px',
+  height = 'auto'
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="popup-overlay">
-      <div className="popup-content">
+    <div className="popup-overlay" onClick={onClose}>
+      <div 
+        className="popup-content" 
+        onClick={e => e.stopPropagation()}
+        style={{ width, height }}
+      >
         <div className="popup-header">
-          <h3>{title}</h3>
+          <h2 className="popup-title">{title}</h2>
           <button className="popup-close" onClick={onClose}>×</button>
         </div>
         <div className="popup-body">
-          <p>{message}</p>
-        </div>
-        <div className="popup-footer">
-          <button className="popup-button cancel" onClick={onClose}>
-            {cancelText}
-          </button>
-          <button className="popup-button confirm" onClick={onConfirm}>
-            {confirmText}
-          </button>
+          {message && <p>{message}</p>}
+          {children}
+          {onConfirm && (
+            <div className="popup-footer">
+              <button className="popup-button cancel" onClick={onClose}>
+                {cancelText}
+              </button>
+              <button className="popup-button confirm" onClick={onConfirm}>
+                {confirmText}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

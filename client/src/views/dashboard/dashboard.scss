@@ -1,0 +1,67 @@
+@use '../../styles/variables' as *;
+.dashboard{
+    color: var(--main-text);
+}
+.welcome{
+    font-size: x-large;
+    font-weight: 500;
+    margin-bottom: 0px;
+}
+.note{
+    font-size: small;
+    margin-top: 0px;
+}
+.counts{
+    // background-color: aqua;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    
+    div{
+        border-radius: 10px;
+        width: 31%;
+        padding-left: 8px;
+        color: #000000;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .students-div{
+        background-color: #797CFF;
+    }
+    .teachers-div{
+        background-color: #FF7C95;
+    }
+    .staff-div{
+        background-color: #00F0DF;
+    }
+    .data-div{
+        display:flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    .icon-div{
+        padding-top: 25px;
+    }
+    .title{
+        margin-bottom: 0px;
+    }
+    .count{
+        margin-top: 0px;
+        font-size: x-large;
+        font-weight: 600;
+    }
+}
+.overview-div{
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    margin-top: 20px;
+    .overview-heading{
+        padding-left:12px;
+    }
+}
+.graphs{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}

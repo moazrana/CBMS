@@ -1,16 +1,12 @@
-import { RolesService } from './roles.service';
+import { RolesService } from './services/roles.service';
+import { Role } from './schemas/role.schema';
 export declare class RolesController {
     private readonly rolesService;
     constructor(rolesService: RolesService);
-    create(createRoleDto: {
-        name: string;
-        description?: string;
-    }): Promise<import("./schemas/role.schema").Role>;
-    findAll(): Promise<import("./schemas/role.schema").Role[]>;
-    findOne(id: string): Promise<import("./schemas/role.schema").Role>;
-    update(id: string, updateRoleDto: {
-        name?: string;
-        description?: string;
-    }): Promise<import("./schemas/role.schema").Role>;
-    remove(id: string): Promise<import("./schemas/role.schema").Role>;
+    create(data: any): Promise<boolean>;
+    findAll(): Promise<Role[]>;
+    findOne(id: string): Promise<Role>;
+    findByName(name: string): Promise<Role>;
+    update(id: string, updateRoleDto: any): Promise<boolean>;
+    remove(id: string): Promise<Role>;
 }

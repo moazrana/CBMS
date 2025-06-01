@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Permission, PermissionSchema } from '../users/schemas/permission.schema';
 import { PermissionsController } from './permissions.controller';
 import { PermissionsService } from './permissions.service';
-import { RolesModule } from '../roles/roles.module';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [

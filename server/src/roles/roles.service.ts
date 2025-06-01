@@ -3,17 +3,45 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role } from './schemas/role.schema';
 
+interface CreateRoleDto {
+  name: string;
+  description?: string;
+  permissions: string[];
+}
+
 @Injectable()
 export class RolesService {
   constructor(@InjectModel(Role.name) private roleModel: Model<Role>) {}
 
-  async create(createRoleDto: { name: string; description?: string }): Promise<Role> {
-    const role = new this.roleModel(createRoleDto);
+  async create(createRoleDto: CreateRoleDto): Promise<Role> {
+    const role = new this.roleModel({
+      name: createRoleDto.name,
+      description: createRoleDto.description,
+      permissions: createRoleDto.permissions
+    });
     return role.save();
   }
 
-  async findAll(): Promise<Role[]> {
-    return this.roleModel.find().populate('permissions');
+  async findAll(sort: string, order: string, search: string, page: number, perPage: number): Promise<Role[]> {
+    return this.roleModel.find({deletedAt: null})
+    // .populate('permissions')
+    .sort({ [sort]: order === 'DESC' ? -1 : 1 })
+      .where({
+        $or: [
+          { name: { $regex: search || '', $options: 'i' } },
+          { email: { $regex: search || '', $options: 'i' } }
+        ]
+      })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .lean()
+      .exec()
+      .then(roles => {
+        return roles.map((role, index) => ({
+          ...role,
+          id: ((page - 1) * perPage) + index + 1
+        }));
+      });
   }
 
   async findOne(id: string): Promise<Role> {

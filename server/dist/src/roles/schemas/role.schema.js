@@ -9,9 +9,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RoleSchema = exports.Role = void 0;
+exports.RoleSchema = exports.Role = exports.UserRole = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+var UserRole;
+(function (UserRole) {
+    UserRole["ADMIN"] = "admin";
+    UserRole["USER"] = "user";
+    UserRole["MANAGER"] = "manager";
+})(UserRole || (exports.UserRole = UserRole = {}));
 let Role = class Role extends mongoose_2.Document {
 };
 exports.Role = Role;
@@ -24,9 +30,13 @@ __decorate([
     __metadata("design:type", String)
 ], Role.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [{ type: mongoose_2.Types.ObjectId, ref: 'Permission' }] }),
+    (0, mongoose_1.Prop)({ type: [{ type: Object }] }),
     __metadata("design:type", Array)
 ], Role.prototype, "permissions", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Role.prototype, "isDefault", void 0);
 exports.Role = Role = __decorate([
     (0, mongoose_1.Schema)()
 ], Role);

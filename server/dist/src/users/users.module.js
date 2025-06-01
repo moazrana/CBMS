@@ -14,8 +14,6 @@ const users_controller_1 = require("./users.controller");
 const user_schema_1 = require("./schemas/user.schema");
 const role_schema_1 = require("./schemas/role.schema");
 const role_permission_service_1 = require("./services/role-permission.service");
-const roles_service_1 = require("./services/roles.service");
-const roles_controller_1 = require("./controllers/roles.controller");
 const permission_schema_1 = require("./schemas/permission.schema");
 const permissions_seeder_1 = require("./seeders/permissions.seeder");
 const seed_permissions_command_1 = require("./seeders/seed-permissions.command");
@@ -31,17 +29,16 @@ exports.UsersModule = UsersModule = __decorate([
                 { name: role_schema_1.Role.name, schema: role_schema_1.RoleSchema },
                 { name: permission_schema_1.Permission.name, schema: permission_schema_1.PermissionSchema },
             ]),
-            roles_module_1.RolesModule
+            (0, common_1.forwardRef)(() => roles_module_1.RolesModule)
         ],
-        controllers: [users_controller_1.UsersController, roles_controller_1.RolesController],
+        controllers: [users_controller_1.UsersController],
         providers: [
             users_service_1.UsersService,
             role_permission_service_1.RolePermissionService,
-            roles_service_1.RolesService,
             permissions_seeder_1.PermissionsSeeder,
             seed_permissions_command_1.SeedPermissionsCommand
         ],
-        exports: [users_service_1.UsersService, role_permission_service_1.RolePermissionService, roles_service_1.RolesService],
+        exports: [users_service_1.UsersService, role_permission_service_1.RolePermissionService],
     })
 ], UsersModule);
 //# sourceMappingURL=users.module.js.map

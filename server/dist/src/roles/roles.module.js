@@ -9,11 +9,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const roles_service_1 = require("./roles.service");
 const roles_controller_1 = require("./roles.controller");
+const roles_service_1 = require("./services/roles.service");
+const role_permission_service_1 = require("./services/role-permission.service");
 const role_schema_1 = require("./schemas/role.schema");
 const permission_schema_1 = require("../permissions/schemas/permission.schema");
-const role_permission_service_1 = require("./role-permission.service");
 let RolesModule = class RolesModule {
 };
 exports.RolesModule = RolesModule;
@@ -27,7 +27,7 @@ exports.RolesModule = RolesModule = __decorate([
         ],
         controllers: [roles_controller_1.RolesController],
         providers: [roles_service_1.RolesService, role_permission_service_1.RolePermissionService],
-        exports: [roles_service_1.RolesService, role_permission_service_1.RolePermissionService]
+        exports: [roles_service_1.RolesService, role_permission_service_1.RolePermissionService],
     })
 ], RolesModule);
 //# sourceMappingURL=roles.module.js.map

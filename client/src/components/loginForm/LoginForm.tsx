@@ -69,7 +69,7 @@ const LoginForm = () => {
           localStorage.setItem('token', response.access_token);
           localStorage.setItem('user', JSON.stringify(response.user));
         }
-        navigate('/role-management');
+        navigate('/dashboard');
       } catch (error) {
         console.error('Login error:', error);
       }

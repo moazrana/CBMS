@@ -18,6 +18,8 @@ interface DataTableProps {
   onSort?: (key: string, direction: 'ASC' | 'DESC') => void;
   onSearch?: (searchTerm: string) => void;
   PerPage?: (number: number) => void;
+  onAdd?: () => void;
+  onEdit: (row: any) => void;
 }
 
 const DataTable: React.FC<DataTableProps> = ({ 
@@ -27,7 +29,9 @@ const DataTable: React.FC<DataTableProps> = ({
   onDelete, 
   onSort, 
   onSearch,
-  PerPage
+  PerPage,
+  onAdd,
+  onEdit
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -125,9 +129,10 @@ const DataTable: React.FC<DataTableProps> = ({
               type="text"
               placeholder="Search..."
               value={searchTerm}
+              className='table-search'
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="add-button">+</button>
+            <button className="add-button" onClick={onAdd}>+</button>
           </div>
         </div>
         <div className="table-container">
@@ -158,6 +163,9 @@ const DataTable: React.FC<DataTableProps> = ({
                 <tr key={index}>
                   {columns.map((column) => (
                     (() => {
+                      if(column.accessor === 'num'){
+                        return <td key={column.accessor}>{index + 1}</td>;
+                      }
                       switch(column.type) {
                         case 'number':
                           return <td key={column.accessor}>{row[column.accessor]}</td>;
@@ -190,7 +198,13 @@ const DataTable: React.FC<DataTableProps> = ({
                     })()
                   ))}
                   <td>
-                    <button id="edit" className="action-button"><FontAwesomeIcon icon={faPencil} /></button>
+                    <button 
+                      id="edit" 
+                      className="action-button"
+                      onClick={()=>onEdit(row)}
+                    >
+                      <FontAwesomeIcon icon={faPencil} />
+                    </button>
                     <button 
                       id="delete" 
                       className="action-button"

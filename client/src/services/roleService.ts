@@ -12,7 +12,7 @@ export interface Role {
   _id: string;
   name: string;
   description: string;
-  permissions: string[];
+  permissions: Permission[];
   isDefault: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -21,7 +21,7 @@ export interface Role {
 export interface CreateRoleDto {
   name: string;
   description: string;
-  permissions: string[];
+  permissions: Permission[];
   isDefault: boolean;
 }
 

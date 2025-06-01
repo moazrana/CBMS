@@ -12,8 +12,8 @@ const mongoose_1 = require("@nestjs/mongoose");
 const permission_schema_1 = require("../users/schemas/permission.schema");
 const permissions_controller_1 = require("./permissions.controller");
 const permissions_service_1 = require("./permissions.service");
-const roles_module_1 = require("../roles/roles.module");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const roles_module_1 = require("../roles/roles.module");
 let PermissionsModule = class PermissionsModule {
 };
 exports.PermissionsModule = PermissionsModule;

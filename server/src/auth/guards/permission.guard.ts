@@ -2,14 +2,14 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/has-permission.decorator';
 import { UsersService } from '../../users/users.service';
-import { RolesService } from '../../roles/roles.service';
+import { RolePermissionService } from '../../roles/services/role-permission.service';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private usersService: UsersService,
-    private roleService: RolesService
+    private rolePermissionService: RolePermissionService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -33,20 +33,15 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('User has no role assigned');
     }
 
-    // Get fresh user data with role and permissions
-    const role = await this.roleService.findOne(user.role.toString());
-    if (!role) {
-      throw new ForbiddenException('User role not found in database');
-    }
-
-    const rolePermissions = role.permissions || [];
-    // Check if role has all required permissions
-    const hasAllPermissions = requiredPermissions.every(permission =>
-      rolePermissions.some(p => p.name === permission)
-    );
-
-    if (!hasAllPermissions) {
-      throw new ForbiddenException(`Insufficient permissions. Required: ${requiredPermissions.join(', ')}`);
+    // Check if user has all required permissions
+    for (const permission of requiredPermissions) {
+      const hasPermission = await this.rolePermissionService.hasPermission(
+        user.role.toString(),
+        permission
+      );
+      if (!hasPermission) {
+        throw new ForbiddenException(`Insufficient permissions. Required: ${requiredPermissions.join(', ')}`);
+      }
     }
 
     return true;

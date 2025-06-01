@@ -14,12 +14,12 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const has_permission_decorator_1 = require("../decorators/has-permission.decorator");
 const users_service_1 = require("../../users/users.service");
-const roles_service_1 = require("../../roles/roles.service");
+const role_permission_service_1 = require("../../roles/services/role-permission.service");
 let PermissionGuard = class PermissionGuard {
-    constructor(reflector, usersService, roleService) {
+    constructor(reflector, usersService, rolePermissionService) {
         this.reflector = reflector;
         this.usersService = usersService;
-        this.roleService = roleService;
+        this.rolePermissionService = rolePermissionService;
     }
     async canActivate(context) {
         const requiredPermissions = this.reflector.get(has_permission_decorator_1.PERMISSIONS_KEY, context.getHandler());
@@ -34,14 +34,11 @@ let PermissionGuard = class PermissionGuard {
         if (!user.role) {
             throw new common_1.ForbiddenException('User has no role assigned');
         }
-        const role = await this.roleService.findOne(user.role.toString());
-        if (!role) {
-            throw new common_1.ForbiddenException('User role not found in database');
-        }
-        const rolePermissions = role.permissions || [];
-        const hasAllPermissions = requiredPermissions.every(permission => rolePermissions.some(p => p.name === permission));
-        if (!hasAllPermissions) {
-            throw new common_1.ForbiddenException(`Insufficient permissions. Required: ${requiredPermissions.join(', ')}`);
+        for (const permission of requiredPermissions) {
+            const hasPermission = await this.rolePermissionService.hasPermission(user.role.toString(), permission);
+            if (!hasPermission) {
+                throw new common_1.ForbiddenException(`Insufficient permissions. Required: ${requiredPermissions.join(', ')}`);
+            }
         }
         return true;
     }
@@ -51,6 +48,6 @@ exports.PermissionGuard = PermissionGuard = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [core_1.Reflector,
         users_service_1.UsersService,
-        roles_service_1.RolesService])
+        role_permission_service_1.RolePermissionService])
 ], PermissionGuard);
 //# sourceMappingURL=permission.guard.js.map

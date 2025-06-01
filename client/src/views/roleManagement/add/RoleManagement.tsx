@@ -1,55 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { useApiRequest } from '../../hooks/useApiRequest';
-import roleService, { Role, CreateRoleDto, UpdateRoleDto } from '../../services/roleService';
-import permissionService, { Permission } from '../../services/permissionService';
-import Input from '../../components/input/Input';
-import TextField from '../../components/textField/TextField';
-import Layout from '../../layouts/layout';
+import { useApiRequest } from '../../../hooks/useApiRequest';
+import roleService, { Role, CreateRoleDto, UpdateRoleDto } from '../../../services/roleService';
+import permissionService, { Permission } from '../../../services/permissionService';
+import Input from '../../../components/input/Input';
+import TextField from '../../../components/textField/TextField';
+import Layout from '../../../layouts/layout';
 import './RoleManagement.css';
 
 const RoleManagement: React.FC = () => {
-  const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CreateRoleDto>({
     name: '',
     description: '',
-    permissions: [] as string[],
+    permissions: [] as Permission[],
     isDefault: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [buttonText, setButtonText] = useState('Create New Role');
   
   const { executeRequest } = useApiRequest<Role[]>();
 
   useEffect(() => {
-    // fetchRoles();
-    fetchPermissions();
+    checkPage();
   }, []);
-
-  const fetchRoles = async () => {
-    try {
-      const data = await executeRequest('get', '/roles');
-      setRoles(data);
-    } catch (error) {
-      console.error('Error fetching roles:', error);
+  useEffect(() => {
+    fetchPermissions();
+  }, [isEditing,isCreating]);
+  
+  const checkPage = async () => {
+    const url = window.location.href;
+    if(url.includes('add')){
+      console.log('is creating ')
+      setIsCreating(true);
     }
-  };
-
+    else if(url.includes('edit')){
+      console.log('is editing ')
+      setIsEditing(true);
+      setButtonText('Update Role');
+      // setIsCreating(false); 
+      // fetchRole();
+    }
+  }
+  
   const fetchPermissions = async () => {
     try {
       setLoading(true);
       const data = await permissionService.getAllPermissions();
       setPermissions(data);
+     
+      
     } catch (error) {
       console.error('Error fetching permissions:', error);
     } finally {
       setLoading(false);
     }
   };
-
+  
+  useEffect(() => {
+    console.log('using effect permissions: ', permissions);
+    if(isEditing){
+      if(permissions.length > 0){
+        if(isEditing){
+          fetchRole()
+        }
+      }
+    }
+  }, [permissions]);
+  
+  const fetchRole = async () => {
+    const url = window.location.href;
+    const id = url.split('/').pop();
+    
+    const res = await executeRequest('get', `/roles/${id}`);
+    setSelectedRole(res);
+    
+    setFormData({
+      name: res.name,
+      description: res.description,
+      permissions: res.permissions,
+      isDefault: res.isDefault,
+    });
+    
+  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -59,19 +95,26 @@ const RoleManagement: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log(formData);
     e.preventDefault();
     setError(null);
-    
+    console.log(isCreating);
     try {
       if (isCreating) {
-        await executeRequest('post', '/roles', formData);
+        console.log('here')
+        let res = await executeRequest('post', '/roles', formData);
+        if(res){
+          window.location.href = '/roles';
+        }
         setIsCreating(false);
       } else if (selectedRole && isEditing) {
-        await executeRequest('patch', `/roles/${selectedRole._id}`, formData);
+        let res = await executeRequest('patch', `/roles/${selectedRole._id}`, formData);
+        if(res){
+          window.location.href = '/roles';
+        }
+        console.log('res: ', res);
         setIsEditing(false);
       }
-      
-      fetchRoles();
       
       setFormData({
         name: '',
@@ -84,60 +127,18 @@ const RoleManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (role: Role) => {
-    setSelectedRole(role);
-    setFormData({
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions || [],
-      isDefault: role.isDefault,
-    });
-    setIsEditing(true);
-    setIsCreating(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this role?')) {
-      try {
-        await executeRequest('delete', `/roles/${id}`);
-        fetchRoles();
-      } catch (error) {
-        console.error('Error deleting role:', error);
-      }
-    }
-  };
-
-  const handleCreateNew = () => {
-    setSelectedRole(null);
-    setFormData({
-      name: '',
-      description: '',
-      permissions: [],
-      isDefault: false,
-    });
-    setIsCreating(true);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setSelectedRole(null);
-    setFormData({
-      name: '',
-      description: '',
-      permissions: [],
-      isDefault: false,
-    });
-    setIsCreating(false);
-    setIsEditing(false);
-  };
-
   const handlePermissionChange = (permissionId: string) => {
+    console.log('permissionId: ', permissionId);
+    const permission = permissions.find(p => p._id === permissionId);
+    if (!permission) return;
+    
     setFormData(prev => ({
       ...prev,
-      permissions: prev.permissions.includes(permissionId)
-        ? prev.permissions.filter(id => id !== permissionId)
-        : [...prev.permissions, permissionId]
+      permissions: prev.permissions.some(p => p._id === permissionId)
+        ? prev.permissions.filter(p => p._id !== permissionId)
+        : [...prev.permissions, permission]
     }));
+    console.log('pers: ', formData.permissions);
   };
 
   if (loading) return <div>Loading permissions...</div>;
@@ -147,7 +148,6 @@ const RoleManagement: React.FC = () => {
       <div className="role-management">
         <div className="role-management-header">
           <h1>Role Management</h1>
-          <p>Configure role permissions and access controls</p>
         </div>
         <div className="role-form">
           <div className="form-group">
@@ -189,8 +189,9 @@ const RoleManagement: React.FC = () => {
                     <td>{permission.description}</td>
                     <td>
                       <input
+                        id={permission.name}
                         type="checkbox"
-                        checked={formData.permissions.includes(permission._id)}
+                        checked={formData.permissions.some(p => p.name === permission.name)}
                         onChange={() => handlePermissionChange(permission._id)}
                       />
                     </td>
@@ -203,10 +204,10 @@ const RoleManagement: React.FC = () => {
         <div className="role-form-actions">
           <button
             className="submit-button"
-            onClick={handleCreateNew}
+            onClick={handleSubmit}
             disabled={loading}
           >
-            Create New Role
+            {buttonText}
           </button>
         </div>
       </div>

@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
-const role_permission_service_1 = require("../../roles/role-permission.service");
+const role_permission_service_1 = require("../../roles/services/role-permission.service");
 let RolesGuard = class RolesGuard {
     constructor(reflector, rolePermissionService) {
         this.reflector = reflector;
@@ -28,7 +28,12 @@ let RolesGuard = class RolesGuard {
         if (!user || !user.role) {
             return false;
         }
-        return requiredRoles.includes(user.role);
+        for (const role of requiredRoles) {
+            if (await this.rolePermissionService.checkRole(user.role, role)) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 exports.RolesGuard = RolesGuard;

@@ -4,16 +4,16 @@ $primary-light: #8b8df3;
 $primary-dark: #575af5;
 
 // Text Colors
-$text-primary: #231F3A;
-$text-secondary: #4A475B;
+$text-primary: var(--main-text);
+$text-secondary: var(--main-text);
 
 // Background Colors
-$bg-white: #ffffff;
-$bg-light: #f8f9fa;
-$bg-hover: #f0f0f0;
+$bg-white: var(--main-bg);
+$bg-light: var(--hover-bg);
+$bg-hover: var(--hover-bg);
 
 // Border Colors
-$border-color: #e0e0e0;
+$border-color: var(--border-color);
 
 // Shadow
 $box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 

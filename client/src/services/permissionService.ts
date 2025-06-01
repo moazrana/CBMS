@@ -5,6 +5,7 @@ export interface Permission {
   name: string;
   description: string;
   module: string;
+  action: string;
 }
 
 const permissionService = {

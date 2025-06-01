@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolePermissionService } from '../../roles/role-permission.service';
+import { RolePermissionService } from '../../roles/services/role-permission.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -22,7 +22,13 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    // Check if user has required role
-    return requiredRoles.includes(user.role);
+    // Check if user has any of the required roles
+    for (const role of requiredRoles) {
+      if (await this.rolePermissionService.checkRole(user.role, role)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 } 

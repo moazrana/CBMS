@@ -14,24 +14,38 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesController = void 0;
 const common_1 = require("@nestjs/common");
-const roles_service_1 = require("./roles.service");
+const roles_service_1 = require("./services/roles.service");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../auth/guards/roles.guard");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const role_schema_1 = require("./schemas/role.schema");
 let RolesController = class RolesController {
     constructor(rolesService) {
         this.rolesService = rolesService;
     }
-    create(createRoleDto) {
-        return this.rolesService.create(createRoleDto);
+    async create(data) {
+        console.log('Received role data:', data);
+        return !!(await this.rolesService.create(data));
     }
-    findAll() {
+    async findAll() {
         return this.rolesService.findAll();
     }
-    findOne(id) {
+    async findOne(id) {
         return this.rolesService.findOne(id);
     }
-    update(id, updateRoleDto) {
-        return this.rolesService.update(id, updateRoleDto);
+    async findByName(name) {
+        return this.rolesService.findByName(name);
     }
-    remove(id) {
+    async update(id, updateRoleDto) {
+        try {
+            const updatedRole = await this.rolesService.update(id, updateRoleDto);
+            return !!updatedRole;
+        }
+        catch (error) {
+            return false;
+        }
+    }
+    async remove(id) {
         return this.rolesService.remove(id);
     }
 };
@@ -41,38 +55,47 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], RolesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], RolesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], RolesController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)('name/:name'),
+    __param(0, (0, common_1.Param)('name')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RolesController.prototype, "findByName", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], RolesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], RolesController.prototype, "remove", null);
 exports.RolesController = RolesController = __decorate([
     (0, common_1.Controller)('roles'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(role_schema_1.UserRole.ADMIN),
     __metadata("design:paramtypes", [roles_service_1.RolesService])
 ], RolesController);
 //# sourceMappingURL=roles.controller.js.map
