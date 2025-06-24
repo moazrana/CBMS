@@ -3,11 +3,8 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faGear,
-  faSun,
-  faMoon
 } from '@fortawesome/free-solid-svg-icons';
-import { useTheme } from '../../context/ThemeContext';
-import './Sidebar.scss';
+import './sidebar.scss';
 import logo from '/logo.png';
 import dashboard from '../../assets/sidebar/dashboard.svg';
 import incidents from '../../assets/sidebar/incidents.svg';
@@ -21,8 +18,7 @@ import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
 
 export default function Sidebar() {
-  const { theme, toggleTheme } = useTheme();
-
+  
   return (
     <aside className="sidebar" style={{ backgroundColor: 'var(--sidebar-bg)' }}>
       <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', marginLeft: '25px' }}>
@@ -108,27 +104,13 @@ export default function Sidebar() {
             Settings
           </div>
         </Link>
-        <Link to="/role-management" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+        <Link to="/roles" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <FontAwesomeIcon className='icon' icon={faGear} />Roles
           </div>
         </Link>
         
-        <div className="theme-toggle" 
-          onClick={toggleTheme} 
-          style={{ 
-            marginTop: 'auto', 
-            padding: '15px',
-            cursor: 'pointer',
-            color: 'var(--sidebar-text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            borderTop: '1px solid rgba(255,255,255,0.1)'
-          }}>
-          <FontAwesomeIcon icon={theme === 'light' ? faMoon : faSun} />
-          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
-        </div>
+        
       </nav>
     </aside>
   );

@@ -5,7 +5,6 @@ import { PermissionsController } from './permissions.controller';
 import { PermissionsService } from './permissions.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RolesModule } from '../roles/roles.module';
-
 @Module({
   imports: [
     MongooseModule.forFeature([

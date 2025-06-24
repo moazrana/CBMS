@@ -6,6 +6,9 @@ import { RolesSeeder } from './roles.seeder';
 import { UsersSeeder } from './users.seeder';
 import { SeederService } from './seeder.service';
 import { SeedCommand } from './seed.command';
+import { permission } from 'process';
+import { PermissionsSeeder } from './permissions.seeder';
+import { Permission, PermissionSchema } from '../permissions/schemas/permission.schema';
 
 @Module({
   imports: [
@@ -13,9 +16,10 @@ import { SeedCommand } from './seed.command';
     MongooseModule.forFeature([
       { name: Role.name, schema: RoleSchema },
       { name: User.name, schema: UserSchema },
+      { name: Permission.name, schema: PermissionSchema },
     ]),
   ],
-  providers: [SeederService, RolesSeeder, UsersSeeder, SeedCommand],
+  providers: [PermissionsSeeder,SeederService, RolesSeeder, UsersSeeder, SeedCommand],
   exports: [SeederService],
 })
 export class SeederModule {} 

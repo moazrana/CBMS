@@ -15,6 +15,8 @@ const roles_seeder_1 = require("./roles.seeder");
 const users_seeder_1 = require("./users.seeder");
 const seeder_service_1 = require("./seeder.service");
 const seed_command_1 = require("./seed.command");
+const permissions_seeder_1 = require("./permissions.seeder");
+const permission_schema_1 = require("../permissions/schemas/permission.schema");
 let SeederModule = class SeederModule {
 };
 exports.SeederModule = SeederModule;
@@ -25,9 +27,10 @@ exports.SeederModule = SeederModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: role_schema_1.Role.name, schema: role_schema_1.RoleSchema },
                 { name: user_schema_1.User.name, schema: user_schema_1.UserSchema },
+                { name: permission_schema_1.Permission.name, schema: permission_schema_1.PermissionSchema },
             ]),
         ],
-        providers: [seeder_service_1.SeederService, roles_seeder_1.RolesSeeder, users_seeder_1.UsersSeeder, seed_command_1.SeedCommand],
+        providers: [permissions_seeder_1.PermissionsSeeder, seeder_service_1.SeederService, roles_seeder_1.RolesSeeder, users_seeder_1.UsersSeeder, seed_command_1.SeedCommand],
         exports: [seeder_service_1.SeederService],
     })
 ], SeederModule);

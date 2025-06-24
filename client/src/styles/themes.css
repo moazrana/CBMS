@@ -1,17 +1,19 @@
 :root[data-theme="light"] {
-  --sidebar-bg: #231F3A;
+  --sidebar-bg: #231f3a;
   --sidebar-text: #ffffff;
   --sidebar-heading: #696BDA;
   --main-bg: #ffffff;
   --main-text: #333333;
+  --border-color: #f5f5f5;
   --hover-bg: #f0f0f0;
-  --icon-filter: brightness(0) invert(1);
+  --icon-filter: brightness(1) invert(1);
+  --nav-icon-filter: brightness(0) invert(0);
   --edit-bg: #ffffff;
   --delete-bg: #ffffff;
 }
 
 :root[data-theme="dark"] {
-  --sidebar-bg: #231F3A;
+  --sidebar-bg: #231f3a;
   --sidebar-text: #ffffff;
   --sidebar-heading: #696BDA;
   --main-bg: #231F3A;
@@ -19,6 +21,7 @@
   --main-text: #ffffff;
   --border-color: #5B5969;
   --icon-filter: brightness(0) invert(1);
+  --nav-icon-filter: brightness(0) invert(1);
   --edit-bg: #231F3A;
   --delete-bg: #471717;
 } 

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
 import Layout from '../../layouts/layout';
 import students from '../../assets/dashboard/students.svg'
-import teachers from '../../assets/dashboard/teachears.svg'
+import teachers from '../../assets/dashboard/teachers.svg'
 import staff from '../../assets/dashboard/staff.svg'
 import './dashboard.scss'
 const Dashboard: React.FC = () => {

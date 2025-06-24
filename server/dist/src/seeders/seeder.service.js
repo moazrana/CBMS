@@ -13,12 +13,15 @@ exports.SeederService = void 0;
 const common_1 = require("@nestjs/common");
 const roles_seeder_1 = require("./roles.seeder");
 const users_seeder_1 = require("./users.seeder");
+const permissions_seeder_1 = require("./permissions.seeder");
 let SeederService = class SeederService {
-    constructor(rolesSeeder, usersSeeder) {
+    constructor(permissionsSeeder, rolesSeeder, usersSeeder) {
+        this.permissionsSeeder = permissionsSeeder;
         this.rolesSeeder = rolesSeeder;
         this.usersSeeder = usersSeeder;
     }
     async seed() {
+        await this.permissionsSeeder.seed();
         await this.rolesSeeder.seed();
         await this.usersSeeder.seed();
     }
@@ -26,7 +29,8 @@ let SeederService = class SeederService {
 exports.SeederService = SeederService;
 exports.SeederService = SeederService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [roles_seeder_1.RolesSeeder,
+    __metadata("design:paramtypes", [permissions_seeder_1.PermissionsSeeder,
+        roles_seeder_1.RolesSeeder,
         users_seeder_1.UsersSeeder])
 ], SeederService);
 //# sourceMappingURL=seeder.service.js.map
