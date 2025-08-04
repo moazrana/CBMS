@@ -26,6 +26,7 @@ const document_schema_1 = require("./schemas/document.schema");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const has_permission_decorator_1 = require("../auth/decorators/has-permission.decorator");
+const fs_1 = require("fs");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -35,6 +36,9 @@ let UsersController = class UsersController {
     }
     async findAll(sort, order, search, page, perPage) {
         return this.usersService.findAll(sort, order, search, page, perPage);
+    }
+    async findAllByRol(role) {
+        return this.usersService.findByRole(role);
     }
     async findOne(id) {
         return this.usersService.findOne(id);
@@ -50,6 +54,9 @@ let UsersController = class UsersController {
     }
     async getPendingCertificates() {
         return this.usersService.getAllPendingCertificates();
+    }
+    async getAllCertificates() {
+        return this.usersService.getAllCertificatesForAdmin();
     }
     async approveCertificate(userId, index, req) {
         return this.usersService.approveCertificate(userId, index, req.user._id);
@@ -90,6 +97,16 @@ let UsersController = class UsersController {
     async remove(id) {
         return this.usersService.remove(id);
     }
+    async downloadCertificate(id, req, res) {
+        const certificate = await this.usersService.getCertificateById(req.user._id, id);
+        if (!(0, fs_1.existsSync)(certificate.filePath)) {
+            throw new common_1.NotFoundException('File not found on server');
+        }
+        res.setHeader('Content-Type', certificate.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${certificate.fileName}"`);
+        const fileStream = (0, fs_1.createReadStream)(certificate.filePath);
+        fileStream.pipe(res);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -114,6 +131,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('role/:role'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_2.SetMetadata)('roles', [role_schema_1.UserRole.ADMIN]),
+    __param(0, (0, common_1.Param)('role')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "findAllByRol", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
@@ -151,7 +177,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "uploadCertificate", null);
 __decorate([
-    (0, common_1.Get)('certificates'),
+    (0, common_1.Get)('certificates/my'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -166,6 +192,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getPendingCertificates", null);
+__decorate([
+    (0, common_1.Get)('certificates/all'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_2.SetMetadata)('roles', [role_schema_1.UserRole.ADMIN]),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getAllCertificates", null);
 __decorate([
     (0, common_1.Post)('certificates/:userId/:index/approve'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
@@ -265,6 +299,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)('certificates/download/:id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "downloadCertificate", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

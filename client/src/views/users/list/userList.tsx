@@ -6,11 +6,51 @@ import Popup from '../../../components/Popup/Popup';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
 
+interface Permission {
+  _id: string;
+  name: string;
+  description: string;
+  module: string;
+  action: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Role {
+  _id: string;
+  name: string;
+  description: string;
+  permissions: Permission[];
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: Role | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+}
+
+interface RoleOption {
+  value: string;
+  label: string;
+}
 
 const UserList = () => {
   // Sample data - replace with actual API call
-  const [users, setUsers] = React.useState([]);
-  const { executeRequest, error: apiError } = useApiRequest<any>();
+  const [users, setUsers] = React.useState<User[]>([]);
+  const { executeRequest} = useApiRequest<User[]>();
   const [sort, setSort] = React.useState('createdAt');
   const [order, setOrder] = React.useState('DESC');
   const [search, setSearch] = React.useState('');
@@ -19,15 +59,15 @@ const UserList = () => {
   const fetchUsers = async () => {
    const response = await executeRequest('get', `/users?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
    console.log({...response});
-   response.forEach((user: any) => {
-    if (user.role) {
+   response.forEach((user: User) => {
+    if (user.role && typeof user.role === 'object' && 'name' in user.role) {
       user.role = user.role.name;
     }
    });
    setUsers(response);
   };
 
-  const handleDelete = async (id:any) => {
+  const handleDelete = async (id: User) => {
     console.log('deleting: ',id);
     const response = await executeRequest('delete', `/users/${id._id}`);
     console.log(response);
@@ -50,7 +90,7 @@ const UserList = () => {
     console.log('adding: ');
     setIsPopupOpen(true);
   }
-  const handleEdit = async (id:any) => {
+  const handleEdit = async (id: User) => {
     console.log('editing: ', id);
     // navigate(`/users/${id._id}`);
   }
@@ -71,17 +111,17 @@ const UserList = () => {
     console.log('form submitted');
     setIsPopupOpen(false);
   }
-  const [userData,setUserData]=useState({
+  const [userData,setUserData]=useState<UserData>({
     name: '',
     email: '',
     role: '',
     password: ''
   });
-  const [roles,setRoles]=useState<Array<{value: any, label: string}>>([]);
+  const [roles,setRoles]=useState<RoleOption[]>([]);
   const fetchRoles = async () => {
     const response = await executeRequest('get', `/roles`);
-    const roleOptions = response.map((role: any) => ({
-      value: role,
+    const roleOptions = response.map((role: Role) => ({
+      value: role.name,
       label: role.name
     }));
     setRoles(roleOptions);
@@ -125,7 +165,7 @@ const UserList = () => {
                 label='Role' 
                 name='role' 
                 value={userData.role} 
-                onChange={(e:any) => setUserData({...userData, role: e.target.value})} 
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUserData({...userData, role: e.target.value})} 
                 options={roles}
                 placeholder='Select Role'
               />

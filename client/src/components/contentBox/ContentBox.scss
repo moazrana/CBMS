@@ -1,0 +1,11 @@
+.content-main-div{
+    color: var(--main-text);
+    margin-top: 80px;
+}
+
+.content{
+    background-color: var(--content-box-bg);
+    display: flex;
+    flex-direction: column;
+    border:1px solid var(--border-color)
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApiRequest } from '../../../hooks/useApiRequest';
-import roleService, { Role, CreateRoleDto, UpdateRoleDto } from '../../../services/roleService';
+import { Role, CreateRoleDto } from '../../../services/roleService';
 import permissionService, { Permission } from '../../../services/permissionService';
 import Input from '../../../components/input/Input';
 import TextField from '../../../components/textField/TextField';
@@ -17,7 +17,7 @@ const RoleManagement: React.FC = () => {
     permissions: [] as Permission[],
     isDefault: false,
   });
-  const [error, setError] = useState<string | null>(null);
+  // const [setError] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [buttonText, setButtonText] = useState('Create New Role');
@@ -97,18 +97,18 @@ const RoleManagement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     console.log(formData);
     e.preventDefault();
-    setError(null);
+    // setError(null);
     console.log(isCreating);
     try {
       if (isCreating) {
         console.log('here')
-        let res = await executeRequest('post', '/roles', formData);
+        const res = await executeRequest('post', '/roles', formData);
         if(res){
           window.location.href = '/roles';
         }
         setIsCreating(false);
       } else if (selectedRole && isEditing) {
-        let res = await executeRequest('patch', `/roles/${selectedRole._id}`, formData);
+        const res = await executeRequest('patch', `/roles/${selectedRole._id}`, formData);
         if(res){
           window.location.href = '/roles';
         }
@@ -122,8 +122,9 @@ const RoleManagement: React.FC = () => {
         permissions: [],
         isDefault: false,
       });
-    } catch (error: any) {
-      setError(error.message || 'An error occurred');
+    } catch (error) {
+      console.log('error: ', error);
+      // setError(error.message || 'An error occurred');
     }
   };
 

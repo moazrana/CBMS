@@ -20,13 +20,20 @@ export class User extends Document {
   @Prop({ required: true })
   password: string;
 
+  @Prop({required:true})
+  pin:string;
+  
   @Prop({ type: Types.ObjectId, ref: 'Role' })
   role: Role;
 
   @Prop({ type: Date, default: null })
   deletedAt: Date;
 
+  @Prop({required:false})
+  subject:string;
+
   @Prop([{
+    _id: Types.ObjectId,
     fileName: String,
     filePath: String,
     fileType: String,
@@ -36,6 +43,7 @@ export class User extends Document {
       enum: Object.values(CertificateStatus),
       default: CertificateStatus.PENDING
     },
+    expiry:String,
     approvedBy: {
       type: Types.ObjectId,
       ref: 'User'
@@ -44,11 +52,13 @@ export class User extends Document {
     uploadedAt: Date
   }])
   certificates: Array<{
+    _id: Types.ObjectId;
     fileName: string;
     filePath: string;
     fileType: string;
     fileSize: number;
     status: CertificateStatus;
+    expiry?:string;
     approvedBy?: Types.ObjectId;
     rejectionReason?: string;
     uploadedAt: Date;

@@ -1,0 +1,235 @@
+.main-div{
+    padding: 10px;
+}
+.main-heading{
+    color: var(--main-text);
+    font-size: large;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.hr-line{
+    border: none;
+    border-top: 2px solid var(--border-color); // Replace with your desired color
+    margin: 8px 0;
+}
+.all-inputs-div{
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: scroll;
+    border-bottom: 1px solid var(--border-color);
+    // Custom scrollbar styling
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--border-color);
+        border-radius: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #ffffff;
+        border-radius: 4px;
+        
+        &:hover {
+            background: var(--sidebar-bg);
+        }
+    }
+
+    // Firefox scrollbar
+    scrollbar-width: none;
+    scrollbar-color: var(--sidebar-bg) var(--border-color);
+}
+.dropdowns{
+    height: 500px;
+}
+.sub-heading{
+    margin-top: 80px;
+}
+.inputs-div{
+    height:150px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.input-div{
+    width: 25%;
+}
+.description{
+    margin-top: 80px;
+    width: 50%;
+}
+.commentary-div{
+    // padding-top: 10px;
+    padding-left:10px;
+    padding-right:10px;
+    display:flex;
+    flex-direction:column;
+    justify-content: space-around;
+    .commentary-heading{
+        font-weight: 600;
+        font-size: larger;
+    }
+    .comentary-inputs{
+        width:95%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    .commentary-hr{
+        width:100%;
+        margin-right:100px;
+    }
+    .commentary-attachment{
+        margin-bottom: 25px;
+    }
+}
+.heading{
+    color:var(--main-text);
+    font-size:20px;
+    font-weight: 500;
+    margin-top:50px;
+}
+.pink-box{
+    color:#ffffff;
+    background-color: #FF7C95;
+    padding-left: 10px;
+    padding-top: 0px;
+    height: 47px;
+    font-size: medium;
+    font-weight: 600;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.pink-content{
+    width:97%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+}
+.box-content{
+    background-color: var(--content-box-bg);
+    border: 1px solid var(--border-color);
+}
+.check-boxes{
+    padding-left: 20px;
+    padding-top: 20px;
+    padding-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    width: 90%;
+    justify-content:space-between ;
+}
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    user-select: none;
+    color: var(--main-text);
+  
+    input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+  
+    .checkmark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 20px;
+      width: 20px;
+      background-color: var(--check-box-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+  
+    input:checked ~ .checkmark {
+      background-color: #2DDBA1;
+      border-color: #2DDBA1;
+    }
+  
+    .checkmark:after {
+      content: "";
+      position: absolute;
+      display: none;
+    }
+  
+    input:checked ~ .checkmark:after {
+      display: block;
+    }
+  
+    .checkmark:after {
+      left: 6px;
+      top: 2px;
+      width: 6px;
+      height: 12px;
+      border: solid #fff;
+      border-width: 0 3px 3px 0;
+      transform: rotate(45deg);
+      content: "";
+      position: absolute;
+    }
+  }
+  .check-boxes-column{
+    display: flex;
+    flex-direction: column;
+    padding-left: 20px;
+    padding-top: 20px;
+    padding-bottom: 10px;
+  }
+  .btns{
+    width:95%;
+    display:flex;
+    
+  }
+  .btns-container{
+    width:30%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom:10px;
+  }
+  .save-btn{
+    color:#ffffff;
+    background-color: #7173EB;
+    width: 50%;
+    border: 1px solid var(--border-color);
+  }
+  .cancel-btn{
+    color: var(--main-text);
+    background-color: var(--cancel-bg);
+    width: 50%;
+    border: 1px solid var(--border-color);
+    margin-right: 10px;
+  }
+  .empty{
+    width: 80%;
+  }
+  .meeting-input-div{
+    width: 30%;
+  }
+  .meeting-add-div{
+    width: 98%;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    padding-bottom:30px;
+    
+  }
+  .meeting-add-btn{
+    background-color: #7173eb;
+    color:#ffffff;
+    width: 15%;
+  }

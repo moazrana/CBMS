@@ -1,0 +1,28 @@
+.file-div{
+    width: 50%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: last baseline;
+}
+.submit-btn{
+    background-color: var(--sidebar-bg);
+    color:var(--sidebar-text);
+    height:70%;
+    font-size:14px;
+    font-weight: 500;
+    transition: transform 0.2s ease-in-out;
+    
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+.downloadIcon{
+    transition: transform 0.2s ease-in-out;
+    cursor:pointer;
+    
+    &:hover {
+        transform: scale(1.5);
+    }
+}

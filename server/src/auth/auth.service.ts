@@ -22,6 +22,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const isPinValid=await bcrypt.compare(loginDto.pin,user.pin)
+    if(!isPinValid){
+      throw new UnauthorizedException('Invalid credentials')
+    }
     // Ensure we have the populated role
     
     const userWithRole = await this.usersService.findOne(user._id.toString());

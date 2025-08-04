@@ -6,8 +6,6 @@ import { User, UserSchema } from './schemas/user.schema';
 import { Role, RoleSchema } from './schemas/role.schema';
 import { RolePermissionService } from './services/role-permission.service';
 import { Permission, PermissionSchema } from './schemas/permission.schema';
-import { PermissionsSeeder } from './seeders/permissions.seeder';
-import { SeedPermissionsCommand } from './seeders/seed-permissions.command';
 import { RolesModule } from '../roles/roles.module';
 
 @Module({
@@ -22,9 +20,7 @@ import { RolesModule } from '../roles/roles.module';
   controllers: [UsersController],
   providers: [
     UsersService, 
-    RolePermissionService, 
-    PermissionsSeeder,
-    SeedPermissionsCommand
+    RolePermissionService
   ],
   exports: [UsersService, RolePermissionService],
 })

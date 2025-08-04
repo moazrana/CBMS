@@ -42,16 +42,20 @@ const Popup: React.FC<PopupProps> = ({
         <div className="popup-body">
           {message && <p>{message}</p>}
           {children}
-          {onConfirm && (
-            <div className="popup-footer">
-              <button className="popup-button cancel" onClick={onClose}>
+          
+          
+        </div>
+        <div className="popup-footer">
+        {onConfirm && (
+          <>
+            <button className="popup-button confirm" onClick={onConfirm}>
+              {confirmText}
+            </button>
+            <button className="popup-button cancel" onClick={onClose}>
                 {cancelText}
-              </button>
-              <button className="popup-button confirm" onClick={onConfirm}>
-                {confirmText}
-              </button>
-            </div>
-          )}
+            </button>
+          </>
+        )}
         </div>
       </div>
     </div>

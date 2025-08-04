@@ -16,21 +16,72 @@ exports.RolesSeeder = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-const role_schema_1 = require("../roles/schemas/role.schema");
+const role_schema_1 = require("../users/schemas/role.schema");
+const permission_schema_1 = require("../users/schemas/permission.schema");
 let RolesSeeder = class RolesSeeder {
-    constructor(roleModel) {
+    constructor(roleModel, permissionModel) {
         this.roleModel = roleModel;
+        this.permissionModel = permissionModel;
     }
     async seed() {
-        const roles = [
-            { name: 'admin', description: 'Administrator with full access' },
-            { name: 'user', description: 'Regular user with limited access' },
-        ];
-        for (const role of roles) {
-            const exists = await this.roleModel.findOne({ name: role.name });
-            if (!exists) {
-                await this.roleModel.create(role);
+        try {
+            console.log('Starting roles seeding...');
+            const allPermissions = await this.permissionModel.find().exec();
+            if (allPermissions.length === 0) {
+                console.log('No permissions found. Please run the permissions seeder first.');
+                return;
             }
+            const existingAdminRole = await this.roleModel.findOne({ name: 'admin' });
+            if (existingAdminRole) {
+                console.log('Admin role already exists. Updating permissions...');
+                await this.roleModel.findByIdAndUpdate(existingAdminRole._id, {
+                    permissions: allPermissions.map(p => ({
+                        name: p.name,
+                        description: p.description,
+                        module: p.module,
+                        action: p.action
+                    }))
+                }, { new: true });
+                console.log('Admin role updated with all permissions');
+            }
+            else {
+                const adminRole = new this.roleModel({
+                    name: 'admin',
+                    description: 'Administrator role with full access',
+                    permissions: allPermissions.map(p => ({
+                        name: p.name,
+                        description: p.description,
+                        module: p.module,
+                        action: p.action
+                    })),
+                    isDefault: false
+                });
+                await adminRole.save();
+                console.log('Admin role created with all permissions');
+            }
+            const existingUserRole = await this.roleModel.findOne({ name: 'user' });
+            if (!existingUserRole) {
+                const userRole = new this.roleModel({
+                    name: 'user',
+                    description: 'Regular user role',
+                    permissions: [
+                        {
+                            name: 'user_read',
+                            description: 'Read user information',
+                            module: 'users',
+                            action: 'read'
+                        }
+                    ],
+                    isDefault: true
+                });
+                await userRole.save();
+                console.log('User role created with limited permissions');
+            }
+            console.log('Roles seeding completed successfully');
+        }
+        catch (error) {
+            console.error('Error seeding roles:', error);
+            throw error;
         }
     }
 };
@@ -38,6 +89,8 @@ exports.RolesSeeder = RolesSeeder;
 exports.RolesSeeder = RolesSeeder = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(role_schema_1.Role.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __param(1, (0, mongoose_1.InjectModel)(permission_schema_1.Permission.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model])
 ], RolesSeeder);
 //# sourceMappingURL=roles.seeder.js.map

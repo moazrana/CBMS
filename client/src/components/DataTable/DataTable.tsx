@@ -7,19 +7,24 @@ interface Column {
   header: string;
   accessor: string;
   sortable?: boolean;
-  type?: 'number' | 'string' | 'date';
+  type?: 'number' | 'string' | 'date' | 'template'|'tenChars';
+  template?: (row: Record<string, unknown>, rowIndex: number) => React.ReactNode;
+  
 }
 
 interface DataTableProps {
   columns: Column[];
-  data: any[];
+  data: Record<string, unknown>[];
   title?: string;
-  onDelete?: (row: any) => void;
+  onDelete?: (row: Record<string, unknown>) => void;
   onSort?: (key: string, direction: 'ASC' | 'DESC') => void;
   onSearch?: (searchTerm: string) => void;
   PerPage?: (number: number) => void;
   onAdd?: () => void;
-  onEdit: (row: any) => void;
+  onEdit: (row: Record<string, unknown>) => void;
+  showActions?: boolean;
+  addButton?: boolean;
+  showSearch?:boolean;
 }
 
 const DataTable: React.FC<DataTableProps> = ({ 
@@ -31,7 +36,10 @@ const DataTable: React.FC<DataTableProps> = ({
   onSearch,
   PerPage,
   onAdd,
-  onEdit
+  onEdit,
+  showActions = true,
+  addButton = true,
+  showSearch=true
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -66,10 +74,14 @@ const DataTable: React.FC<DataTableProps> = ({
     // Apply sorting
     if (sortConfig) {
       filteredData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aVal = (a as Record<string, unknown>)[sortConfig.key];
+        const bVal = (b as Record<string, unknown>)[sortConfig.key];
+        const aStr = String(aVal);
+        const bStr = String(bVal);
+        if (aStr < bStr) {
           return sortConfig.direction === 'ASC' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aStr > bStr) {
           return sortConfig.direction === 'ASC' ? 1 : -1;
         }
         return 0;
@@ -108,7 +120,7 @@ const DataTable: React.FC<DataTableProps> = ({
     obj: { name?: string } | null;
   }
   const [deletePopup, setDeletePopup] = React.useState<DeletePopupState>({ isOpen: false, obj: null });
-  const handleDelete = async (obj: Object) => {
+  const handleDelete = async (obj: Record<string, unknown>) => {
     setDeletePopup({ isOpen: true, obj });
   };
   const confirmDelete = async () => {
@@ -125,14 +137,14 @@ const DataTable: React.FC<DataTableProps> = ({
         <div className="data-table-header">
           {title && <h2>{title}</h2>}
           <div className="search-box">
-            <input
+            {showSearch&&<input
               type="text"
               placeholder="Search..."
               value={searchTerm}
               className='table-search'
               onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button className="add-button" onClick={onAdd}>+</button>
+            />}
+            {addButton && <button className="add-button" onClick={onAdd}>+</button>}
           </div>
         </div>
         <div className="table-container">
@@ -153,27 +165,31 @@ const DataTable: React.FC<DataTableProps> = ({
                     )}
                   </th>
                 ))}
-                <th>
-                  Actions
-                </th>
+                {showActions && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((row, index) => (
                 <tr key={index}>
-                  {columns.map((column) => (
+                  {columns.map((column,cindex) => (
                     (() => {
+                      let tdClass=''
+                      if(cindex==0)
+                        tdClass='first-td-class'
+                      if(cindex==columns.length-1)
+                        tdClass='last-td-class'
+                      const last=cindex==columns.length-1
                       if(column.accessor === 'num'){
-                        return <td key={column.accessor}>{index + 1}</td>;
+                        return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{index + 1}</div></td>;
                       }
                       switch(column.type) {
                         case 'number':
-                          return <td key={column.accessor}>{row[column.accessor]}</td>;
+                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{String(row[column.accessor])}</div></td>;
                         case 'string':
-                          return <td key={column.accessor}>{row[column.accessor]}</td>;
-                        case 'date':
+                          return row[column.accessor]!=null? <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{String(row[column.accessor])}</div></td>:<td key={column.accessor}><div className={last?"last-td-div":"td-div"}>--</div></td>;
+                        case 'date': {
                           const now = new Date();
-                          const date = new Date(row[column.accessor]);
+                          const date = new Date(row[column.accessor] as string | number | Date);
                           const diffInMilliseconds = now.getTime() - date.getTime();
                           const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
                           const diffInHours = Math.floor(diffInMinutes / 60);
@@ -181,7 +197,7 @@ const DataTable: React.FC<DataTableProps> = ({
 
                           let timeAgo;
                           if (diffInDays > 30) {
-                            return <td key={column.accessor}>{date.toLocaleDateString()}</td>;
+                            return <td className={tdClass} key={column.accessor}>{date.toLocaleDateString()}</td>;
                           } else if (diffInDays > 0) {
                             timeAgo = `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
                           } else if (diffInHours > 0) {
@@ -191,28 +207,39 @@ const DataTable: React.FC<DataTableProps> = ({
                           } else {
                             timeAgo = 'just now';
                           }
-                          return <td key={column.accessor}>{timeAgo}</td>;
+                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{timeAgo}</div></td>;
+                        }
+                        case 'template':
+                          if (column.template) {
+                            return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{column.template(row, index)}</div></td>;
+                          }
+                          return <td className={tdClass} key={column.accessor}></td>;
+                        case 'tenChars':
+                          return <td title={String(row[column.accessor])}>
+                            <div className={last?"last-td-div":"td-div"}>{String(row[column.accessor]).length>10?String(row[column.accessor]).slice(0,10)+'...':String(row[column.accessor])}</div></td>
                         default:
-                          return <td key={column.accessor}>{row[column.accessor]}</td>;
+                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{String(row[column.accessor])}</div></td>;
                       }
                     })()
                   ))}
-                  <td>
-                    <button 
-                      id="edit" 
-                      className="action-button"
-                      onClick={()=>onEdit(row)}
-                    >
-                      <FontAwesomeIcon icon={faPencil} />
-                    </button>
-                    <button 
-                      id="delete" 
-                      className="action-button"
-                      onClick={()=>handleDelete(row)}
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </td>
+                  {showActions && (
+                    <td>
+                      <button 
+                        id="edit" 
+                        className="action-button"
+                        onClick={()=>onEdit(row)}
+                      >
+                        <FontAwesomeIcon icon={faPencil} />
+                      </button>
+                      <button 
+                        id="delete" 
+                        className="action-button"
+                        onClick={()=>handleDelete(row)}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

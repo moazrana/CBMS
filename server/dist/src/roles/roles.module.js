@@ -14,6 +14,8 @@ const roles_service_1 = require("./services/roles.service");
 const role_permission_service_1 = require("./services/role-permission.service");
 const role_schema_1 = require("./schemas/role.schema");
 const permission_schema_1 = require("../permissions/schemas/permission.schema");
+const auth_module_1 = require("../auth/auth.module");
+const users_module_1 = require("../users/users.module");
 let RolesModule = class RolesModule {
 };
 exports.RolesModule = RolesModule;
@@ -24,6 +26,8 @@ exports.RolesModule = RolesModule = __decorate([
                 { name: role_schema_1.Role.name, schema: role_schema_1.RoleSchema },
                 { name: permission_schema_1.Permission.name, schema: permission_schema_1.PermissionSchema }
             ]),
+            (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
+            (0, common_1.forwardRef)(() => users_module_1.UsersModule)
         ],
         controllers: [roles_controller_1.RolesController],
         providers: [roles_service_1.RolesService, role_permission_service_1.RolePermissionService],

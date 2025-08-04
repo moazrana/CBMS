@@ -15,8 +15,6 @@ const user_schema_1 = require("./schemas/user.schema");
 const role_schema_1 = require("./schemas/role.schema");
 const role_permission_service_1 = require("./services/role-permission.service");
 const permission_schema_1 = require("./schemas/permission.schema");
-const permissions_seeder_1 = require("./seeders/permissions.seeder");
-const seed_permissions_command_1 = require("./seeders/seed-permissions.command");
 const roles_module_1 = require("../roles/roles.module");
 let UsersModule = class UsersModule {
 };
@@ -34,9 +32,7 @@ exports.UsersModule = UsersModule = __decorate([
         controllers: [users_controller_1.UsersController],
         providers: [
             users_service_1.UsersService,
-            role_permission_service_1.RolePermissionService,
-            permissions_seeder_1.PermissionsSeeder,
-            seed_permissions_command_1.SeedPermissionsCommand
+            role_permission_service_1.RolePermissionService
         ],
         exports: [users_service_1.UsersService, role_permission_service_1.RolePermissionService],
     })

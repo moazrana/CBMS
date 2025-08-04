@@ -17,9 +17,14 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const certificate_schema_1 = require("./schemas/certificate.schema");
+const user_schema_1 = require("../users/schemas/user.schema");
+const mongoose_3 = require("mongoose");
+const mail_service_1 = require("../services/mail.service");
 let CertificatesService = class CertificatesService {
-    constructor(certificateModel) {
+    constructor(certificateModel, userModel, mailService) {
         this.certificateModel = certificateModel;
+        this.userModel = userModel;
+        this.mailService = mailService;
     }
     async create(teacher, fileName, filePath, fileType, fileSize) {
         const certificate = new this.certificateModel({
@@ -73,11 +78,58 @@ let CertificatesService = class CertificatesService {
         certificate.rejectionReason = reason;
         return certificate.save();
     }
+    async getCertificateById(userId, certificateId) {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const certificate = user.certificates.find((cert) => cert._id.toString() === certificateId);
+        if (!certificate) {
+            throw new common_1.NotFoundException('Certificate not found');
+        }
+        return certificate;
+    }
+    async approveEmbeddedCertificate(userId, certificateId, adminId, expiry) {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const certificate = user.certificates.find((cert) => cert._id.toString() === certificateId);
+        if (!certificate) {
+            throw new common_1.NotFoundException('Certificate not found');
+        }
+        certificate.expiry = expiry;
+        certificate.status = certificate_schema_1.CertificateStatus.APPROVED;
+        certificate.approvedBy = new mongoose_3.Types.ObjectId(adminId);
+        certificate.rejectionReason = undefined;
+        await user.save();
+        await this.mailService.sendEmail('muaazmehmood@gmail.com', 'Good News', 'Text body', 'certificateApproved');
+        return certificate;
+    }
+    async rejectEmbeddedCertificate(userId, certificateId, adminId, reason) {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const certificate = user.certificates.find((cert) => cert._id.toString() === certificateId);
+        if (!certificate) {
+            throw new common_1.NotFoundException('Certificate not found');
+        }
+        certificate.status = certificate_schema_1.CertificateStatus.REJECTED;
+        certificate.approvedBy = new mongoose_3.Types.ObjectId(adminId);
+        certificate.rejectionReason = reason;
+        await user.save();
+        await this.mailService.sendEmail('muaazmehmood@gmail.com', 'Bad News', 'Text body', 'certificateRejected');
+        return certificate;
+    }
 };
 exports.CertificatesService = CertificatesService;
 exports.CertificatesService = CertificatesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(certificate_schema_1.Certificate.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __param(1, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
+        mail_service_1.MailService])
 ], CertificatesService);
 //# sourceMappingURL=certificates.service.js.map

@@ -12,14 +12,15 @@ const config_1 = require("@nestjs/config");
 const mongoose_1 = require("@nestjs/mongoose");
 const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
-const seed_permissions_command_1 = require("./users/seeders/seed-permissions.command");
-const permissions_seeder_1 = require("./users/seeders/permissions.seeder");
-const roles_seeder_1 = require("./users/seeders/roles.seeder");
 const permission_schema_1 = require("./users/schemas/permission.schema");
 const role_schema_1 = require("./users/schemas/role.schema");
 const roles_module_1 = require("./roles/roles.module");
 const permissions_module_1 = require("./permissions/permissions.module");
 const certificates_module_1 = require("./certificates/certificates.module");
+const test_module_1 = require("./test/test.module");
+const safeguards_module_1 = require("./safeguards/safeguards.module");
+const location_module_1 = require("./location/location.module");
+const period_module_1 = require("./period/period.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -52,8 +53,12 @@ exports.AppModule = AppModule = __decorate([
             roles_module_1.RolesModule,
             permissions_module_1.PermissionsModule,
             certificates_module_1.CertificatesModule,
+            test_module_1.TestModule,
+            safeguards_module_1.SafeguardsModule,
+            location_module_1.LocationModule,
+            period_module_1.PeriodModule
         ],
-        providers: [seed_permissions_command_1.SeedPermissionsCommand, permissions_seeder_1.PermissionsSeeder, roles_seeder_1.RolesSeeder],
+        providers: [],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

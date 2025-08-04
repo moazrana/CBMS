@@ -73,7 +73,8 @@ export class RolePermissionService {
       .exec();
   }
 
-  async checkRole(roleId: string, requiredRole: string): Promise<boolean> {
+  async checkRole(roleId: any, requiredRole: string): Promise<boolean> {
+    console.log('Roll: ',roleId.name)
     const role = await this.roleModel.findById(roleId).exec();
     return role ? role.name === requiredRole : false;
   }

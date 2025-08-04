@@ -56,6 +56,28 @@ export class UsersService {
       });
   }
 
+  async findByRole(role:string): Promise<Partial<User>[]> {
+    return this.userModel.aggregate([
+      {
+        $lookup: {
+          from: 'roles',
+          localField: 'role',
+          foreignField: '_id',
+          as: 'role'
+        }
+      },
+      { $unwind: '$role' },
+      { $match: { 'role.name': role,deletedAt:null } },
+      {
+        $project:{
+          value:'$_id',
+          label:'$name'
+        }
+      }
+    ]);
+     
+  }
+
   async findOne(id: string): Promise<User> {
     const user = await this.userModel.findOne({ _id: id, deletedAt: null })
       .select('-password')
@@ -86,6 +108,7 @@ export class UsersService {
     }
 
     user.certificates.push({
+      _id: new Types.ObjectId(),
       fileName,
       filePath,
       fileType,
@@ -100,13 +123,31 @@ export class UsersService {
   async getCertificates(userId: string) {
     const user = await this.userModel.findById(userId)
       .populate('certificates.approvedBy', 'name email')
-      .exec();
-    
+      .exec()
+      if (!user) {
+        throw new NotFoundException('User not found!!!!');
+      }
+     
+      // Add unique _id to each certificate for frontend identification
+      return user.certificates;
+  }
+
+  async getCertificateById(userId:string,certificateId: string) {
+    const user=await this.userModel.findById(userId).exec()
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    return user.certificates;
+    
+    const certifiactes=user.certificates
+    const certificate=certifiactes.find((cert)=>{
+      return cert._id.toString()==certificateId
+    })
+    
+    if (!certificate) {
+      throw new NotFoundException('Certificate not found');
+    }
+    
+    return certificate;
   }
 
   async approveCertificate(
@@ -158,6 +199,38 @@ export class UsersService {
     .populate('certificates.approvedBy', 'name email')
     .select('name email certificates')
     .exec();
+  }
+
+  async getAllCertificatesForAdmin() {
+    const users = await this.userModel.find({
+      'certificates': { $exists: true, $ne: [] }
+    })
+    .populate('certificates.approvedBy', 'name email')
+    .select('name email certificates expiry')
+    .exec();
+
+    const allCertificates = [];
+    let certificateId = 1;
+
+    for (const user of users) {
+      for (const certificate of user.certificates) {
+        allCertificates.push({
+          id: certificateId++,
+          teacher: user.name,
+          fileName: certificate.fileName,
+          status: certificate.status,
+          approvedBy: certificate.approvedBy ? (certificate.approvedBy as any).name : null,
+          rejectionReason: certificate.rejectionReason || null,
+          expiry:certificate.expiry||null,
+          createdAt: certificate.uploadedAt,
+          updatedAt: certificate.uploadedAt, // Using uploadedAt as updatedAt for now
+          userId: user._id,
+          certificateId: certificate._id
+        });
+      }
+    }
+
+    return allCertificates;
   }
 
   async addDocument(

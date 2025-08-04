@@ -12,8 +12,9 @@ const mongoose_1 = require("@nestjs/mongoose");
 const permission_schema_1 = require("../users/schemas/permission.schema");
 const permissions_controller_1 = require("./permissions.controller");
 const permissions_service_1 = require("./permissions.service");
-const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_module_1 = require("../roles/roles.module");
+const users_module_1 = require("../users/users.module");
+const auth_module_1 = require("../auth/auth.module");
 let PermissionsModule = class PermissionsModule {
 };
 exports.PermissionsModule = PermissionsModule;
@@ -23,10 +24,12 @@ exports.PermissionsModule = PermissionsModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: permission_schema_1.Permission.name, schema: permission_schema_1.PermissionSchema }
             ]),
-            roles_module_1.RolesModule
+            roles_module_1.RolesModule,
+            users_module_1.UsersModule,
+            auth_module_1.AuthModule
         ],
         controllers: [permissions_controller_1.PermissionsController],
-        providers: [permissions_service_1.PermissionsService, roles_guard_1.RolesGuard],
+        providers: [permissions_service_1.PermissionsService],
         exports: [permissions_service_1.PermissionsService]
     })
 ], PermissionsModule);

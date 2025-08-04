@@ -6,8 +6,14 @@ import RoleManagement from './views/roleManagement/add/RoleManagement';
 import { ThemeProvider } from './context/ThemeContext';
 import './styles/themes.css';
 import Dashboard from './views/dashboard/dashboard';
-
+import AdminPageList from './views/compliance/adminPage/list';
+import TeacherUploadFile from './views/compliance/teacherPage/uploadFile';
+import Safeguarding from './views/safeguarding/index';
+import NewSafeguarding from './views/safeguarding/new/new'
 function App() {
+  const user = localStorage.getItem('user');
+  const role = user ? JSON.parse(user).role : undefined;
+  const complianceComponent = role === 'admin' ? <AdminPageList /> : <TeacherUploadFile/>;
   return (
     <ThemeProvider>
       <Router>
@@ -19,6 +25,10 @@ function App() {
             <Route path="/roles/add" element={<RoleManagement />} />
             <Route path="/roles/edit/:id" element={<RoleManagement />} />
             <Route path="/users" element={<UserList />} />
+            <Route path="/compliance" element={complianceComponent} />
+            <Route path="/safeguarding" element={<Safeguarding/>} />
+            <Route path="/safeguarding/add" element={<NewSafeguarding/>} />
+            <Route path="/safeguarding/safeguard/:id" element={<NewSafeguarding/>} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>

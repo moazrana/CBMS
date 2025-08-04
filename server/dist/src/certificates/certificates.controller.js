@@ -22,6 +22,8 @@ const certificates_service_1 = require("./certificates.service");
 const role_schema_1 = require("../users/schemas/role.schema");
 const multer_1 = require("multer");
 const path_1 = require("path");
+const fs_1 = require("fs");
+const fs_2 = require("fs");
 let CertificatesController = class CertificatesController {
     constructor(certificatesService) {
         this.certificatesService = certificatesService;
@@ -37,6 +39,25 @@ let CertificatesController = class CertificatesController {
     }
     async findMyCertificates(req) {
         return this.certificatesService.findByTeacher(req.user._id);
+    }
+    async downloadCertificateByAdmin(userId, certificateId, res) {
+        const certificate = await this.certificatesService.getCertificateById(userId, certificateId);
+        if (!(0, fs_2.existsSync)(certificate.filePath)) {
+            throw new common_1.NotFoundException('File not found on server');
+        }
+        res.setHeader('Content-Type', certificate.fileType);
+        res.setHeader('Content-Disposition', `attachment; filename="${certificate.fileName}"`);
+        const fileStream = (0, fs_1.createReadStream)(certificate.filePath);
+        fileStream.pipe(res);
+    }
+    async approveEmbedded(userId, certificateId, expiry, req) {
+        return this.certificatesService.approveEmbeddedCertificate(userId, certificateId, req.user._id, expiry);
+    }
+    async rejectEmbedded(userId, certificateId, req, reason) {
+        if (!reason) {
+            throw new common_1.BadRequestException('Rejection reason is required');
+        }
+        return this.certificatesService.rejectEmbeddedCertificate(userId, certificateId, req.user._id, reason);
     }
     async findOne(id) {
         return this.certificatesService.findOne(id);
@@ -94,6 +115,40 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], CertificatesController.prototype, "findMyCertificates", null);
+__decorate([
+    (0, common_1.Get)('download/:userId/:certificateId'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Param)('certificateId')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], CertificatesController.prototype, "downloadCertificateByAdmin", null);
+__decorate([
+    (0, common_1.Post)('approve/:userId/:certificateId/:expiry'),
+    (0, common_1.UseGuards)(certificate_role_guard_1.CertificateRoleGuard),
+    (0, common_2.SetMetadata)('roles', [role_schema_1.UserRole.ADMIN]),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Param)('certificateId')),
+    __param(2, (0, common_1.Param)('expiry')),
+    __param(3, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:returntype", Promise)
+], CertificatesController.prototype, "approveEmbedded", null);
+__decorate([
+    (0, common_1.Post)('reject/:userId/:certificateId'),
+    (0, common_1.UseGuards)(certificate_role_guard_1.CertificateRoleGuard),
+    (0, common_2.SetMetadata)('roles', [role_schema_1.UserRole.ADMIN]),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Param)('certificateId')),
+    __param(2, (0, common_1.Request)()),
+    __param(3, (0, common_1.Body)('reason')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, String]),
+    __metadata("design:returntype", Promise)
+], CertificatesController.prototype, "rejectEmbedded", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

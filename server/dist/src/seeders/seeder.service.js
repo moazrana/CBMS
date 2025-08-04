@@ -14,22 +14,32 @@ const common_1 = require("@nestjs/common");
 const roles_seeder_1 = require("./roles.seeder");
 const users_seeder_1 = require("./users.seeder");
 const permissions_seeder_1 = require("./permissions.seeder");
+const dashboard_permission_seeder_1 = require("./dashboard-permission.seeder");
+const role_permissions_seeder_1 = require("./role-permissions.seeder");
 let SeederService = class SeederService {
-    constructor(permissionsSeeder, rolesSeeder, usersSeeder) {
+    constructor(permissionsSeeder, dashboardPermissionSeeder, rolePermissionsSeeder, rolesSeeder, usersSeeder) {
         this.permissionsSeeder = permissionsSeeder;
+        this.dashboardPermissionSeeder = dashboardPermissionSeeder;
+        this.rolePermissionsSeeder = rolePermissionsSeeder;
         this.rolesSeeder = rolesSeeder;
         this.usersSeeder = usersSeeder;
     }
     async seed() {
+        console.log('Starting all seeders...');
         await this.permissionsSeeder.seed();
+        await this.dashboardPermissionSeeder.seed();
+        await this.rolePermissionsSeeder.seed();
         await this.rolesSeeder.seed();
         await this.usersSeeder.seed();
+        console.log('All seeders completed successfully!');
     }
 };
 exports.SeederService = SeederService;
 exports.SeederService = SeederService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [permissions_seeder_1.PermissionsSeeder,
+        dashboard_permission_seeder_1.DashboardPermissionSeeder,
+        role_permissions_seeder_1.RolePermissionsSeeder,
         roles_seeder_1.RolesSeeder,
         users_seeder_1.UsersSeeder])
 ], SeederService);

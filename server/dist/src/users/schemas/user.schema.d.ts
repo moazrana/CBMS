@@ -10,14 +10,18 @@ export declare class User extends Document {
     name: string;
     email: string;
     password: string;
+    pin: string;
     role: Role;
     deletedAt: Date;
+    subject: string;
     certificates: Array<{
+        _id: Types.ObjectId;
         fileName: string;
         filePath: string;
         fileType: string;
         fileSize: number;
         status: CertificateStatus;
+        expiry?: string;
         approvedBy?: Types.ObjectId;
         rejectionReason?: string;
         uploadedAt: Date;

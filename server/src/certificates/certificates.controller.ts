@@ -8,7 +8,9 @@ import {
   UploadedFile, 
   Request,
   Body,
-  BadRequestException
+  BadRequestException,
+  Res,
+  NotFoundException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,6 +20,9 @@ import { CertificatesService } from './certificates.service';
 import { UserRole } from '../users/schemas/role.schema';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { createReadStream } from 'fs';
+import { existsSync } from 'fs';
+import { Response } from 'express';
 
 @Controller('certificates')
 @UseGuards(JwtAuthGuard)
@@ -72,7 +77,51 @@ export class CertificatesController {
   async findMyCertificates(@Request() req: any) {
     return this.certificatesService.findByTeacher(req.user._id);
   }
+  
+  @Get('download/:userId/:certificateId')
+  @UseGuards(JwtAuthGuard)
+  async downloadCertificateByAdmin(
+    @Param('userId') userId: string,
+    @Param('certificateId') certificateId: string,
+    @Res() res: Response
+  ) {
+    const certificate = await this.certificatesService.getCertificateById(userId, certificateId);
 
+    if (!existsSync(certificate.filePath)) {
+      throw new NotFoundException('File not found on server');
+    }
+
+    res.setHeader('Content-Type', certificate.fileType);
+    res.setHeader('Content-Disposition', `attachment; filename="${certificate.fileName}"`);
+    const fileStream = createReadStream(certificate.filePath);
+    fileStream.pipe(res);
+  }
+  @Post('approve/:userId/:certificateId/:expiry')
+  @UseGuards(CertificateRoleGuard)
+  @SetMetadata('roles', [UserRole.ADMIN])
+  async approveEmbedded(
+    @Param('userId') userId: string,
+    @Param('certificateId') certificateId: string,
+    @Param('expiry') expiry:string,
+    @Request() req: any
+  ) {
+    return this.certificatesService.approveEmbeddedCertificate(userId, certificateId, req.user._id,expiry);
+  }
+
+  @Post('reject/:userId/:certificateId')
+  @UseGuards(CertificateRoleGuard)
+  @SetMetadata('roles', [UserRole.ADMIN])
+  async rejectEmbedded(
+    @Param('userId') userId: string,
+    @Param('certificateId') certificateId: string,
+    @Request() req: any,
+    @Body('reason') reason: string
+  ) {
+    if (!reason) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+    return this.certificatesService.rejectEmbeddedCertificate(userId, certificateId, req.user._id, reason);
+  }
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.certificatesService.findOne(id);
@@ -101,4 +150,8 @@ export class CertificatesController {
     }
     return this.certificatesService.reject(id, req.user, reason);
   }
+
+  
+
+  
 } 

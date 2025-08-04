@@ -30,35 +30,35 @@ export default function Sidebar() {
         
         <Link to="/dashboard" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={dashboard} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={dashboard} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Dashboard
           </div>
         </Link>
         
         <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={incidents} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={incidents} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Incidents
           </div>
         </Link>
         
         <Link to="/safeguarding" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={safeguarding} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={safeguarding} alt="logo" style={{width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Safeguarding
           </div>
         </Link>
         
         <Link to="/attendance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={attendance} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={attendance} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Attendance
           </div>
         </Link>
         
         <Link to="/sbt" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={studentBehavior} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={studentBehavior} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Student Behavior Trends
           </div>
         </Link>
@@ -68,14 +68,14 @@ export default function Sidebar() {
         
         <Link to="/classes" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={classes} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={classes} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Classes
           </div>
         </Link>
 
         <Link to="/classes" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={reports} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={reports} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Reports
           </div>
         </Link>
@@ -84,14 +84,14 @@ export default function Sidebar() {
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>USER & STAFF MANAGEMENT</h4>
         <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={users} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={users} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Users
           </div>
         </Link>
         
-        <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+        <Link to="/compliance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={compliance} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={compliance} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Compliance
           </div>
         </Link>
@@ -100,7 +100,7 @@ export default function Sidebar() {
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>CONFIGURATIONS</h4>
         <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
-            <img src={settings} alt="logo" style={{ width: 25, height: 25, filter: 'var(--icon-filter)' }} />
+            <img src={settings} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
             Settings
           </div>
         </Link>

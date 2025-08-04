@@ -3,14 +3,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { SeedPermissionsCommand } from './users/seeders/seed-permissions.command';
-import { PermissionsSeeder } from './users/seeders/permissions.seeder';
-import { RolesSeeder } from './users/seeders/roles.seeder';
 import { Permission, PermissionSchema } from './users/schemas/permission.schema';
 import { Role, RoleSchema } from './users/schemas/role.schema';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { CertificatesModule } from './certificates/certificates.module';
+// import { MailService } from './services/mail.service';
+import { TestModule } from './test/test.module';
+import { SafeguardsModule } from './safeguards/safeguards.module';
+import { LocationModule } from './location/location.module';
+import { PeriodModule } from './period/period.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -42,7 +44,13 @@ import { CertificatesModule } from './certificates/certificates.module';
     RolesModule,
     PermissionsModule,
     CertificatesModule,
+    TestModule,
+    SafeguardsModule,
+    LocationModule,
+    PeriodModule
   ],
-  providers: [SeedPermissionsCommand, PermissionsSeeder, RolesSeeder],
+  providers: [
+    // MailService
+  ],
 })
 export class AppModule {} 

@@ -1,0 +1,39 @@
+.filter-sec{
+    width: 98%;
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    margin-top: var(--standard-padding);
+}
+.sec-name-div{
+    border-radius: 16px;
+    background-color: var(--hover-bg);
+    width: 200px;
+    padding-left: var(--standard-padding);
+    // padding-right: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    .sec-name{
+        color: var(--main-text);
+        font-size:24px;
+        font-family: 'DM Sans';
+        margin-bottom: 0px;
+    }
+    .year{
+        margin-top:0px;
+        font-family:'DM Sans';
+        font-size: 16px;
+        color: var(--secondary-text);
+    }
+}
+.content-div{
+    width: 80%;
+    padding: var(--standard-padding);
+}
+.small-div{
+    padding-top:10px;
+}
+

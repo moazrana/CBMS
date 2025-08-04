@@ -10,7 +10,10 @@ import {
   Request,
   BadRequestException,
   Query,
-  Delete
+
+  Delete,
+  Res,
+  NotFoundException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -25,6 +28,8 @@ import { DocumentType } from './schemas/document.schema';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { HasPermission } from '../auth/decorators/has-permission.decorator';
+import { Response } from 'express';
+import { createReadStream, existsSync } from 'fs';
 
 @Controller('users')
 export class UsersController {
@@ -50,9 +55,17 @@ export class UsersController {
     return this.usersService.findAll(sort, order, search, page, perPage);
   }
 
+  @Get('role/:role')
+  @UseGuards(JwtAuthGuard)
+  @SetMetadata('roles', [UserRole.ADMIN])
+  async findAllByRol(@Param('role') role:string): Promise<Partial<User>[]> {
+    return this.usersService.findByRole(role);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string): Promise<User> {
+    // console.log('tha pe')
     return this.usersService.findOne(id);
   }
 
@@ -94,7 +107,7 @@ export class UsersController {
     );
   }
 
-  @Get('certificates')
+  @Get('certificates/my')
   @UseGuards(JwtAuthGuard)
   async getMyCertificates(@Request() req: any) {
     return this.usersService.getCertificates(req.user._id);
@@ -105,6 +118,13 @@ export class UsersController {
   @SetMetadata('roles', [UserRole.ADMIN])
   async getPendingCertificates() {
     return this.usersService.getAllPendingCertificates();
+  }
+
+  @Get('certificates/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @SetMetadata('roles', [UserRole.ADMIN])
+  async getAllCertificates() {
+    return this.usersService.getAllCertificatesForAdmin();
   }
 
   @Post('certificates/:userId/:index/approve')
@@ -227,4 +247,30 @@ export class UsersController {
   async remove(@Param('id') id: string): Promise<Partial<User>> {
     return this.usersService.remove(id);
   }
+  
+  @Get('certificates/download/:id')
+  @UseGuards(JwtAuthGuard)
+  async downloadCertificate(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Res() res: Response
+  ) {
+    const certificate = await this.usersService.getCertificateById(req.user._id, id);
+    
+    // Check if file exists
+    if (!existsSync(certificate.filePath)) {
+      throw new NotFoundException('File not found on server');
+    }
+
+    // Set headers for file download
+    res.setHeader('Content-Type', certificate.fileType);
+    res.setHeader('Content-Disposition', `attachment; filename="${certificate.fileName}"`);
+    
+    // Create read stream and pipe to response
+    const fileStream = createReadStream(certificate.filePath);
+    fileStream.pipe(res);
+  }
+
+  
+
 } 

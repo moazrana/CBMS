@@ -2,17 +2,21 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 1rem;
+  
 }
 
 .text-field label {
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color:var(--main-text);
+  font-size: 20px;
   font-weight: 500;
 }
 
 .text-field textarea {
+  background-color: var(--input-bg);
+  color:var(--input-text);
   padding: 0.75rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
   resize: vertical;

@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './src/app.module';
-import { PermissionsSeeder } from './src/users/seeders/permissions.seeder';
+import { PermissionsSeeder } from './src/seeders/permissions.seeder';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, {

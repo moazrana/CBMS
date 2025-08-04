@@ -13,5 +13,5 @@ export declare class RolePermissionService {
     hasPermission(roleId: string, requiredPermission: string): Promise<boolean>;
     getRolePermissions(roleId: string): Promise<string[]>;
     updateRolePermissions(roleId: string, permissions: Permission[]): Promise<Role>;
-    checkRole(roleId: string, requiredRole: string): Promise<boolean>;
+    checkRole(roleId: any, requiredRole: string): Promise<boolean>;
 }

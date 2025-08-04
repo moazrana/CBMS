@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const user_schema_1 = require("../users/schemas/user.schema");
-const role_schema_1 = require("../roles/schemas/role.schema");
+const role_schema_1 = require("../users/schemas/role.schema");
 const bcrypt = require("bcrypt");
 let UsersSeeder = class UsersSeeder {
     constructor(userModel, roleModel) {
@@ -33,13 +33,15 @@ let UsersSeeder = class UsersSeeder {
                 return;
             }
             const existingAdminUser = await this.userModel.findOne({ email: 'admin@cbms.com' });
+            const hashedPassword = await bcrypt.hash('P@ssword', 10);
+            const hashedPin = await bcrypt.hash('123', 10);
             if (existingAdminUser) {
                 console.log('Admin user already exists. Updating...');
-                const hashedPassword = await bcrypt.hash('P@ssword', 10);
                 await this.userModel.findByIdAndUpdate(existingAdminUser._id, {
                     name: 'admin',
                     email: 'admin@cbms.com',
                     password: hashedPassword,
+                    pin: hashedPin,
                     role: adminRole._id
                 }, { new: true });
                 console.log('Admin user updated successfully');
@@ -50,6 +52,7 @@ let UsersSeeder = class UsersSeeder {
                     name: 'admin',
                     email: 'admin@cbms.com',
                     password: hashedPassword,
+                    pin: hashedPin,
                     role: adminRole._id
                 });
                 await adminUser.save();

@@ -35,6 +35,10 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], User.prototype, "pin", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'Role' }),
     __metadata("design:type", role_schema_1.Role)
 ], User.prototype, "role", void 0);
@@ -43,7 +47,12 @@ __decorate([
     __metadata("design:type", Date)
 ], User.prototype, "deletedAt", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ required: false }),
+    __metadata("design:type", String)
+], User.prototype, "subject", void 0);
+__decorate([
     (0, mongoose_1.Prop)([{
+            _id: mongoose_2.Types.ObjectId,
             fileName: String,
             filePath: String,
             fileType: String,
@@ -53,6 +62,7 @@ __decorate([
                 enum: Object.values(CertificateStatus),
                 default: CertificateStatus.PENDING
             },
+            expiry: String,
             approvedBy: {
                 type: mongoose_2.Types.ObjectId,
                 ref: 'User'

@@ -8,6 +8,7 @@ import { faUserShield } from '@fortawesome/free-solid-svg-icons';
 interface LoginFormData {
   email: string;
   password: string;
+  pin:string
 }
 
 interface LoginResponse {
@@ -25,6 +26,7 @@ const LoginForm = () => {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
+    pin:''
   });
 
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
@@ -102,6 +104,15 @@ const LoginForm = () => {
               onChange={handleChange}
               error={errors.password}
               placeholder="Enter Your Passcode..."
+            />
+            <Input
+              label=""
+              type="password"
+              name="pin"
+              value={formData.pin}
+              onChange={handleChange}
+              error={errors.pin}
+              placeholder="Enter Your PIN..."
             />
             <button type="submit" className="submit-button">
               Done

@@ -2,13 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Certificate, CertificateDocument, CertificateStatus } from './schemas/certificate.schema';
-import { User } from '../users/schemas/user.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { Types } from 'mongoose';
+import { MailService } from 'src/services/mail.service';
 
 @Injectable()
 export class CertificatesService {
   constructor(
-    @InjectModel(Certificate.name)
-    private certificateModel: Model<CertificateDocument>
+    @InjectModel(Certificate.name)private certificateModel: Model<CertificateDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly mailService: MailService
   ) {}
 
   async create(
@@ -76,5 +79,73 @@ export class CertificatesService {
     certificate.approvedBy = admin;
     certificate.rejectionReason = reason;
     return certificate.save();
+  }
+  async getCertificateById(userId: string, certificateId: string) {
+    // Find the user by userId
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Find the certificate in the user's certificates array
+    const certificate = user.certificates.find(
+      (cert) => cert._id.toString() === certificateId
+    );
+    if (!certificate) {
+      throw new NotFoundException('Certificate not found');
+    }
+
+    return certificate;
+  }
+
+  async approveEmbeddedCertificate(userId: string, certificateId: string, adminId: string,expiry:string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const certificate = user.certificates.find(
+      (cert) => cert._id.toString() === certificateId
+    );
+    if (!certificate) {
+      throw new NotFoundException('Certificate not found');
+    }
+    certificate.expiry=expiry
+    certificate.status = CertificateStatus.APPROVED;
+    certificate.approvedBy = new Types.ObjectId(adminId);
+    certificate.rejectionReason = undefined;
+    await user.save();
+
+    await this.mailService.sendEmail(
+      'muaazmehmood@gmail.com',
+      'Good News',
+      'Text body',
+      'certificateApproved'
+    );
+    return certificate;
+  }
+
+  async rejectEmbeddedCertificate(userId: string, certificateId: string, adminId: string, reason: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const certificate = user.certificates.find(
+      (cert) => cert._id.toString() === certificateId
+    );
+    if (!certificate) {
+      throw new NotFoundException('Certificate not found');
+    }
+    certificate.status = CertificateStatus.REJECTED;
+    certificate.approvedBy = new Types.ObjectId(adminId);
+    certificate.rejectionReason = reason;
+    await user.save();
+
+    await this.mailService.sendEmail(
+      'muaazmehmood@gmail.com',
+      'Bad News',
+      'Text body',
+      'certificateRejected'
+    );
+    return certificate;
   }
 } 

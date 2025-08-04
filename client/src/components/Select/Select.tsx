@@ -17,6 +17,7 @@ interface SelectProps {
     required?: boolean;
     disabled?: boolean;
     className?: string;
+    icon?: string; // SVG or image path
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -29,35 +30,38 @@ const Select: React.FC<SelectProps> = ({
     error,
     required = false,
     disabled = false,
-    className = ''
+    className = '',
+    icon
 }) => {
     return (
         <div className={`select-container ${className}`}>
             {label && (
                 <label htmlFor={name} className="select-label">
+                    {icon && <img src={icon} alt="icon" style={{ width: 19, height: 19, marginRight: 8,filter:'var(--icon-filter)' }} />}
                     {label}
                     {required && <span className="required">*</span>}
                 </label>
             )}
-            <select
-                id={name}
-                name={name}
-                value={value}
-                onChange={onChange}
-                disabled={disabled}
-                className={`select-field ${error ? 'error' : ''}`}
-            >
-                {placeholder && (
-                    <option value="" disabled>
-                        {placeholder}
-                    </option>
-                )}
-                {options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
+            
+                <select
+                    id={name}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    disabled={disabled}
+                    className={`select-field ${error ? 'error' : ''}`}
+                >
+                    {placeholder && (
+                        <option value="">
+                            {placeholder}
+                        </option>
+                    )}
+                    {options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                            {option.label}
+                        </option>
+                    ))}
+                </select>
             {error && <span className="error-message">{error}</span>}
         </div>
     );

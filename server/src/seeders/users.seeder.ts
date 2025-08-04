@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
-import { Role } from '../roles/schemas/role.schema';
+import { Role } from '../users/schemas/role.schema';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersSeeder {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Role.name) private readonly roleModel: Model<Role>,
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Role.name) private roleModel: Model<Role>,
   ) {}
 
   async seed() {
@@ -26,18 +26,21 @@ export class UsersSeeder {
       
       // Check if admin user already exists
       const existingAdminUser = await this.userModel.findOne({ email: 'admin@cbms.com' });
-      
+      const hashedPassword = await bcrypt.hash('P@ssword', 10);
+      const hashedPin = await bcrypt.hash('123', 10);
       if (existingAdminUser) {
         console.log('Admin user already exists. Updating...');
         
         // Update admin user
-        const hashedPassword = await bcrypt.hash('P@ssword', 10);
+        
+
         await this.userModel.findByIdAndUpdate(
           existingAdminUser._id,
           { 
             name: 'admin',
             email: 'admin@cbms.com',
             password: hashedPassword,
+            pin:hashedPin,
             role: adminRole._id
           },
           { new: true }
@@ -51,6 +54,7 @@ export class UsersSeeder {
           name: 'admin',
           email: 'admin@cbms.com',
           password: hashedPassword,
+          pin:hashedPin,
           role: adminRole._id
         });
         

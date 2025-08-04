@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './src/app.module';
-import { RolesSeeder } from './src/users/seeders/roles.seeder';
+import { RolesSeeder } from './src/seeders/roles.seeder';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, {

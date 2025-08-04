@@ -28,6 +28,10 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        const isPinValid = await bcrypt.compare(loginDto.pin, user.pin);
+        if (!isPinValid) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
         const userWithRole = await this.usersService.findOne(user._id.toString());
         console.log(userWithRole.role);
         const payload = {

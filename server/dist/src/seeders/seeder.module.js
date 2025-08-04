@@ -9,14 +9,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SeederModule = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
-const role_schema_1 = require("../roles/schemas/role.schema");
+const role_schema_1 = require("../users/schemas/role.schema");
 const user_schema_1 = require("../users/schemas/user.schema");
 const roles_seeder_1 = require("./roles.seeder");
 const users_seeder_1 = require("./users.seeder");
 const seeder_service_1 = require("./seeder.service");
 const seed_command_1 = require("./seed.command");
 const permissions_seeder_1 = require("./permissions.seeder");
-const permission_schema_1 = require("../permissions/schemas/permission.schema");
+const permission_schema_1 = require("../users/schemas/permission.schema");
+const dashboard_permission_seeder_1 = require("./dashboard-permission.seeder");
+const role_permissions_seeder_1 = require("./role-permissions.seeder");
+const teacher_seeder_1 = require("./teacher.seeder");
+const student_seeder_1 = require("./student.seeder");
+const staff_seeder_1 = require("./staff.seeder");
+const student_seed_command_1 = require("./student-seed.command");
+const staff_seed_command_1 = require("./staff-seed.command");
 let SeederModule = class SeederModule {
 };
 exports.SeederModule = SeederModule;
@@ -30,8 +37,11 @@ exports.SeederModule = SeederModule = __decorate([
                 { name: permission_schema_1.Permission.name, schema: permission_schema_1.PermissionSchema },
             ]),
         ],
-        providers: [permissions_seeder_1.PermissionsSeeder, seeder_service_1.SeederService, roles_seeder_1.RolesSeeder, users_seeder_1.UsersSeeder, seed_command_1.SeedCommand],
-        exports: [seeder_service_1.SeederService],
+        providers: [
+            permissions_seeder_1.PermissionsSeeder, dashboard_permission_seeder_1.DashboardPermissionSeeder, role_permissions_seeder_1.RolePermissionsSeeder, seeder_service_1.SeederService, roles_seeder_1.RolesSeeder, users_seeder_1.UsersSeeder, seed_command_1.SeedCommand, teacher_seeder_1.TeacherSeeder,
+            student_seeder_1.StudentSeeder, staff_seeder_1.StaffSeeder, student_seed_command_1.StudentSeedCommand, staff_seed_command_1.StaffSeedCommand
+        ],
+        exports: [seeder_service_1.SeederService, teacher_seeder_1.TeacherSeeder, student_seeder_1.StudentSeeder, staff_seeder_1.StaffSeeder],
     })
 ], SeederModule);
 //# sourceMappingURL=seeder.module.js.map
