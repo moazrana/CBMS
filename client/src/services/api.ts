@@ -1,8 +1,9 @@
 import axios from 'axios';
 
+const url=import.meta.env.VITE_BACKEND
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:8000/', // Adjust this to your API base URL
+  baseURL: url, // Adjust this to your API base URL
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,16 +39,12 @@ api.interceptors.response.use(
 // Auth API functions
 export const authApi = {
   login: async (email: string, password: string) => {
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      // Store the token in localStorage
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
+    const response = await api.post('/auth/login', { email, password });
+    // Store the token in localStorage
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
     }
+    return response.data;
   },
   
   logout: () => {
