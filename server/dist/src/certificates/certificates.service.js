@@ -19,12 +19,10 @@ const mongoose_2 = require("mongoose");
 const certificate_schema_1 = require("./schemas/certificate.schema");
 const user_schema_1 = require("../users/schemas/user.schema");
 const mongoose_3 = require("mongoose");
-const mail_service_1 = require("../services/mail.service");
 let CertificatesService = class CertificatesService {
-    constructor(certificateModel, userModel, mailService) {
+    constructor(certificateModel, userModel) {
         this.certificateModel = certificateModel;
         this.userModel = userModel;
-        this.mailService = mailService;
     }
     async create(teacher, fileName, filePath, fileType, fileSize) {
         const certificate = new this.certificateModel({
@@ -103,7 +101,6 @@ let CertificatesService = class CertificatesService {
         certificate.approvedBy = new mongoose_3.Types.ObjectId(adminId);
         certificate.rejectionReason = undefined;
         await user.save();
-        await this.mailService.sendEmail('muaazmehmood@gmail.com', 'Good News', 'Text body', 'certificateApproved');
         return certificate;
     }
     async rejectEmbeddedCertificate(userId, certificateId, adminId, reason) {
@@ -119,7 +116,6 @@ let CertificatesService = class CertificatesService {
         certificate.approvedBy = new mongoose_3.Types.ObjectId(adminId);
         certificate.rejectionReason = reason;
         await user.save();
-        await this.mailService.sendEmail('muaazmehmood@gmail.com', 'Bad News', 'Text body', 'certificateRejected');
         return certificate;
     }
 };
@@ -129,7 +125,6 @@ exports.CertificatesService = CertificatesService = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(certificate_schema_1.Certificate.name)),
     __param(1, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model,
-        mail_service_1.MailService])
+        mongoose_2.Model])
 ], CertificatesService);
 //# sourceMappingURL=certificates.service.js.map

@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { MailService } from 'src/services/mail.service';
+// import { MailService } from 'src/services/mail.service';
 
 @Controller('test')
 export class TestController {
-    constructor(private readonly mailService: MailService) {}
+    constructor() {}
     @Get()
     getHello(): string {
         return 'Hello from TestController!';

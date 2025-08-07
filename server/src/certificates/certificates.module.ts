@@ -6,7 +6,7 @@ import { Certificate, CertificateSchema } from './schemas/certificate.schema';
 import { CertificateRoleGuard } from './guards/certificate-role.guard';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersModule } from '../users/users.module';
-import { MailService } from '../services/mail.service';
+// import { MailService } from '../services/mail.service';
 
 
 @Module({
@@ -18,7 +18,7 @@ import { MailService } from '../services/mail.service';
     forwardRef(() => UsersModule), // <-- Use forwardRef here
   ],
   controllers: [CertificatesController],
-  providers: [CertificatesService, CertificateRoleGuard,MailService],
+  providers: [CertificatesService, CertificateRoleGuard],
   exports: [CertificatesService]
 })
 export class CertificatesModule {} 

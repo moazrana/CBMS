@@ -4,14 +4,14 @@ import { Model } from 'mongoose';
 import { Certificate, CertificateDocument, CertificateStatus } from './schemas/certificate.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Types } from 'mongoose';
-import { MailService } from 'src/services/mail.service';
+// import { MailService } from 'src/services/mail.service';
 
 @Injectable()
 export class CertificatesService {
   constructor(
     @InjectModel(Certificate.name)private certificateModel: Model<CertificateDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly mailService: MailService
+    // private readonly mailService: MailService
   ) {}
 
   async create(

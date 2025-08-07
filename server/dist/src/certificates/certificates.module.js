@@ -15,7 +15,6 @@ const certificate_schema_1 = require("./schemas/certificate.schema");
 const certificate_role_guard_1 = require("./guards/certificate-role.guard");
 const user_schema_1 = require("../users/schemas/user.schema");
 const users_module_1 = require("../users/users.module");
-const mail_service_1 = require("../services/mail.service");
 let CertificatesModule = class CertificatesModule {
 };
 exports.CertificatesModule = CertificatesModule;
@@ -29,7 +28,7 @@ exports.CertificatesModule = CertificatesModule = __decorate([
             (0, common_1.forwardRef)(() => users_module_1.UsersModule),
         ],
         controllers: [certificates_controller_1.CertificatesController],
-        providers: [certificates_service_1.CertificatesService, certificate_role_guard_1.CertificateRoleGuard, mail_service_1.MailService],
+        providers: [certificates_service_1.CertificatesService, certificate_role_guard_1.CertificateRoleGuard],
         exports: [certificates_service_1.CertificatesService]
     })
 ], CertificatesModule);
