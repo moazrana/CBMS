@@ -67,11 +67,10 @@ const UserList = () => {
    setUsers(response);
   };
 
-  const handleDelete = async (id: User) => {
-    console.log('deleting: ',id);
-    const response = await executeRequest('delete', `/users/${id._id}`);
-    console.log(response);
-    fetchUsers();
+  const handleDelete = async (row: Record<string, any>) => {
+    const user = row as User;
+    await executeRequest('delete', `/users/${user._id}`).then(fetchUsers);
+    
   }
   const handleSort = async (key: string, direction: 'ASC' | 'DESC') => {
     console.log('sorting: ', key, direction);
@@ -90,10 +89,10 @@ const UserList = () => {
     console.log('adding: ');
     setIsPopupOpen(true);
   }
-  const handleEdit = async (id: User) => {
-    console.log('editing: ', id);
-    // navigate(`/users/${id._id}`);
-  }
+  const handleEdit = (row: Record<string, any>) => {
+    const user = row as User;
+    console.log('editing: ', user);
+  };
   React.useEffect(() => {
     fetchUsers();
   }, []);

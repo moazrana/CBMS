@@ -58,7 +58,7 @@ const SidebarPopup: React.FC<PopupProps> = ({
             <div className="status-div">
               <img src={beat} alt="icon" style={{ width: 15, height: 15, marginRight: 8,filter: 'var(--status-color)' }} />Open
             </div>
-            <div className="open-link"  onClick={() => navigate(link)} style={{ cursor: 'pointer' }}>
+            <div className="open-link"  onClick={() => link &&navigate(link)} style={{ cursor: 'pointer' }}>
               <img 
                 src={open} 
                 alt="icon" 

@@ -115,12 +115,12 @@ export class CertificatesService {
     certificate.rejectionReason = undefined;
     await user.save();
 
-    await this.mailService.sendEmail(
-      'muaazmehmood@gmail.com',
-      'Good News',
-      'Text body',
-      'certificateApproved'
-    );
+    // await this.mailService.sendEmail(
+    //   'muaazmehmood@gmail.com',
+    //   'Good News',
+    //   'Text body',
+    //   'certificateApproved'
+    // );
     return certificate;
   }
 
@@ -140,12 +140,12 @@ export class CertificatesService {
     certificate.rejectionReason = reason;
     await user.save();
 
-    await this.mailService.sendEmail(
-      'muaazmehmood@gmail.com',
-      'Bad News',
-      'Text body',
-      'certificateRejected'
-    );
+    // await this.mailService.sendEmail(
+    //   'muaazmehmood@gmail.com',
+    //   'Bad News',
+    //   'Text body',
+    //   'certificateRejected'
+    // );
     return certificate;
   }
 } 

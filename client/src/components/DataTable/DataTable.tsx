@@ -14,14 +14,14 @@ interface Column {
 
 interface DataTableProps {
   columns: Column[];
-  data: Record<string, unknown>[];
+  data: Record<string, any>[];
   title?: string;
-  onDelete?: (row: Record<string, unknown>) => void;
+  onDelete?:  (row: Record<string, any>) => void;
   onSort?: (key: string, direction: 'ASC' | 'DESC') => void;
   onSearch?: (searchTerm: string) => void;
   PerPage?: (number: number) => void;
   onAdd?: () => void;
-  onEdit: (row: Record<string, unknown>) => void;
+  onEdit:  (row: Record<string, any>) => void;
   showActions?: boolean;
   addButton?: boolean;
   showSearch?:boolean;

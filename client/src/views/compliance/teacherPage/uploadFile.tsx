@@ -40,7 +40,7 @@ const TeacherUploadFile=()=>{
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCertificate(e.target.files?.[0]);
         // Do something with the file
-      };
+    };
 
     const handleDownload = async (certificateIndex: unknown, fileName: string) => {
         try {

@@ -161,7 +161,7 @@ const Index=()=>{
         console.log('fetching!!!!')
         const res= await executeRequest('get','/safeguards');
         setSafeguards([])
-        res.forEach(element => {
+        res.forEach((element:any) => {
             const safe:safeguard={
                 student:'',
                 location:'',
@@ -204,6 +204,46 @@ const Index=()=>{
         }
         getUsers('Student')
         getUsers('Staff')
+        setNegativeSafeguards([])
+        setPoitiveSafeguards([])
+        setSafeguardingSafeguards([])
+        setVictims([])
+        setHouses([])
+        setKeyStages([])
+        setYearGroups([])
+        setForms([])
+        setSubjects([])
+        setClasses([])
+        setSortByes([])
+        setSortTypes([])
+        setShowTops([])
+        setGenders([])
+        setFirstLanguages([])
+        setReligions([])
+        setEnthnicities([])
+        setPostcodes([])
+        setFreeMeals([])
+        setEals([])
+        setInCares([])
+        setPupilPremiums([])
+        setSlips([])
+        setPositivites([])
+        setFields([])
+        setCategories([])
+        setPrinteds([])
+        setOrigins([])
+        setDetentions([])
+        setShows([])
+        setAdmissions([])
+        setStatuses([])
+        setLocations([])
+        setPeriods([])
+        setSenStatuses([])
+        setSenTypes([])
+        setFors([])
+        setbroaderStatuses([])
+        setReportNames([])
+        
     },[])
     // -------------------------END OF USE EFFECT-----------------------------------------
 
@@ -668,7 +708,7 @@ const Index=()=>{
                 name='senStatus'
                 options={senStatuses}
                 value={senStatus}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStatus(e.target.value)}}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSenStatus(e.target.value)}}
                 label='SEN Status'
                 icon={SENStatus}
             />
@@ -826,7 +866,7 @@ const Index=()=>{
     const [socialCare, setSocialCare] = useState<string[]>([]);
     const [refferal, setRefferal] = useState<string[]>([]);
     const [attachment, setAttachment] = useState<boolean>(false);
-
+    const [file, setFile] = useState<File | undefined>(undefined);
     interface meeting{
         haveDate:boolean,
         date?:Date,
@@ -843,6 +883,11 @@ const Index=()=>{
             setState(state.filter(v => v !== value));
         } else {
             setState([...state, value]);
+        }
+    };
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
         }
     };
     const sideBarBody=(
@@ -1405,6 +1450,7 @@ const Index=()=>{
                                         onChange={handleFileChange}
                                         label=""
                                         labelFont={15}
+                                        
                                     />
                                 )} 
                             </div>
@@ -1414,7 +1460,36 @@ const Index=()=>{
         </div> 
         </>
     )
-    
+    const handleSave = async () => {
+        try {
+            const formData = new FormData();
+            formData.append('student', student);
+            formData.append('staff', staff);
+            formData.append('status', status);
+            formData.append('location', location);
+            // formData.append('dateAndTime', `${doi}T${toi}`);
+            formData.append('period', period);
+            formData.append('description', description);
+            formData.append('commentary[severity]', String(severity));
+            formData.append('commentary[direction]', idt);
+            formData.append('commentary[behavior]', behaviour);
+            concernTypes.forEach((t, i) => formData.append(`type[${i}]`, t));
+            accountChecks.forEach((a, i) => formData.append(`your_account[${i}]`, a));
+            formData.append('body_mapping', String(bodyMap));
+            socialCare.forEach((s, i) => formData.append(`early_help[${i}]`, s));
+            if (file) formData.append('file', file);
+            formData.append('meetings', JSON.stringify(meetings));
+            formData.append('conclusion', JSON.stringify(conclusion));
+            // For update, provide safeguardId and PATCH, else POST
+            // Example: const safeguardId = ...
+            const url = '/safeguards';
+            const method = 'post';
+            await executeRequest(method, url, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            alert('Safeguard saved successfully');
+        } catch {
+            alert('Error saving safeguard');
+        }
+    };
     const sideBarFooter=(
         <>
             <div className="sidebar-footer">
@@ -1429,7 +1504,7 @@ const Index=()=>{
                     <p>Print</p>
                 </div>
                 <div className="btns-div">
-                    <button id='rs-save-btn'>Save</button>
+                    <button id='rs-save-btn' onClick={handleSave}>Save</button>
                     <button id='rs-cancel-btn'>Cancel</button>
                 </div>
                 <div className="print-div">
@@ -1448,7 +1523,7 @@ const Index=()=>{
 
     const [linkForSafeguard,setLinkForSafeguard]=useState<string>('')
     const openSafeguard=async(safeguard:safeguard)=>{
-        setSelectedSafeguard(safeguard)
+        // setSelectedSafeguard(safeguard)
         
         setRsStudent(safeguard.data.student._id)
         setRsStaff(safeguard.data.staff._id)
@@ -1469,8 +1544,11 @@ const Index=()=>{
     }
     
     const [openFilter,setOpenFilter]=useState<boolean>(false)
-    const [selectedSafeguard,setSelectedSafeguard]=useState<safeguard|null>(null)
+    // const [selectedSafeguard,setSelectedSafeguard]=useState<safeguard|null>(null)
     const [openRS,setOpenRS]=useState<boolean>(false)
+
+    
+
     return (
         <>
             <Layout

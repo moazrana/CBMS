@@ -28,7 +28,7 @@ const New=()=>{
     const [staffs,setStaffs]=useState<any[]>([])
     const [staff,setStaff]=useState<any>()
 
-    const [statuses,setStatuses]=useState<any[]>([{value:'1',label:'Open'},{value:'0',label:'Close'}])
+    const [statuses]=useState<any[]>([{value:'1',label:'Open'},{value:'0',label:'Close'}])
     const [status,setStatus]=useState<any>()
 
     const [locations,setLocations]=useState<any[]>([])
@@ -47,7 +47,7 @@ const New=()=>{
     const [idt,setIdt]=useState<string>('');
     const [behaviour,setBehavior]=useState<string>('');
     const { executeRequest, loading } = useApiRequest();
-    const [file, setFile] = useState<File | null>(null);
+    const [file, setFile] = useState<File | undefined>(undefined);
     const [concernTypes, setConcernTypes] = useState<string[]>([]);
     const [accountChecks, setAccountChecks] = useState<string[]>([]);
     const [bodyMap, setBodyMap] = useState(false);
@@ -124,7 +124,7 @@ const New=()=>{
         setSeverity(1);
         setIdt('');
         setBehavior('');
-        setFile(null);
+        setFile(undefined);
         setConcernTypes([]);
         setAccountChecks([]);
         setBodyMap(false);

@@ -10,12 +10,12 @@ export class TestController {
     }
     @Get('mail')
     async mailTest(){
-        await this.mailService.sendEmail(
-            'muaazmehmood@gmail.com',
-            'Subject',
-            'Text body',
-            'test'
-          );
+        // await this.mailService.sendEmail(
+        //     'muaazmehmood@gmail.com',
+        //     'Subject',
+        //     'Text body',
+        //     'test'
+        //   );
         return "testing mail"
     }
 } 

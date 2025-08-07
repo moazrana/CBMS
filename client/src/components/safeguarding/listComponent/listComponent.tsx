@@ -7,7 +7,7 @@ import './llistComponent.scss'
 interface ComponentProps{
     student:string
     subject:string
-    eventTime:string
+    eventTime:string | Date
     description:string
     location:string
     status:boolean
@@ -49,7 +49,7 @@ const ListComponent:React.FC<ComponentProps>=({
                 <div className="date-div">
                     <div className="date-box">
                         <img src={calendar} alt="icon" style={{ width: 15, height: 15, marginRight: 8,filter: `var(--nav-icon-filter)`,fill: 'var(--nav-icon-filter)' }} />
-                        {extractDateAndTime(eventTime).date}
+                        {extractDateAndTime(typeof eventTime === 'string' ? eventTime : eventTime.toISOString()).date}
                     </div>
                     <div className="b-day-box">12345{status} </div>
                 </div>

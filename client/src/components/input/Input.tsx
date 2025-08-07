@@ -5,7 +5,7 @@ interface InputProps {
     type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'time' | 'file';
     label?: string;
     name: string;
-    value?: string | number;
+    value?: string | number | undefined;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
     error?: string;
@@ -30,6 +30,7 @@ const Input: React.FC<InputProps> = ({
     icon,
     labelFont=20
 }) => {
+    
     return (
         <div className={`input-container ${className}`}>
             {label && (
