@@ -67,10 +67,16 @@ const LoginForm = () => {
     alert('asdfasdfasdf')
     if (validateForm()) {
       try {
+        console.log('asdfasdfasdfsdfsdf')
         const response = await executeRequest('post', '/auth/login', formData);
+        // alert(response)
         if (response.access_token) {
           localStorage.setItem('token', response.access_token);
           localStorage.setItem('user', JSON.stringify(response.user));
+        }
+        else{
+          // alert('sadfsdfdsfsdf!!!!!!!!!!!!!!!!!!')
+          return
         }
         navigate('/dashboard');
       } catch (error) {
@@ -120,7 +126,7 @@ const LoginForm = () => {
               placeholder="Enter Your PIN..."
             />
             <button onClick={handleSubmit} className="submit-button">
-              Doneeeeeeeeeeeeeeeee
+              Done
             </button>
           {/* </form> */}
           <div className="contact-admin">

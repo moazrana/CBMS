@@ -26,17 +26,19 @@ export function useApiRequest<T = any>() {
     options?: any
   ) => {
     try {
+      // alert('a')
       setResponse(prev => ({ ...prev, loading: true, error: null }));
+      // alert('b')
       setIsLoading(true);
-      
+      // alert('c')
       const apiResponse = await api[method](url, data, options);
-      
+      // alert('d')
       setResponse({
         data: apiResponse.data,
         error: null,
         loading: false,
       });
-      
+      // alert('e')
       return apiResponse.data;
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
