@@ -18,7 +18,7 @@ import { StaffSeedCommand } from './staff-seed.command';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/cbms'),
+    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/cbms'),
     MongooseModule.forFeature([
       { name: Role.name, schema: RoleSchema },
       { name: User.name, schema: UserSchema },
