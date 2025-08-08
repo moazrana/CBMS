@@ -39,6 +39,7 @@ api.interceptors.response.use(
 // Auth API functions
 export const authApi = {
   login: async (email: string, password: string) => {
+    alert(api.toString())
     const response = await api.post('/auth/login', { email, password });
     // Store the token in localStorage
     if (response.data.token) {
