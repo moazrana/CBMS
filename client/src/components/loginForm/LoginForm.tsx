@@ -77,6 +77,10 @@ const LoginForm = () => {
         console.error('Login error:', error);
       }
     }
+    else{
+      alert('elsing')
+      return
+    }
   };
 
   return (
