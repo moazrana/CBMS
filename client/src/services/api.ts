@@ -44,6 +44,9 @@ export const authApi = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
     }
+    else{
+      alert('wrong creds!!!')
+    }
     return response.data;
   },
   
