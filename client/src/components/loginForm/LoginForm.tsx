@@ -114,7 +114,7 @@ const LoginForm = () => {
               error={errors.pin}
               placeholder="Enter Your PIN..."
             />
-            <button type="submit" className="submit-button">
+            <button onClick={handleSubmit} className="submit-button">
               Done
             </button>
           </form>
