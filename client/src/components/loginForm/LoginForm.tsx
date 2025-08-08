@@ -85,7 +85,7 @@ const LoginForm = () => {
         <div className="login-left">
           <h1>Transform Behaviour With Insight.</h1>
           <p>Enter Your Email To Get Access!</p>
-          <form onSubmit={handleSubmit} className="login-form">
+          {/* <form className="login-form"> */}
             {apiError && <div className="error-message global-error">{apiError}</div>}
             <Input
               label=""
@@ -117,7 +117,7 @@ const LoginForm = () => {
             <button onClick={handleSubmit} className="submit-button">
               Doneeeeeeeeeeeeeeeee
             </button>
-          </form>
+          {/* </form> */}
           <div className="contact-admin">
             <div className="or-div">
               <span className='hr-div'><hr /></span>
