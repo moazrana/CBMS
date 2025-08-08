@@ -64,6 +64,7 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    alert('asdfasdfasdf')
     if (validateForm()) {
       try {
         const response = await executeRequest('post', '/auth/login', formData);
