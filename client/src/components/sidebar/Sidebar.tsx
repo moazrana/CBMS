@@ -16,6 +16,7 @@ import reports from '../../assets/sidebar/reports.svg';
 import users from '../../assets/sidebar/users.svg';
 import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
+import { PermissionGuard } from '../PermissionGuard';
 
 export default function Sidebar() {
   
@@ -27,27 +28,31 @@ export default function Sidebar() {
       </div>
       <nav className="sidebar-nav">
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>CORE OPERATIONS</h4>
+        <PermissionGuard permission="view_dashboard"> 
+          <Link to="/dashboard" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={dashboard} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
+              Dashboard
+            </div>
+          </Link>
+        </PermissionGuard>
+        <PermissionGuard permission="read_incident">
+          <Link to="/incidents" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={incidents} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
+              Incidents
+            </div>
+          </Link>
+        </PermissionGuard>
         
-        <Link to="/dashboard" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={dashboard} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
-            Dashboard
-          </div>
-        </Link>
-        
-        <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={incidents} alt="logo" style={{ width: 35, height: 35, filter: 'var(--icon-filter)' }} />
-            Incidents
-          </div>
-        </Link>
-        
-        <Link to="/safeguarding" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={safeguarding} alt="logo" style={{width: 35, height: 35, filter: 'var(--icon-filter)' }} />
-            Safeguarding
-          </div>
-        </Link>
+        <PermissionGuard permission="read_safeguarding">
+          <Link to="/safeguarding" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={safeguarding} alt="logo" style={{width: 35, height: 35, filter: 'var(--icon-filter)' }} />
+              Safeguarding
+            </div>
+          </Link>
+        </PermissionGuard>
         
         <Link to="/attendance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
@@ -104,11 +109,13 @@ export default function Sidebar() {
             Settings
           </div>
         </Link>
+        <PermissionGuard permission="read_role">
         <Link to="/roles" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <FontAwesomeIcon className='icon' icon={faGear} />Roles
           </div>
         </Link>
+        </PermissionGuard>
         
         
       </nav>

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import ComponentsView from '../assets/layout/componentsView.svg'
 import TableView from '../assets/layout/tableView.svg'
 import Filter from '../assets/layout/filter.svg'
+import { PermissionGuard } from '../components/PermissionGuard';
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ type LayoutProps = {
   filters?:React.ReactNode;
   openFilters?:boolean;
   filtersBtnClicked?:()=>void;
+  newPermission?:string;
 };
 
 export default function Layout({
@@ -39,6 +41,7 @@ export default function Layout({
   filters,
   openFilters=false,
   filtersBtnClicked,
+  newPermission,
 }: LayoutProps) {
   const navigate = useNavigate();
   return (
@@ -55,12 +58,14 @@ export default function Layout({
                     </div>
                     <div className="btn-div">
                       {showNew && (
-                        <button
-                          className='create-btn'
-                          onClick={() => createLink && navigate(createLink)}
-                        >
-                          <FontAwesomeIcon icon={faPlus}/> Create new
-                        </button>
+                        <PermissionGuard permission={newPermission}>
+                          <button
+                            className='create-btn'
+                            onClick={() => createLink && navigate(createLink)}
+                          >
+                            <FontAwesomeIcon icon={faPlus}/> Create new
+                          </button>
+                        </PermissionGuard>
                       )}
                       {showFilter&&(
                         <button className='head-btn' onClick={filtersBtnClicked}> 

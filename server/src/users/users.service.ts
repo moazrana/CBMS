@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument, CertificateStatus } from './schemas/user.schema';
 import { UserDocument as UserDocumentType, DocumentStatus, DocumentType } from './schemas/document.schema';
+import { Role } from './schemas/role.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -10,10 +11,11 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Role.name) private roleModel: Model<Role>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { email } = createUserDto;
+    const { email, role: roleName } = createUserDto;
     
     // Check if user already exists
     const existingUser = await this.userModel.findOne({ email });
@@ -21,13 +23,20 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
+    // Find the role by name
+    const role = await this.roleModel.findOne({ name: roleName });
+    if (!role) {
+      throw new NotFoundException(`Role '${roleName}' not found`);
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    // Create new user
+    // Create new user with role reference
     const createdUser = new this.userModel({
       ...createUserDto,
       password: hashedPassword,
+      role: role._id, // Save the role reference
     });
 
     return createdUser.save();
@@ -81,7 +90,14 @@ export class UsersService {
   async findOne(id: string): Promise<User> {
     const user = await this.userModel.findOne({ _id: id, deletedAt: null })
       .select('-password')
-      .populate('role', 'name')
+      .populate({
+        path: 'role',
+        select: 'name description permissions',
+        populate: {
+          path: 'permissions',
+          select: 'name'
+        }
+      })
       .exec();
     if (!user) {
       throw new NotFoundException('User not found');
@@ -91,8 +107,33 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User> {
     return this.userModel.findOne({ email, deletedAt: null })
-      .populate('role', 'name')
+      .populate({
+        path: 'role',
+        select: 'name description permissions',
+        populate: {
+          path: 'permissions',
+          select: 'name'
+        }
+      })
       .exec();
+  }
+
+  async findOneForLogin(id: string): Promise<User> {
+    const user = await this.userModel.findOne({ _id: id, deletedAt: null })
+      .select('-password')
+      .populate({
+        path: 'role',
+        select: 'name description permissions',
+        populate: {
+          path: 'permissions',
+          select: 'name'
+        }
+      })
+      .exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   async addCertificate(

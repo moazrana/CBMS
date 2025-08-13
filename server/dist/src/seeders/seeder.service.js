@@ -16,21 +16,39 @@ const users_seeder_1 = require("./users.seeder");
 const permissions_seeder_1 = require("./permissions.seeder");
 const dashboard_permission_seeder_1 = require("./dashboard-permission.seeder");
 const role_permissions_seeder_1 = require("./role-permissions.seeder");
+const safeguarding_permissions_seeder_1 = require("./safeguarding-permissions.seeder");
+const incidents_permissions_seeder_1 = require("./incidents-permissions.seeder");
+const location_seeder_1 = require("./location.seeder");
+const period_seeder_1 = require("./period.seeder");
+const student_seeder_1 = require("./student.seeder");
+const staff_seeder_1 = require("./staff.seeder");
 let SeederService = class SeederService {
-    constructor(permissionsSeeder, dashboardPermissionSeeder, rolePermissionsSeeder, rolesSeeder, usersSeeder) {
+    constructor(permissionsSeeder, dashboardPermissionSeeder, rolePermissionsSeeder, safeguardingPermissionsSeeder, incidentsPermissionsSeeder, rolesSeeder, usersSeeder, locationSeeder, periodSeeder, studentSeeder, staffSeeder) {
         this.permissionsSeeder = permissionsSeeder;
         this.dashboardPermissionSeeder = dashboardPermissionSeeder;
         this.rolePermissionsSeeder = rolePermissionsSeeder;
+        this.safeguardingPermissionsSeeder = safeguardingPermissionsSeeder;
+        this.incidentsPermissionsSeeder = incidentsPermissionsSeeder;
         this.rolesSeeder = rolesSeeder;
         this.usersSeeder = usersSeeder;
+        this.locationSeeder = locationSeeder;
+        this.periodSeeder = periodSeeder;
+        this.studentSeeder = studentSeeder;
+        this.staffSeeder = staffSeeder;
     }
     async seed() {
         console.log('Starting all seeders...');
         await this.permissionsSeeder.seed();
         await this.dashboardPermissionSeeder.seed();
         await this.rolePermissionsSeeder.seed();
+        await this.safeguardingPermissionsSeeder.seed();
+        await this.incidentsPermissionsSeeder.seed();
         await this.rolesSeeder.seed();
         await this.usersSeeder.seed();
+        await this.locationSeeder.seed();
+        await this.periodSeeder.seed();
+        await this.studentSeeder.seed();
+        await this.staffSeeder.seed();
         console.log('All seeders completed successfully!');
     }
 };
@@ -40,7 +58,13 @@ exports.SeederService = SeederService = __decorate([
     __metadata("design:paramtypes", [permissions_seeder_1.PermissionsSeeder,
         dashboard_permission_seeder_1.DashboardPermissionSeeder,
         role_permissions_seeder_1.RolePermissionsSeeder,
+        safeguarding_permissions_seeder_1.SafeguardingPermissionsSeeder,
+        incidents_permissions_seeder_1.IncidentsPermissionsSeeder,
         roles_seeder_1.RolesSeeder,
-        users_seeder_1.UsersSeeder])
+        users_seeder_1.UsersSeeder,
+        location_seeder_1.LocationSeeder,
+        period_seeder_1.PeriodSeeder,
+        student_seeder_1.StudentSeeder,
+        staff_seeder_1.StaffSeeder])
 ], SeederService);
 //# sourceMappingURL=seeder.service.js.map

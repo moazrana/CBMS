@@ -32,21 +32,22 @@ let AuthService = class AuthService {
         if (!isPinValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const userWithRole = await this.usersService.findOne(user._id.toString());
-        console.log(userWithRole.role);
+        const userWithRoleAndPermissions = await this.usersService.findOneForLogin(user._id.toString());
+        console.log(userWithRoleAndPermissions.role);
         const payload = {
-            email: userWithRole.email,
-            sub: userWithRole._id,
-            role: userWithRole.role.name
+            email: userWithRoleAndPermissions.email,
+            sub: userWithRoleAndPermissions._id,
+            role: userWithRoleAndPermissions.role.name
         };
         console.log('logging in....');
         return {
             access_token: this.jwtService.sign(payload),
             user: {
-                id: userWithRole._id,
-                name: userWithRole.name,
-                email: userWithRole.email,
-                role: userWithRole.role.name
+                id: userWithRoleAndPermissions._id,
+                name: userWithRoleAndPermissions.name,
+                email: userWithRoleAndPermissions.email,
+                role: userWithRoleAndPermissions.role.name,
+                permissions: userWithRoleAndPermissions.role.permissions
             },
         };
     }

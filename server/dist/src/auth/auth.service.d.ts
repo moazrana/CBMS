@@ -12,6 +12,7 @@ export declare class AuthService {
             name: string;
             email: string;
             role: string;
+            permissions: import("../users/schemas/permission.schema").Permission[];
         };
     }>;
 }

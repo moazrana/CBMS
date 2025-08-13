@@ -19,6 +19,7 @@ const permissions_module_1 = require("./permissions/permissions.module");
 const certificates_module_1 = require("./certificates/certificates.module");
 const test_module_1 = require("./test/test.module");
 const safeguards_module_1 = require("./safeguards/safeguards.module");
+const incidents_module_1 = require("./incidents/incidents.module");
 const location_module_1 = require("./location/location.module");
 const period_module_1 = require("./period/period.module");
 let AppModule = class AppModule {
@@ -55,6 +56,7 @@ exports.AppModule = AppModule = __decorate([
             certificates_module_1.CertificatesModule,
             test_module_1.TestModule,
             safeguards_module_1.SafeguardsModule,
+            incidents_module_1.IncidentsModule,
             location_module_1.LocationModule,
             period_module_1.PeriodModule
         ],

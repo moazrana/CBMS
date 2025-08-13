@@ -1,15 +1,18 @@
 import { Model, Types } from 'mongoose';
 import { User, UserDocument, CertificateStatus } from './schemas/user.schema';
 import { UserDocument as UserDocumentType, DocumentType } from './schemas/document.schema';
+import { Role } from './schemas/role.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 export declare class UsersService {
     private userModel;
-    constructor(userModel: Model<UserDocument>);
+    private roleModel;
+    constructor(userModel: Model<UserDocument>, roleModel: Model<Role>);
     create(createUserDto: CreateUserDto): Promise<User>;
     findAll(sort: string, order: string, search: string, page: number, perPage: number): Promise<Partial<User>[]>;
     findByRole(role: string): Promise<Partial<User>[]>;
     findOne(id: string): Promise<User>;
     findByEmail(email: string): Promise<User>;
+    findOneForLogin(id: string): Promise<User>;
     addCertificate(userId: string, fileName: string, filePath: string, fileType: string, fileSize: number): Promise<User>;
     getCertificates(userId: string): Promise<{
         _id: Types.ObjectId;

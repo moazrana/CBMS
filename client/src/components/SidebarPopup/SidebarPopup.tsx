@@ -37,7 +37,7 @@ const SidebarPopup: React.FC<PopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="popup-overlay" onClick={onClose}>
+    <div className="sb-popup-overlay" onClick={onClose}>
       <div 
         className="side-popup-content" 
         onClick={e => e.stopPropagation()}

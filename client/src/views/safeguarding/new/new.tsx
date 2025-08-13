@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import { useLocation,useParams } from 'react-router-dom';
+import BodyMap from '../../../components/safeguarding/bodyMap/bodyMap';
 
 const New=()=>{
     const [students,setStudents]=useState<any[]>([])
@@ -477,7 +478,8 @@ const New=()=>{
                                     <input type="checkbox" checked={bodyMap} onChange={() => setBodyMap(!bodyMap)} />
                                     <span className="checkmark"></span>
                                     Body Map (Tick If Required)
-                                </label> 
+                                </label>
+                                {bodyMap&&<BodyMap/>}
                             </div>
                         </div>
                     </div>  

@@ -3,6 +3,7 @@ import './DataTable.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons';
 import Popup from '../Popup/Popup';
+import { PermissionGuard } from '../PermissionGuard';
 interface Column {
   header: string;
   accessor: string;
@@ -25,6 +26,7 @@ interface DataTableProps {
   showActions?: boolean;
   addButton?: boolean;
   showSearch?:boolean;
+  addPermission?:string;
 }
 
 const DataTable: React.FC<DataTableProps> = ({ 
@@ -39,7 +41,8 @@ const DataTable: React.FC<DataTableProps> = ({
   onEdit,
   showActions = true,
   addButton = true,
-  showSearch=true
+  showSearch=true,
+  addPermission=''
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -144,7 +147,11 @@ const DataTable: React.FC<DataTableProps> = ({
               className='table-search'
               onChange={(e) => setSearchTerm(e.target.value)}
             />}
-            {addButton && <button className="add-button" onClick={onAdd}>+</button>}
+            {addButton && (
+              <PermissionGuard permission={addPermission}>
+                <button className="add-button" onClick={onAdd}>+</button>
+              </PermissionGuard>
+              )}
           </div>
         </div>
         <div className="table-container">
@@ -223,7 +230,7 @@ const DataTable: React.FC<DataTableProps> = ({
                     })()
                   ))}
                   {showActions && (
-                    <td>
+                   <td className='last-td-class'>
                       <button 
                         id="edit" 
                         className="action-button"

@@ -40,6 +40,7 @@ interface UserData {
   email: string;
   role: string;
   password: string;
+  pin: string;
 }
 
 interface RoleOption {
@@ -107,14 +108,43 @@ const UserList = () => {
   ];
   const [isPopupOpen, setIsPopupOpen] = React.useState(false);
   const handleSubmit = async () => {
-    console.log('form submitted');
-    setIsPopupOpen(false);
+    try {
+      console.log('form submitted', userData);
+      
+      // Validate required fields
+      if (!userData.name || !userData.email || !userData.role || !userData.password || !userData.pin) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      // Call the create user API
+      await executeRequest('post', '/users', userData);
+      
+      // Reset form and close popup
+      setUserData({
+        name: '',
+        email: '',
+        role: '',
+        password: '',
+        pin: ''
+      });
+      setIsPopupOpen(false);
+      
+      // Refresh the users list
+      await fetchUsers();
+      
+      alert('User created successfully!');
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user. Please try again.');
+    }
   }
   const [userData,setUserData]=useState<UserData>({
     name: '',
     email: '',
     role: '',
-    password: ''
+    password: '',
+    pin: ''
   });
   const [roles,setRoles]=useState<RoleOption[]>([]);
   const fetchRoles = async () => {
@@ -143,6 +173,7 @@ const UserList = () => {
               PerPage={setPerPage}
               onEdit={handleEdit}
               onAdd={onAdd}
+              addPermission='create_user'
             />
           </div>
         </div>
@@ -169,7 +200,7 @@ const UserList = () => {
                 placeholder='Select Role'
               />
               <Input type='password' label='Password' name='password' value={userData.password} onChange={(e) => setUserData({...userData, password: e.target.value})} />
-              
+              <Input type='password' label='Pin' name='pin' value={userData.pin} onChange={(e) => setUserData({...userData, pin: e.target.value})} />
           </form>
       </Popup>
     </>

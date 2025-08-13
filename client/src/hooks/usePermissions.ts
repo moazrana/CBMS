@@ -1,46 +1,40 @@
-import { useState, useEffect } from 'react';
-import permissionService, { Permission } from '../services/permissionService';
+import { useAppSelector } from '../store/hooks';
 
 export const usePermissions = () => {
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const user = useAppSelector(state => state.auth.user);
+  const permissions = useAppSelector(state => state.auth.user?.permissions || []);
 
-  const fetchPermissions = async () => {
-    try {
-      setLoading(true);
-      const data = await permissionService.getAllPermissions();
-      setPermissions(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch permissions');
-    } finally {
-      setLoading(false);
-    }
+  const checkPermission = (permissionName: string): boolean => {
+    return permissions.some(permission => permission.name == permissionName);
   };
 
-  const fetchPermissionsByModule = async (module: string) => {
-    try {
-      setLoading(true);
-      const data = await permissionService.getPermissionsByModule(module);
-      setPermissions(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch permissions');
-    } finally {
-      setLoading(false);
-    }
+  const checkAnyPermission = (permissionNames: string[]): boolean => {
+    return permissionNames.some(permissionName => 
+      permissions.some(permission => permission.name === permissionName)
+    );
   };
 
-  useEffect(() => {
-    fetchPermissions();
-  }, []);
+  const checkAllPermissions = (permissionNames: string[]): boolean => {
+    return permissionNames.every(permissionName => 
+      permissions.some(permission => permission.name === permissionName)
+    );
+  };
+
+  const hasRole = (roleName: string): boolean => {
+    return user?.role === roleName;
+  };
+
+  const hasAnyRole = (roleNames: string[]): boolean => {
+    return roleNames.includes(user?.role || '');
+  };
 
   return {
     permissions,
-    loading,
-    error,
-    fetchPermissions,
-    fetchPermissionsByModule
+    user,
+    checkPermission,
+    checkAnyPermission,
+    checkAllPermissions,
+    hasRole,
+    hasAnyRole,
   };
 }; 

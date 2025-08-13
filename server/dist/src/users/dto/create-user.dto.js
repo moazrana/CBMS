@@ -33,7 +33,11 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsIn)(['student', 'teacher', 'staff', 'parent', 'admin']),
     __metadata("design:type", String)
-], CreateUserDto.prototype, "userType", void 0);
+], CreateUserDto.prototype, "role", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "pin", void 0);
 //# sourceMappingURL=create-user.dto.js.map

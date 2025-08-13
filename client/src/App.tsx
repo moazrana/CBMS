@@ -10,6 +10,8 @@ import AdminPageList from './views/compliance/adminPage/list';
 import TeacherUploadFile from './views/compliance/teacherPage/uploadFile';
 import Safeguarding from './views/safeguarding/index';
 import NewSafeguarding from './views/safeguarding/new/new'
+import Incidents from './views/incidents/index';
+import NewIncident from './views/incidents/new/new'
 function App() {
   const user = localStorage.getItem('user');
   const role = user ? JSON.parse(user).role : undefined;
@@ -29,6 +31,9 @@ function App() {
             <Route path="/safeguarding" element={<Safeguarding/>} />
             <Route path="/safeguarding/add" element={<NewSafeguarding/>} />
             <Route path="/safeguarding/safeguard/:id" element={<NewSafeguarding/>} />
+            <Route path="/incidents" element={<Incidents/>} />
+            <Route path="/incidents/add" element={<NewIncident/>} />
+            <Route path="/incidents/incident/:id" element={<NewIncident/>} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>

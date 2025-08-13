@@ -1,24 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../input/Input';
-import { useApiRequest } from '../../hooks/useApiRequest';
 import './LoginForm.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserShield } from '@fortawesome/free-solid-svg-icons';
+import { authService } from '../../services/authService';
+import { useAppSelector } from '../../store/hooks';
+
 interface LoginFormData {
   email: string;
   password: string;
-  pin:string
-}
-
-interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
-  };
+  pin: string;
 }
 
 const LoginForm = () => {
@@ -26,11 +18,11 @@ const LoginForm = () => {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
-    pin:''
+    pin: ''
   });
 
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
-  const { executeRequest, error: apiError } = useApiRequest<LoginResponse>();
+  const { loading, error: authError } = useAppSelector(state => state.auth);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,84 +50,82 @@ const LoginForm = () => {
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
+    if (!formData.pin) {
+      newErrors.pin = 'PIN is required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('asdfasdfasdf')
+    
     if (validateForm()) {
       try {
-        console.log('asdfasdfasdfsdfsdf')
-        const response = await executeRequest('post', '/auth/login', formData);
-        // alert(response)
-        if (response.access_token) {
-          localStorage.setItem('token', response.access_token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-        }
-        else{
-          // alert('sadfsdfdsfsdf!!!!!!!!!!!!!!!!!!')
-          return
-        }
+        await authService.login(formData);
         navigate('/dashboard');
       } catch (error) {
         console.error('Login error:', error);
+        // Error is already handled by Redux
       }
-    }
-    else{
-      alert('elsing')
-      return
     }
   };
 
   return (
     <div className="login-container">
-      <img src="/logo.svg" alt="Logo" style={{ width: 60,height:50,marginTop:32, marginLeft: 10 }} />
+      <img src="/logo.svg" alt="Logo" style={{ width: 60, height: 50, marginTop: 32, marginLeft: 10 }} />
       <div className="login-div">
         <div className="login-left">
           <h1>Transform Behaviour With Insight.</h1>
           <p>Enter Your Email To Get Access!</p>
-          {/* <form className="login-form"> */}
-            {apiError && <div className="error-message global-error">{apiError}</div>}
-            <Input
-              label=""
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={errors.email}
-              placeholder="Enter Your Username..."
-            />
-            <Input
-              label=""
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              error={errors.password}
-              placeholder="Enter Your Passcode..."
-            />
-            <Input
-              label=""
-              type="password"
-              name="pin"
-              value={formData.pin}
-              onChange={handleChange}
-              error={errors.pin}
-              placeholder="Enter Your PIN..."
-            />
-            <button onClick={handleSubmit} className="submit-button">
-              Done
-            </button>
-          {/* </form> */}
+          
+          {authError && <div className="error-message global-error">{authError}</div>}
+          
+          <Input
+            label=""
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            placeholder="Enter Your Username..."
+          />
+          <Input
+            label=""
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            placeholder="Enter Your Passcode..."
+          />
+          <Input
+            label=""
+            type="password"
+            name="pin"
+            value={formData.pin}
+            onChange={handleChange}
+            error={errors.pin}
+            placeholder="Enter Your PIN..."
+          />
+          <button 
+            onClick={handleSubmit} 
+            className="submit-button"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Done'}
+          </button>
+          
           <div className="contact-admin">
             <div className="or-div">
               <span className='hr-div'><hr /></span>
               <span className='or-text'>OR</span>
               <span className='hr-div'><hr /></span>
             </div>
-            <button className="admin-button"><FontAwesomeIcon icon={faUserShield} style={{ marginRight: 8 }} />Contact Administrator</button>
+            <button className="admin-button">
+              <FontAwesomeIcon icon={faUserShield} style={{ marginRight: 8 }} />
+              Contact Administrator
+            </button>
           </div>
         </div>
         <div className="login-right">

@@ -52,7 +52,6 @@ import Description from '../../../assets/safeguarding/description.svg'
 import Commentary from '../../../assets/safeguarding/commentary.svg'
 import Clip from '../../../assets/safeguarding/clip.svg'
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
-
 import TextField from '../../../components/textField/TextField';
 import ContentBox from '../../../components/contentBox/ContentBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -1555,6 +1554,7 @@ const Index=()=>{
                 heading='Safeguarding Management.'
                 note='Log Track, & Resolve Student Safeguarding With Ease.'
                 showNew={true}
+                newPermission='create_safeguarding'
                 showPagination={true}
                 showFilter={true}
                 showViewType={true}

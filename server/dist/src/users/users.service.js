@@ -18,21 +18,28 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const user_schema_1 = require("./schemas/user.schema");
 const document_schema_1 = require("./schemas/document.schema");
+const role_schema_1 = require("./schemas/role.schema");
 const bcrypt = require("bcrypt");
 let UsersService = class UsersService {
-    constructor(userModel) {
+    constructor(userModel, roleModel) {
         this.userModel = userModel;
+        this.roleModel = roleModel;
     }
     async create(createUserDto) {
-        const { email } = createUserDto;
+        const { email, role: roleName } = createUserDto;
         const existingUser = await this.userModel.findOne({ email });
         if (existingUser) {
             throw new common_1.ConflictException('Email already exists');
+        }
+        const role = await this.roleModel.findOne({ name: roleName });
+        if (!role) {
+            throw new common_1.NotFoundException(`Role '${roleName}' not found`);
         }
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
         const createdUser = new this.userModel({
             ...createUserDto,
             password: hashedPassword,
+            role: role._id,
         });
         return createdUser.save();
     }
@@ -81,7 +88,14 @@ let UsersService = class UsersService {
     async findOne(id) {
         const user = await this.userModel.findOne({ _id: id, deletedAt: null })
             .select('-password')
-            .populate('role', 'name')
+            .populate({
+            path: 'role',
+            select: 'name description permissions',
+            populate: {
+                path: 'permissions',
+                select: 'name'
+            }
+        })
             .exec();
         if (!user) {
             throw new common_1.NotFoundException('User not found');
@@ -90,8 +104,32 @@ let UsersService = class UsersService {
     }
     async findByEmail(email) {
         return this.userModel.findOne({ email, deletedAt: null })
-            .populate('role', 'name')
+            .populate({
+            path: 'role',
+            select: 'name description permissions',
+            populate: {
+                path: 'permissions',
+                select: 'name'
+            }
+        })
             .exec();
+    }
+    async findOneForLogin(id) {
+        const user = await this.userModel.findOne({ _id: id, deletedAt: null })
+            .select('-password')
+            .populate({
+            path: 'role',
+            select: 'name description permissions',
+            populate: {
+                path: 'permissions',
+                select: 'name'
+            }
+        })
+            .exec();
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        return user;
     }
     async addCertificate(userId, fileName, filePath, fileType, fileSize) {
         const user = await this.userModel.findById(userId);
@@ -277,6 +315,8 @@ exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __param(1, (0, mongoose_1.InjectModel)(role_schema_1.Role.name)),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

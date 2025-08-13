@@ -2,12 +2,10 @@ import { Model } from 'mongoose';
 import { Certificate, CertificateDocument } from './schemas/certificate.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Types } from 'mongoose';
-import { MailService } from 'src/services/mail.service';
 export declare class CertificatesService {
     private certificateModel;
     private userModel;
-    private readonly mailService;
-    constructor(certificateModel: Model<CertificateDocument>, userModel: Model<UserDocument>, mailService: MailService);
+    constructor(certificateModel: Model<CertificateDocument>, userModel: Model<UserDocument>);
     create(teacher: User, fileName: string, filePath: string, fileType: string, fileSize: number): Promise<Certificate>;
     findAll(): Promise<Certificate[]>;
     findByTeacher(teacherId: string): Promise<Certificate[]>;

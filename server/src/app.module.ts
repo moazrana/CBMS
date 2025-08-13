@@ -11,6 +11,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 // import { MailService } from './services/mail.service';
 import { TestModule } from './test/test.module';
 import { SafeguardsModule } from './safeguards/safeguards.module';
+import { IncidentsModule } from './incidents/incidents.module';
 import { LocationModule } from './location/location.module';
 import { PeriodModule } from './period/period.module';
 // import { AppController } from './app.controller';
@@ -46,6 +47,7 @@ import { PeriodModule } from './period/period.module';
     CertificatesModule,
     TestModule,
     SafeguardsModule,
+    IncidentsModule,
     LocationModule,
     PeriodModule
   ],

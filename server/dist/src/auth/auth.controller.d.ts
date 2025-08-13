@@ -10,6 +10,7 @@ export declare class AuthController {
             name: string;
             email: string;
             role: string;
+            permissions: import("../users/schemas/permission.schema").Permission[];
         };
     }>;
 }
