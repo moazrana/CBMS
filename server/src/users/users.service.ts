@@ -31,11 +31,14 @@ export class UsersService {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPin = await bcrypt.hash(createUserDto.pin, 10);
+
 
     // Create new user with role reference
     const createdUser = new this.userModel({
       ...createUserDto,
       password: hashedPassword,
+      pin: hashedPin,
       role: role._id, // Save the role reference
     });
 
