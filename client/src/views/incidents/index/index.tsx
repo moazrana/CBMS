@@ -58,6 +58,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import Print from '../../../assets/safeguarding/printed.svg'
 import Email from '../../../assets/safeguarding/email.svg'
+import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
+
 interface incident{
     student:string
     location:string
@@ -1090,6 +1092,7 @@ const Index=()=>{
                             <span className="checkmark"></span>
                             Body Map (Tick If Required)
                         </label> 
+                        {bodyMap&&<BodyMapComponent />}
                     </div>
                 </div>
             </div>  

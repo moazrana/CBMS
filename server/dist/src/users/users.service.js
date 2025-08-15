@@ -36,9 +36,11 @@ let UsersService = class UsersService {
             throw new common_1.NotFoundException(`Role '${roleName}' not found`);
         }
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+        const hashedPin = await bcrypt.hash(createUserDto.pin, 10);
         const createdUser = new this.userModel({
             ...createUserDto,
             password: hashedPassword,
+            pin: hashedPin,
             role: role._id,
         });
         return createdUser.save();

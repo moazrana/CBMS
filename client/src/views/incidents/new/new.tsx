@@ -20,6 +20,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import { useLocation,useParams, useNavigate } from 'react-router-dom';
+import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
+
 
 const New=()=>{
     const navigate = useNavigate();
@@ -483,6 +485,7 @@ const New=()=>{
                                     <span className="checkmark"></span>
                                     Body Map (Tick If Required)
                                 </label> 
+                                {bodyMap&&<BodyMapComponent />}
                             </div>
                         </div>
                     </div>  
