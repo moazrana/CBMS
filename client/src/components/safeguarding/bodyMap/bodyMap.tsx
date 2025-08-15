@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import skull from '../../../assets/safeguarding/bodymap/skull.svg';
 import fullBody from '../../../assets/safeguarding/bodymap/fullBody.svg';
 
-interface RegionData {
-  value: number;
-  label: string;
-  color: string;
-}
+// interface RegionData {
+//   value: number;
+//   label: string;
+//   color: string;
+// }
 
-interface SelectedRegion {
-  id: string;
-  name: string;
-  data: RegionData;
-}
+// interface SelectedRegion {
+//   id: string;
+//   name: string;
+//   data: RegionData;
+// }
 
 const BodyMapComponent: React.FC = () => {
   // const [selectedRegion, setSelectedRegion] = useState<SelectedRegion | null>(null);
