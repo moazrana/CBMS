@@ -204,27 +204,8 @@ const New=()=>{
     }, []);
 
     //for body mapp
-    const bodyData = {
-        'head-front': { value: 25, label: '25%', color: '#ff6b6b' },
-        'chest-front': { value: 75, label: '75%', color: '#4ecdc4' },
-        'abdomen-front': { value: 45, label: '45%', color: '#45b7d1' },
-        'arm-left-front': { value: 60, label: '60%', color: '#96ceb4' },
-        'arm-right-front': { value: 80, label: '80%', color: '#feca57' },
-        'thigh-left-front': { value: 90, label: '90%', color: '#ff9ff3' },
-        'thigh-right-front': { value: 70, label: '70%', color: '#54a0ff' },
-    };
-
-    const [selectedRegion, setSelectedRegion] = useState(null);
-
-
-    const handleRegionClick = (regionId, region) => {
-        setSelectedRegion({ id: regionId, name: region.name, data: bodyData[regionId] });
-        console.log('Clicked region:', regionId, region.name);
-    };
-
-    const handleRegionHover = (regionId, region) => {
-        console.log('Hovering over:', region.name);
-    };
+    
+    
 
     return (
         <Layout
