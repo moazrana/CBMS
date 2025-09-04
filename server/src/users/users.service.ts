@@ -49,6 +49,9 @@ export class UsersService {
     return this.userModel.find({ deletedAt: null })
       .select('-password')
       .populate('role', 'name')
+      .populate('enrolledClasses', 'name')
+      .populate('teachingClasses', 'name')
+      .populate('students', 'name email role')
       .sort({ [sort]: order === 'DESC' ? -1 : 1 })
       .where({
         $or: [
@@ -90,6 +93,138 @@ export class UsersService {
      
   }
 
+  // Class management methods
+  async enrollInClass(userId: string, classId: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.enrolledClasses.includes(new Types.ObjectId(classId))) {
+      throw new BadRequestException('User is already enrolled in this class');
+    }
+
+    user.enrolledClasses.push(new Types.ObjectId(classId));
+    return user.save();
+  }
+
+  async removeFromClass(userId: string, classId: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const classIndex = user.enrolledClasses.indexOf(new Types.ObjectId(classId));
+    if (classIndex === -1) {
+      throw new BadRequestException('User is not enrolled in this class');
+    }
+
+    user.enrolledClasses.splice(classIndex, 1);
+    return user.save();
+  }
+
+  async assignTeachingClass(userId: string, classId: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.teachingClasses.includes(new Types.ObjectId(classId))) {
+      throw new BadRequestException('User is already teaching this class');
+    }
+
+    user.teachingClasses.push(new Types.ObjectId(classId));
+    return user.save();
+  }
+
+  async removeTeachingClass(userId: string, classId: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const classIndex = user.teachingClasses.indexOf(new Types.ObjectId(classId));
+    if (classIndex === -1) {
+      throw new BadRequestException('User is not teaching this class');
+    }
+
+    user.teachingClasses.splice(classIndex, 1);
+    return user.save();
+  }
+
+
+
+  async findUsersByClass(classId: string): Promise<User[]> {
+    return this.userModel.find({
+      $or: [
+        { enrolledClasses: new Types.ObjectId(classId) },
+        { teachingClasses: new Types.ObjectId(classId) }
+      ]
+    }).populate('role', 'name').exec();
+  }
+
+  async findEnrolledUsers(classId: string): Promise<User[]> {
+    return this.userModel.find({
+      enrolledClasses: new Types.ObjectId(classId)
+    }).populate('role', 'name').exec();
+  }
+
+  async findTeachingUsers(classId: string): Promise<User[]> {
+    return this.userModel.find({
+      teachingClasses: new Types.ObjectId(classId)
+    }).populate('role', 'name').exec();
+  }
+
+  // Student management methods
+  async addStudent(teacherId: string, studentId: string): Promise<User> {
+    const teacher = await this.userModel.findById(teacherId);
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    if (teacher.students.includes(new Types.ObjectId(studentId))) {
+      throw new BadRequestException('Student is already assigned to this teacher');
+    }
+
+    teacher.students.push(new Types.ObjectId(studentId));
+    return teacher.save();
+  }
+
+  async removeStudent(teacherId: string, studentId: string): Promise<User> {
+    const teacher = await this.userModel.findById(teacherId);
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    const studentIndex = teacher.students.indexOf(new Types.ObjectId(studentId));
+    if (studentIndex === -1) {
+      throw new BadRequestException('Student is not assigned to this teacher');
+    }
+
+    teacher.students.splice(studentIndex, 1);
+    return teacher.save();
+  }
+
+  async getTeacherStudents(teacherId: string): Promise<User[]> {
+    const teacher = await this.userModel.findById(teacherId)
+      .populate('students', 'name email role')
+      .populate('role', 'name')
+      .exec();
+    
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+    
+    // Type assertion for populated students
+    return (teacher.students as any) || [];
+  }
+
+  async findTeachersByStudent(studentId: string): Promise<User[]> {
+    return this.userModel.find({
+      students: new Types.ObjectId(studentId)
+    }).populate('role', 'name').exec();
+  }
+
   async findOne(id: string): Promise<User> {
     const user = await this.userModel.findOne({ _id: id, deletedAt: null })
       .select('-password')
@@ -101,6 +236,8 @@ export class UsersService {
           select: 'name'
         }
       })
+      .populate('enrolledClasses', 'name')
+      .populate('teachingClasses', 'name')
       .exec();
     if (!user) {
       throw new NotFoundException('User not found');
@@ -118,6 +255,8 @@ export class UsersService {
           select: 'name'
         }
       })
+      .populate('enrolledClasses', 'name')
+      .populate('teachingClasses', 'name')
       .exec();
   }
 
@@ -132,6 +271,8 @@ export class UsersService {
           select: 'name'
         }
       })
+      .populate('enrolledClasses', 'name')
+      .populate('teachingClasses', 'name')
       .exec();
     if (!user) {
       throw new NotFoundException('User not found');

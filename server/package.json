@@ -21,10 +21,12 @@
     "seed:role-permissions": "ts-node seed-role-permissions.ts",
     "seed:safeguarding-permissions": "ts-node seed-safeguarding-permissions.ts",
     "seed:incidents-permissions": "ts-node seed-incidents-permissions.ts",
+    "seed:attendance-permissions": "nest start --entryFile attendance-permissions-seed",
     "seed:all": "npm run seed:permissions && npm run seed:roles && npm run seed:users",
     "seed": "nest start --entryFile seed",
     "seed:users": "nest start --entryFile seed-users",
-    "seed:teacher": "ts-node src/seeders/seed-teacher.ts"
+    "seed:teacher": "ts-node src/seeders/seed-teacher.ts",
+    "seed:classes": "ts-node src/class-seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

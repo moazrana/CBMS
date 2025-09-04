@@ -1,0 +1,70 @@
+.time-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    // background: linear-gradient(135deg, #2d1b69 0%, #1a103f 100%);
+    // border: 1px solid #3d2b7a;
+    // border-radius: 8px;
+    padding: 0px;
+    min-width: 60px;
+    // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+
+    &:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        border-color: #4d3b8a;
+    }
+
+    &.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .time-value {
+        color: #ffffff;
+        font-weight: 500;
+        font-size: 14px;
+        margin-right: 8px;
+        user-select: none;
+    }
+
+    .time-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+
+            &:hover:not(:disabled) {
+                background-color: rgba(255, 255, 255, 0.1);
+                transform: scale(1.1);
+            }
+
+            &:active:not(:disabled) {
+                transform: scale(0.95);
+            }
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            svg {
+                width: 10px;
+                height: 10px;
+            }
+        }
+    }
+} 

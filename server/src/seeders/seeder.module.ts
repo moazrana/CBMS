@@ -5,6 +5,8 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { Permission, PermissionSchema } from '../users/schemas/permission.schema';
 import { Location, LocationSchema } from '../location/location.schema';
 import { Period, PeriodSchema } from '../period/period.schema';
+import { Class, ClassSchema } from '../class/class.schema';
+import { ClassModule } from '../class/class.module';
 import { RolesSeeder } from './roles.seeder';
 import { UsersSeeder } from './users.seeder';
 import { SeederService } from './seeder.service';
@@ -14,13 +16,16 @@ import { DashboardPermissionSeeder } from './dashboard-permission.seeder';
 import { RolePermissionsSeeder } from './role-permissions.seeder';
 import { SafeguardingPermissionsSeeder } from './safeguarding-permissions.seeder';
 import { IncidentsPermissionsSeeder } from './incidents-permissions.seeder';
+import { AttendancePermissionsSeeder } from './attendance-permissions.seeder';
 import { SafeguardingPermissionsSeedCommand } from './safeguarding-permissions-seed.command';
 import { IncidentsPermissionsSeedCommand } from './incidents-permissions-seed.command';
+import { AttendancePermissionsSeedCommand } from './attendance-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { TeacherSeeder } from './teacher.seeder';
 import { StudentSeeder } from './student.seeder';
 import { StaffSeeder } from './staff.seeder';
+import { ClassSeeder } from './class.seeder';
 import { StudentSeedCommand } from './student-seed.command';
 import { StaffSeedCommand } from './staff-seed.command';
 
@@ -33,7 +38,9 @@ import { StaffSeedCommand } from './staff-seed.command';
       { name: Permission.name, schema: PermissionSchema },
       { name: Location.name, schema: LocationSchema },
       { name: Period.name, schema: PeriodSchema },
+      { name: Class.name, schema: ClassSchema },
     ]),
+    ClassModule,
   ],
   providers: [
     PermissionsSeeder, 
@@ -41,8 +48,10 @@ import { StaffSeedCommand } from './staff-seed.command';
     RolePermissionsSeeder, 
     SafeguardingPermissionsSeeder,
     IncidentsPermissionsSeeder,
+    AttendancePermissionsSeeder,
     SafeguardingPermissionsSeedCommand,
     IncidentsPermissionsSeedCommand,
+    AttendancePermissionsSeedCommand,
     LocationSeeder,
     PeriodSeeder,
     SeederService, 
@@ -51,10 +60,11 @@ import { StaffSeedCommand } from './staff-seed.command';
     SeedCommand, 
     TeacherSeeder,
     StudentSeeder, 
-    StaffSeeder, 
+    StaffSeeder,
+    ClassSeeder,
     StudentSeedCommand, 
     StaffSeedCommand
   ],
-  exports: [SeederService, TeacherSeeder, StudentSeeder, StaffSeeder],
+  exports: [SeederService, TeacherSeeder, StudentSeeder, StaffSeeder, ClassSeeder],
 })
 export class SeederModule {} 

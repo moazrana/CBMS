@@ -1,11 +1,15 @@
-import { useAppSelector } from '../store/hooks';
+import { useSelector } from 'react-redux';
+import { 
+  selectPermissions, 
+  selectUser
+} from '../store/slices/authSlice';
 
 export const usePermissions = () => {
-  const user = useAppSelector(state => state.auth.user);
-  const permissions = useAppSelector(state => state.auth.user?.permissions || []);
+  const permissions = useSelector(selectPermissions);
+  const user = useSelector(selectUser);
 
   const checkPermission = (permissionName: string): boolean => {
-    return permissions.some(permission => permission.name == permissionName);
+    return permissions.some(permission => permission.name === permissionName);
   };
 
   const checkAnyPermission = (permissionNames: string[]): boolean => {
@@ -36,5 +40,9 @@ export const usePermissions = () => {
     checkAllPermissions,
     hasRole,
     hasAnyRole,
+    // Legacy selectors for compatibility
+    hasPermission: (permissionName: string) => checkPermission(permissionName),
+    hasAnyPermission: (permissionNames: string[]) => checkAnyPermission(permissionNames),
+    hasAllPermissions: (permissionNames: string[]) => checkAllPermissions(permissionNames),
   };
 }; 

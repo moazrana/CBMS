@@ -220,7 +220,7 @@ const New=()=>{
             <div className="main-div">
                 <p className='main-heading'>Create New.</p>
                 <hr className='hr-line'/>
-                <div className="all-inputs-div">
+                <div className="all-inputs-div-incident">
                     <div className="dropdowns">
                         <div className="inputs-div">
                             <div className="input-div">

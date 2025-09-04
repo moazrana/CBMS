@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../input/Input';
 import './LoginForm.css';
@@ -23,6 +23,19 @@ const LoginForm = () => {
 
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const { loading, error: authError } = useAppSelector(state => state.auth);
+
+  // Force light theme for login page
+  useEffect(() => {
+    const originalTheme = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', 'light');
+    
+    // Restore original theme when component unmounts
+    return () => {
+      if (originalTheme) {
+        document.documentElement.setAttribute('data-theme', originalTheme);
+      }
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -271,6 +271,12 @@ export class UsersController {
     fileStream.pipe(res);
   }
 
+  @Get('staff/:staffId/students')
+  @UseGuards(JwtAuthGuard)
+  async getStaffStudents(@Param('staffId') staffId: string) {
+    return this.usersService.getTeacherStudents(staffId);
+  }
+
   
 
 } 

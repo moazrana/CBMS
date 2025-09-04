@@ -1,0 +1,228 @@
+.header-left-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-right: 10px;
+}
+.header-left-icon{
+    border: 2px solid #797CFF6F;
+    border-radius: 50%;
+    padding: 5px;
+    width: 30px;
+    height: 30px;
+    margin-top:0px;
+    margin-bottom:0px;
+    img{    
+        width: 100%;
+        height: 100%;
+        filter: invert(62%) sepia(98%) saturate(7472%) hue-rotate(220deg) brightness(102%) opacity(60%);
+        // filter: invert(1);
+    }
+}
+.header-left-icon-three-dots{
+    width: 20px;
+    height: 30px;
+    margin-top: 12px;
+    margin-bottom: 0px;
+}
+.attendance-overview-body{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 98%;
+}
+.attendance-upper-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+.graph-div{
+    width: 65%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+.graph{
+    width: 100%;
+    height: 80%;
+}
+.filter-div{
+    width: 100%;
+    
+}
+.input-div-attendance{
+    width: 50%;
+    margin-bottom: 0px;
+}
+.calendar-div{
+    width: 35%;
+}
+.pagination-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 28%;
+}
+.btn-div{
+    width: 25%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 26px;
+    .create-btn{
+        // margin-top: 5px;
+        background-color: #6786FB;
+        height: fit-content;
+    }
+    .head-btn{
+        height: fit-content;
+        width: fit-content;
+        color: var(--main-text);
+        background-color: var(--hover-bg);
+        border: solid 1px var(--border-color);
+        
+    }
+    .circle{
+        border-radius: 100%;
+        padding:0px, 2px;
+        margin-left: 5px;
+    }
+}
+
+// Calendar Styles
+.calendar-body {
+    padding: 10px;
+    width: 95%;
+    height: 100%;
+}
+
+.calendar-header {
+    margin-bottom: 10px;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.weekday {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--main-text);
+    padding: 8px 4px;
+    // background-color: var(--hover-bg);
+    // border-radius: 6px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--main-text);
+    background-color: var(--bg-color);
+    // border: 1px solid var(--border-color);
+    // border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        background-color: var(--hover-bg);
+        transform: scale(1.05);
+        border-radius: 100%;
+    }
+    
+    &.empty {
+        background-color: transparent;
+        border: none;
+        cursor: default;
+        
+        &:hover {
+            background-color: transparent;
+            transform: none;
+        }
+    }
+    
+    &.today {
+        background-color: #00f0df;
+        color: black;
+        font-weight: 600;
+        border-color: #00f0df;
+        border-radius: 100%;
+        
+        &:hover {
+            background-color: #6b6ee8;
+        }
+    }
+}
+.inputs-div-att{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    margin-bottom: 10px;
+}
+.search-btn-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    // margin-top: 12px;
+}
+.search-btn-att{
+    background-color: var(--sidebar-heading);
+    height: fit-content;
+    width: fit-content;
+    border-radius: 10px;
+    border: none;
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 10px;
+    padding: 10px;
+}
+.lower-inputs-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.attendance-input-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+.data-table-div{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    
+}

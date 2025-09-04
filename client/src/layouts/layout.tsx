@@ -99,12 +99,14 @@ export default function Layout({
                       )}
                       {showPagination&&(
                         <>
+                        <div className='pagination-div'>
                           <button className='head-btn circle' onClick={() => window.history.back()}>
                             <FontAwesomeIcon icon={faChevronLeft} />
                           </button>
                           <button className='head-btn circle' onClick={() => window.history.forward()}>
                             <FontAwesomeIcon icon={faChevronRight} />
                           </button>
+                        </div>
                         </>
                       )}
                     </div>

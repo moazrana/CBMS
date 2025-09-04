@@ -3,6 +3,12 @@
   background: var(--main-bg);
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
 }
 
 .app-content {
@@ -15,18 +21,23 @@
   margin-left: 12px;
   border-radius: 10px;
   border: 2px solid var(--border-color);
+  overflow-y: auto;
+  height: calc(100vh - 80px);
 }
 
 .navs {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-main {
   display: flex;
   flex: 1;
   flex-direction: column;
+  overflow: hidden;
 }
 .head{
   display: flex;
@@ -46,6 +57,12 @@
       font-size: small;
       margin-top: 0px;
     }
+  }
+  .pagination-div{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 28%;
   }
   .btn-div{
     width: 25%;

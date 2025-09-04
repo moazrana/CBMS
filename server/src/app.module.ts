@@ -14,6 +14,7 @@ import { SafeguardsModule } from './safeguards/safeguards.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { LocationModule } from './location/location.module';
 import { PeriodModule } from './period/period.module';
+import { ClassModule } from './class/class.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -24,7 +25,7 @@ import { PeriodModule } from './period/period.module';
       load: [
         () => ({
           JWT_SECRET: process.env.JWT_SECRET || 'your-super-secret-key-here',
-          MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/cbms',
+          MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/cbms',
           PORT: process.env.PORT || 3000,
         }),
       ],
@@ -49,7 +50,8 @@ import { PeriodModule } from './period/period.module';
     SafeguardsModule,
     IncidentsModule,
     LocationModule,
-    PeriodModule
+    PeriodModule,
+    ClassModule
   ],
   providers: [
     // MailService

@@ -13,34 +13,34 @@
     margin: 8px 0;
 }
 .all-inputs-div{
-    height: 500px;
+    // height: 500px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    overflow-y: scroll;
+    // overflow-y: scroll;
     border-bottom: 1px solid var(--border-color);
     // Custom scrollbar styling
-    &::-webkit-scrollbar {
-        width: 8px;
-    }
+    // &::-webkit-scrollbar {
+    //     width: 8px;
+    // }
 
-    &::-webkit-scrollbar-track {
-        background: var(--border-color);
-        border-radius: 8px;
-    }
+    // &::-webkit-scrollbar-track {
+    //     background: var(--border-color);
+    //     border-radius: 8px;
+    // }
 
-    &::-webkit-scrollbar-thumb {
-        background: #ffffff;
-        border-radius: 4px;
+    // &::-webkit-scrollbar-thumb {
+    //     background: #ffffff;
+    //     border-radius: 4px;
         
-        &:hover {
-            background: var(--sidebar-bg);
-        }
-    }
+    //     &:hover {
+    //         background: var(--sidebar-bg);
+    //     }
+    // }
 
     // Firefox scrollbar
-    scrollbar-width: none;
-    scrollbar-color: var(--sidebar-bg) var(--border-color);
+    // scrollbar-width: none;
+    // scrollbar-color: var(--sidebar-bg) var(--border-color);
 }
 .dropdowns{
     height: 500px;

@@ -32,6 +32,17 @@ export class User extends Document {
   @Prop({required:false})
   subject:string;
 
+  @Prop({ type: [Types.ObjectId], ref: 'Class', default: [] })
+  enrolledClasses: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'Class', default: [] })
+  teachingClasses: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
+  students: Types.ObjectId[];
+
+
+
   @Prop([{
     _id: Types.ObjectId,
     fileName: String,
@@ -83,4 +94,11 @@ export class User extends Document {
 }
 
 export type UserDocument = User & Document;
-export const UserSchema = SchemaFactory.createForClass(User); 
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// Add indexes for better query performance
+UserSchema.index({ enrolledClasses: 1 });
+UserSchema.index({ teachingClasses: 1 });
+UserSchema.index({ students: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ email: 1 }); 

@@ -12,30 +12,39 @@ import Safeguarding from './views/safeguarding/index';
 import NewSafeguarding from './views/safeguarding/new/new'
 import Incidents from './views/incidents/index';
 import NewIncident from './views/incidents/new/new'
+import RouteGuard from './components/RouteGuard';
+import { useSelector } from 'react-redux';
+import { selectUser } from './store/slices/authSlice';
+import Attendance from './views/attendance/index';
+
 function App() {
-  const user = localStorage.getItem('user');
-  const role = user ? JSON.parse(user).role : undefined;
+  const user = useSelector(selectUser);
+  const role = user?.role;
   const complianceComponent = role === 'admin' ? <AdminPageList /> : <TeacherUploadFile/>;
+  
   return (
     <ThemeProvider>
       <Router>
         <div className="app-container">
-          <Routes>
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/dashboard" element={<Dashboard/>}/>
-            <Route path="/roles" element={<RolesList />} />
-            <Route path="/roles/add" element={<RoleManagement />} />
-            <Route path="/roles/edit/:id" element={<RoleManagement />} />
-            <Route path="/users" element={<UserList />} />
-            <Route path="/compliance" element={complianceComponent} />
-            <Route path="/safeguarding" element={<Safeguarding/>} />
-            <Route path="/safeguarding/add" element={<NewSafeguarding/>} />
-            <Route path="/safeguarding/safeguard/:id" element={<NewSafeguarding/>} />
-            <Route path="/incidents" element={<Incidents/>} />
-            <Route path="/incidents/add" element={<NewIncident/>} />
-            <Route path="/incidents/incident/:id" element={<NewIncident/>} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-          </Routes>
+          <RouteGuard>
+            <Routes>
+              <Route path="/login" element={<LoginForm />} />
+              <Route path="/dashboard" element={<Dashboard/>}/>
+              <Route path="/roles" element={<RolesList />} />
+              <Route path="/roles/add" element={<RoleManagement />} />
+              <Route path="/roles/edit/:id" element={<RoleManagement />} />
+              <Route path="/users" element={<UserList />} />
+              <Route path="/compliance" element={complianceComponent} />
+              <Route path="/safeguarding" element={<Safeguarding/>} />
+              <Route path="/safeguarding/add" element={<NewSafeguarding/>} />
+              <Route path="/safeguarding/safeguard/:id" element={<NewSafeguarding/>} />
+              <Route path="/incidents" element={<Incidents/>} />
+              <Route path="/incidents/add" element={<NewIncident/>} />
+              <Route path="/incidents/incident/:id" element={<NewIncident/>} />
+              <Route path="/attendance" element={<Attendance/>}/>
+              <Route path="/" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </RouteGuard>
         </div>
       </Router>
     </ThemeProvider>

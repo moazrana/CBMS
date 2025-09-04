@@ -53,14 +53,14 @@ export default function Sidebar() {
             </div>
           </Link>
         </PermissionGuard>
-        
-        <Link to="/attendance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={attendance} alt="logo" className='sidebar-icon' />
-            Attendance
-          </div>
-        </Link>
-        
+        <PermissionGuard permission="view_attendance">
+          <Link to="/attendance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={attendance} alt="logo" className='sidebar-icon' />
+              Attendance
+            </div>
+          </Link>
+        </PermissionGuard>
         <Link to="/sbt" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={studentBehavior} alt="logo" className='sidebar-icon' />
@@ -116,6 +116,7 @@ export default function Sidebar() {
           </div>
         </Link>
         </PermissionGuard>
+        <div className='sidebar-text' style={{ color: 'var(--sidebar-text)' }}></div>
         
         
       </nav>
