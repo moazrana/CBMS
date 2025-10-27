@@ -26,7 +26,9 @@
     "seed": "nest start --entryFile seed",
     "seed:users": "nest start --entryFile seed-users",
     "seed:teacher": "ts-node src/seeders/seed-teacher.ts",
-    "seed:classes": "ts-node src/class-seed.ts"
+    "seed:classes": "ts-node src/class-seed.ts",
+    "seed:timetable-permissions": "nest start --entryFile cli -- seed:timetable-permissions",
+    "delete:users": "nest start --entryFile cli -- delete:users"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

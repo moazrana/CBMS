@@ -26,7 +26,7 @@ export class UsersSeeder {
       
       // Check if admin user already exists
       const existingAdminUser = await this.userModel.findOne({ email: 'admin@cbms.com' });
-      const hashedPassword = await bcrypt.hash('P@ssword', 10);
+      const hashedPassword = await bcrypt.hash('P@$$word', 10);
       const hashedPin = await bcrypt.hash('123', 10);
       if (existingAdminUser) {
         console.log('Admin user already exists. Updating...');

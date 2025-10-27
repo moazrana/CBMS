@@ -17,9 +17,11 @@ import { RolePermissionsSeeder } from './role-permissions.seeder';
 import { SafeguardingPermissionsSeeder } from './safeguarding-permissions.seeder';
 import { IncidentsPermissionsSeeder } from './incidents-permissions.seeder';
 import { AttendancePermissionsSeeder } from './attendance-permissions.seeder';
+import { TimetablePermissionsSeeder } from './timetable-permissions.seeder';
 import { SafeguardingPermissionsSeedCommand } from './safeguarding-permissions-seed.command';
 import { IncidentsPermissionsSeedCommand } from './incidents-permissions-seed.command';
 import { AttendancePermissionsSeedCommand } from './attendance-permissions-seed.command';
+import { TimetablePermissionsSeedCommand } from './timetable-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { TeacherSeeder } from './teacher.seeder';
@@ -28,6 +30,8 @@ import { StaffSeeder } from './staff.seeder';
 import { ClassSeeder } from './class.seeder';
 import { StudentSeedCommand } from './student-seed.command';
 import { StaffSeedCommand } from './staff-seed.command';
+import { DeleteUsersSeeder } from './delete-users.seeder';
+import { DeleteUsersSeedCommand } from './delete-users-seed.command';
 
 @Module({
   imports: [
@@ -49,9 +53,11 @@ import { StaffSeedCommand } from './staff-seed.command';
     SafeguardingPermissionsSeeder,
     IncidentsPermissionsSeeder,
     AttendancePermissionsSeeder,
+    TimetablePermissionsSeeder,
     SafeguardingPermissionsSeedCommand,
     IncidentsPermissionsSeedCommand,
     AttendancePermissionsSeedCommand,
+    TimetablePermissionsSeedCommand,
     LocationSeeder,
     PeriodSeeder,
     SeederService, 
@@ -60,11 +66,13 @@ import { StaffSeedCommand } from './staff-seed.command';
     SeedCommand, 
     TeacherSeeder,
     StudentSeeder, 
-    StaffSeeder,
+    StaffSeeder, 
     ClassSeeder,
     StudentSeedCommand, 
-    StaffSeedCommand
+    StaffSeedCommand,
+    DeleteUsersSeeder,
+    DeleteUsersSeedCommand
   ],
-  exports: [SeederService, TeacherSeeder, StudentSeeder, StaffSeeder, ClassSeeder],
+  exports: [SeederService, TeacherSeeder, StudentSeeder, StaffSeeder, ClassSeeder, TimetablePermissionsSeeder, DeleteUsersSeeder],
 })
-export class SeederModule {} 
+export class SeederModule {}
