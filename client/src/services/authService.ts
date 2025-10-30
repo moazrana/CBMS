@@ -46,7 +46,7 @@ export const authService = {
     try {
       store.dispatch(loginStart());
       
-      const response = await api.post<LoginResponse>('/auth/login', credentials);
+      const response = await api.post<LoginResponse>('/api/auth/login', credentials);
       
       store.dispatch(loginSuccess(response.data));
       
