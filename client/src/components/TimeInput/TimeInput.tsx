@@ -25,8 +25,8 @@ const TimeInput: React.FC<TimeInputProps> = ({
     onRapidChange
 }) => {
     const [isRapidChanging, setIsRapidChanging] = useState(false);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const changeCountRef = useRef(0);
 
     const handleIncrement = useCallback(() => {
