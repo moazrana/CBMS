@@ -5,7 +5,7 @@ interface InputProps {
     type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'time' | 'file';
     label?: string;
     name: string;
-    value?: string | number | undefined;
+    value?: string | number | Date | undefined;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     placeholder?: string;
     error?: string;
@@ -54,7 +54,9 @@ const Input: React.FC<InputProps> = ({
               type={type}
               id={name}
               name={name}
-              {...(type !== 'file' ? { value } : {})}
+              {...(type !== 'file'
+                ? { value: value instanceof Date ? value.toISOString().slice(0, 10) : value }
+                : {})}
               onChange={onChange}
               placeholder={placeholder}
               disabled={disabled}

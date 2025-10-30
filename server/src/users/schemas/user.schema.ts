@@ -94,7 +94,7 @@ export class User extends Document {
 }
 
 export type UserDocument = User & Document;
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(User); 
 
 // Add indexes for better query performance
 UserSchema.index({ enrolledClasses: 1 });

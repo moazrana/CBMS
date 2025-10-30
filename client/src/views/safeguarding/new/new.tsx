@@ -687,7 +687,7 @@ const New=()=>{
                                                 <Input
                                                     type="date"
                                                     name={`meeting-date-${idx}`}
-                                                    value={meeting.date ? meeting.date.toISOString().split('T')[0] : ''}
+                                                    value={meeting.date}
                                                     onChange={e => {
                                                     const updated = [...meetings];
                                                     updated[idx] = { ...updated[idx], date: e.target.value ? new Date(e.target.value) : undefined };

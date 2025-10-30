@@ -16,6 +16,7 @@ import reports from '../../assets/sidebar/reports.svg';
 import users from '../../assets/sidebar/users.svg';
 import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
+import timeTable from '../../assets/sidebar/timeTable.svg';
 import { PermissionGuard } from '../PermissionGuard';
 
 export default function Sidebar() {
@@ -58,6 +59,14 @@ export default function Sidebar() {
             <div className='link'>
               <img src={attendance} alt="logo" className='sidebar-icon' />
               Attendance
+            </div>
+          </Link>
+        </PermissionGuard>
+        <PermissionGuard permission="view_time_table">
+          <Link to="/time-table" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={timeTable} alt="logo" className='sidebar-icon' />
+              Time Table
             </div>
           </Link>
         </PermissionGuard>

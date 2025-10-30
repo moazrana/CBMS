@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from 'react';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../../../layouts/layout';
 import Box from '../../../components/box/box';
 import calendarIcon from '../../../assets/sidebar/attendance.svg';
@@ -25,7 +25,7 @@ const Index=()=>{
     const { executeRequest} = useApiRequest();
     const [currentDate, setCurrentDate] = useState(new Date());
     
-    const graphData = [
+    const [graphData,setGraphData] = useState<any[]>([
         { month: 'January', present: 100,absent:10 },
         { month: 'February', present: 200,absent:20 },
         { month: 'March', present: 150,absent:300 },
@@ -38,8 +38,12 @@ const Index=()=>{
         { month: 'October', present: 260,absent:26 },
         { month: 'November', present: 190,absent:19 },
         { month: 'December', present: 290,absent:29 }
-    ];
+    ]);
     
+    const getMonthlyStats=async()=>{
+        const res=await executeRequest('get','/attendance/stats/monthly')
+        setGraphData(res)
+    }
     function valueFormatter(value: number | null) {
         return `${value}`;
     }
@@ -228,16 +232,16 @@ const Index=()=>{
             </div>
         )
     }
-    const [filterDate,setFilterDate]=useState<any>()
+    const [filterDate, setFilterDate] = useState<string>(() => {
+        const today = new Date();
+        return today.toISOString().split('T')[0]; // "2024-01-15"
+    });
     const [periods,setPeriods]=useState<any[]>([])
     const [period, setPeriod] = useState<any>();
     const [staffs,setStaffs]=useState<any[]>([])
     const [staff,setStaff]=useState<any>()
     const [classes,setClasses]=useState<any[]>([])
     const [filterClass,setFilterClass]=useState<any>()
-    const [lateMinutes, setLateMinutes] = useState<number>(10);
-    const [attendance, setAttendance] = useState<string>('attended');
-
     const attendanceOptions: AttendanceOption[] = [
         { value: 'attended', label: 'Attended', color: '#4ade80' },
         { value: 'absent', label: 'Absent', color: '#dc2626' },
@@ -253,6 +257,11 @@ const Index=()=>{
         const res=await executeRequest('get','/classes')
         const classes=res.map((cls: any) => ({ value: cls._id, label: cls.name }))
         setClasses(classes)
+    }
+    const searchStudents=async()=>{
+        const res=await executeRequest('get',`/staff/${staff}/students`)
+        const students=res.map((student: any) => ({ ...student, session1:'attended', session2:'attended', lateMinutes:0 }))
+        setStudents(students)
     }
     const filterBody=()=>{
         return(
@@ -276,6 +285,7 @@ const Index=()=>{
                         onChange={(e)=>{setPeriod(e.target.value)}}
                         icon={Period}
                         value={period}
+                        placeholder='Select Period'
                     />
                 </div>
             </div>
@@ -289,6 +299,7 @@ const Index=()=>{
                             onChange={(e)=>{setStaff(e.target.value)}}
                             icon={Staff}
                             value={staff}
+                            placeholder='Select Staff'
                         />
                     </div>
                     <div className='input-div-attendance'>
@@ -299,11 +310,12 @@ const Index=()=>{
                             onChange={(e)=>{setFilterClass(e.target.value)}}
                             icon={Class}
                             value={filterClass}
+                            placeholder='Select Class/Provision'
                         />
                     </div>
                 </div>
                 <div className='search-btn-div'>
-                    <button className='search-btn-att'>
+                    <button className='search-btn-att' onClick={searchStudents}>
                         <FontAwesomeIcon className='nav-icon' icon={faMagnifyingGlass} />
                     </button>
                 </div>
@@ -311,17 +323,68 @@ const Index=()=>{
             </>
         )
     }
+    
+    const markAttendance=async(studentId:string,session1:string,session2:string,lateMinutes:number)=>{
+        if(!filterDate||!period||!staff||!filterClass)
+        {
+            alert("Please fill all the fields in filter section")
+        }
+        else{
+            // Update student state first
+            setStudents(prevStudents => 
+                prevStudents.map(student => 
+                    student._id === studentId 
+                        ? { ...student, session1, session2, lateMinutes }
+                        : student
+                )
+            );
+            await executeRequest("post","/attendance/mark-attendance",{
+                student:studentId,
+                class:filterClass,
+                period:period,
+                staff:staff,
+                date:filterDate,
+                session1:session1,
+                session2:session2,
+                lateMinutes:lateMinutes
+            })
+        }
+    }
+    const updateStudentLateMinutes = (studentId: string, lateMinutes: number) => {
+        setStudents(prevStudents => 
+            prevStudents.map(student => 
+                student._id === studentId 
+                    ? { ...student, lateMinutes } 
+                    : student
+            )
+        );
+        console.log("updating...")
+    };
+
+    // Add rapid change detection
+    const handleRapidChange = (student: any, isRapid: boolean) => {
+        if (isRapid) {
+            console.log(`Rapid change detected for student ${student._id}`);
+            // You can add additional logic here, like:
+            // - Show a loading indicator
+            // - Disable other inputs
+            // - Show a warning message
+            // - Optimize API calls
+        } else {
+            markAttendance(student._id,student.session1,student.session2,student.lateMinutes)
+        }
+    };
     const columns=[
         { 
             header: 'Student Details', 
-            accessor: 'student', 
+            accessor: 'student',
             sortable: false, 
             type: 'template' as const,
             template:(row: Record<string, any>) => {
                 return( 
                 <>
                     <p>{row.name}</p>
-                    <div className='boxed-location'><img src={Home} alt="icon" style={{ width: 15, height: 15, marginRight: 8 }} />{row.location}</div>
+                    <div className='boxed-location'><img src={Home} alt="icon" style={{ width: 15, height: 15, marginRight: 8 }} />{row.subject}</div>
                 </>
                 )
             } 
@@ -337,14 +400,14 @@ const Index=()=>{
                     <div className='attendance-input-div'>
                         <AttendanceDropdown
                             label="Session-1"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value={row.session1}
+                            onChange={(value: string)=>markAttendance(row._id,value,row.session2,row.lateMinutes)}
                             options={attendanceOptions}
                         />
                         <AttendanceDropdown
                             label="Session-2"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value={row.session2}
+                            onChange={(value: string)=>markAttendance(row._id,row.session1,value,row.lateMinutes)}
                             options={attendanceOptions}
                         />
                     </div>
@@ -360,12 +423,13 @@ const Index=()=>{
             template:(row: Record<string, any>) => {
                 return( 
                     <TimeInput
-                        value={lateMinutes}
-                        onChange={setLateMinutes}
+                        value={row.lateMinutes}
+                        onChange={(value: number) => { updateStudentLateMinutes(row._id, value) }}
                         min={0}
                         max={60}
-                        step={5}
-                        suffix="Mins"
+                        step={1}
+                        suffix="Mins" 
+                        onRapidChange={(isRapid: boolean) => handleRapidChange(row, isRapid)}
                     />
                 )
             } 
@@ -375,20 +439,20 @@ const Index=()=>{
             accessor: 'fristAtt', 
             sortable: false, 
             type: 'template' as const,
-            template:(row: Record<string, any>) => {
+            template:(/*row: Record<string, any>*/) => {
                 return( 
                 <>
                     <div className='attendance-input-div'>
                         <AttendanceDropdown
                             label="Session-1"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                         <AttendanceDropdown
                             label="Session-2"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                     </div>
@@ -401,20 +465,20 @@ const Index=()=>{
             accessor: 'secondAtt', 
             sortable: false, 
             type: 'template' as const,
-            template:(row: Record<string, any>) => {
+            template:(/*row: Record<string, any>*/) => {
                 return( 
                 <>
                     <div className='attendance-input-div'>
                         <AttendanceDropdown
                             label="Session-1"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                         <AttendanceDropdown
                             label="Session-2"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                     </div>
@@ -427,20 +491,20 @@ const Index=()=>{
             accessor: 'thirdAtt', 
             sortable: false, 
             type: 'template' as const,
-            template:(row: Record<string, any>) => {
+            template:(/*row: Record<string, any>*/) => {
                 return( 
                 <>
                     <div className='attendance-input-div'>
                         <AttendanceDropdown
                             label="Session-1"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                         <AttendanceDropdown
                             label="Session-2"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                     </div>
@@ -453,20 +517,20 @@ const Index=()=>{
             accessor: 'fourthAtt',  
             sortable: false, 
             type: 'template' as const,
-            template:(row: Record<string, any>) => {
+            template:(/*row: Record<string, any>*/) => {
                 return( 
                 <>
                     <div className='attendance-input-div'>
                         <AttendanceDropdown
                             label="Session-1"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                         <AttendanceDropdown
                             label="Session-2"
-                            value={attendance}
-                            onChange={setAttendance}
+                            value='attended'
+                            onChange={()=>{}}
                             options={attendanceOptions}
                         />
                     </div>
@@ -475,6 +539,7 @@ const Index=()=>{
             } 
         },
     ]
+    
     const [students,setStudents]=useState<any[]>([])
     
     useEffect(() => {
@@ -496,7 +561,6 @@ const Index=()=>{
     }, [filterClass])
 
     useEffect(() => {
-        
         // Fetch periods
         const fetchPeriods = async () => {
             try {
@@ -508,9 +572,8 @@ const Index=()=>{
                 // Optionally handle error
             }
         };
-        fetchPeriods();
-        
-        
+        getMonthlyStats()
+        fetchPeriods()
         getClasses()
     }, []);
     return (

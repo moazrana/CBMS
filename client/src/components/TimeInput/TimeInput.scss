@@ -1,70 +1,75 @@
 .time-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  // border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  // background: white;
+  transition: all 0.2s ease;
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &.rapid-changing {
+    border-color: #3b82f6;
+    // background-color: #eff6ff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .time-value {
+    font-size: 14px;
+    font-weight: 500;
+    // color: #374151;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .time-controls {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    // background: linear-gradient(135deg, #2d1b69 0%, #1a103f 100%);
-    // border: 1px solid #3d2b7a;
-    // border-radius: 8px;
-    padding: 0px;
-    min-width: 60px;
-    // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
+    flex-direction: column;
+    gap: 2px;
 
-    &:hover {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        border-color: #4d3b8a;
-    }
+    .control-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 16px;
+      border: none;
+      background-color: transparent;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 10px;
+      color: var(--main-text);
 
-    &.disabled {
-        opacity: 0.6;
+      &:hover:not(:disabled) {
+        background: #e5e7eb;
+        color: #374151;
+      }
+
+      &:active:not(:disabled) {
+        background: #d1d5db;
+        transform: scale(0.95);
+      }
+
+      &:disabled {
+        opacity: 0.4;
         cursor: not-allowed;
+      }
+
+      &.up {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+
+      &.down {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+      }
     }
-
-    .time-value {
-        color: #ffffff;
-        font-weight: 500;
-        font-size: 14px;
-        margin-right: 8px;
-        user-select: none;
-    }
-
-    .time-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        .control-btn {
-            background: none;
-            border: none;
-            color: #ffffff;
-            cursor: pointer;
-            padding: 2px;
-            border-radius: 3px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-
-            &:hover:not(:disabled) {
-                background-color: rgba(255, 255, 255, 0.1);
-                transform: scale(1.1);
-            }
-
-            &:active:not(:disabled) {
-                transform: scale(0.95);
-            }
-
-            &:disabled {
-                opacity: 0.4;
-                cursor: not-allowed;
-            }
-
-            svg {
-                width: 10px;
-                height: 10px;
-            }
-        }
-    }
-} 
+  }
+}

@@ -16,6 +16,7 @@ import RouteGuard from './components/RouteGuard';
 import { useSelector } from 'react-redux';
 import { selectUser } from './store/slices/authSlice';
 import Attendance from './views/attendance/index';
+import TimeTable from './views/timeTable/index';
 
 function App() {
   const user = useSelector(selectUser);
@@ -42,6 +43,7 @@ function App() {
               <Route path="/incidents/add" element={<NewIncident/>} />
               <Route path="/incidents/incident/:id" element={<NewIncident/>} />
               <Route path="/attendance" element={<Attendance/>}/>
+              <Route path="/time-table" element={<TimeTable/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
           </RouteGuard>

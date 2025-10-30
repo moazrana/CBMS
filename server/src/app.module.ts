@@ -15,6 +15,8 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { LocationModule } from './location/location.module';
 import { PeriodModule } from './period/period.module';
 import { ClassModule } from './class/class.module';
+import { StaffModule } from './staff/staff.module';
+import { AttendanceModule } from './attendance/attendance.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -51,7 +53,9 @@ import { ClassModule } from './class/class.module';
     IncidentsModule,
     LocationModule,
     PeriodModule,
-    ClassModule
+    ClassModule,
+    StaffModule,
+AttendanceModule,
   ],
   providers: [
     // MailService

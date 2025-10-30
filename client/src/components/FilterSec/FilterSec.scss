@@ -35,5 +35,17 @@
 }
 .small-div{
     padding-top:10px;
+    color:var(--main-text);
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: self-end;
+    margin-bottom:var(--standard-padding);
+}
+.seach-btn{
+    background-color: var(--sidebar-heading);
+    color:white;
+    margin-bottom:15px;
 }
 

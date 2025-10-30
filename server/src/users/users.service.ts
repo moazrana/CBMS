@@ -207,8 +207,7 @@ export class UsersService {
 
   async getTeacherStudents(teacherId: string): Promise<User[]> {
     const teacher = await this.userModel.findById(teacherId)
-      .populate('students', 'name email role')
-      .populate('role', 'name')
+      .populate('students', 'name subject')
       .exec();
     
     if (!teacher) {

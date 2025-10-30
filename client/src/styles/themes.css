@@ -20,6 +20,7 @@
   --check-box-bg:#F5F5F5;
   --cancel-bg:#F6F6F6;
   --standard-padding:30px;
+  --event-bg:transparent;
 }
 
 :root[data-theme="dark"] {
@@ -45,4 +46,5 @@
   --cancel-bg:#2A2640;
   --standard-padding:30px;
   --secondary-background:#201C37;
+  --event-bg:transparent;
 } 

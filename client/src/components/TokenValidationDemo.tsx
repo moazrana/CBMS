@@ -3,7 +3,7 @@ import { authService } from '../services/authService';
 import { useTokenValidation } from '../hooks/useTokenValidation';
 
 const TokenValidationDemo: React.FC = () => {
-  const { isValid, isLoading, error, user, isExpiringSoon, validateToken } = useTokenValidation();
+  const { isValid, isLoading, error,  isExpiringSoon, validateToken } = useTokenValidation();
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [validationResult, setValidationResult] = useState<string>('');
 
