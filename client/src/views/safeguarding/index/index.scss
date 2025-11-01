@@ -72,22 +72,24 @@
 }
 #rs-body{
     overflow-y: scroll;
-    height: 500px;
+    height: 600px;
 }
 .btns-div{
     display: flex;
     flex-direction: column;
-    width:60%;
-    margin-right:10px;
-    margin-left:10px;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
 }
 #rs-save-btn{
     color: var(--main-text);
     background-color: var(--sidebar-heading);
+    width: 70%;
 }
 #rs-cancel-btn{
     background-color: var(--secondary-background);
     color: var(--main-text);
+    width: 70%;
 }
 .rs-description{
     margin-top: 80px;
@@ -270,4 +272,7 @@
     background-color: #7173eb;
     color:#ffffff;
     width: 15%;
+  }
+  .print-div{
+    margin-top:10px;
   }

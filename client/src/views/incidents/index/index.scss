@@ -77,9 +77,9 @@
 .btns-div{
   display: flex;
   flex-direction: column;
-  width:60%;
-  margin-right:10px;
-  margin-left:10px;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
 }
 #rs-save-btn{
   color: var(--main-text);

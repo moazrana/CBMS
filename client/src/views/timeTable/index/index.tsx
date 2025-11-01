@@ -180,7 +180,7 @@ const Index = () => {
                                         />
                                     </div>
                                     {idx === slots.length - 1 && (    
-                                        <div className="input-div btns-div">
+                                        <div className="input-div btns-div-tt">
                                             <button
                                                 type="button"
                                                 className="add-slot-btn"
