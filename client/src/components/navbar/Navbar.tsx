@@ -6,6 +6,10 @@ import bell from '../../assets/navbar/bell.svg';
 import gear from '../../assets/navbar/gear.svg';
 import sun from '../../assets/navbar/sun.svg';
 import moon from '../../assets/navbar/moon.svg';
+import { useAppSelector } from '../../store/hooks';
+import { selectUser } from '../../store/slices/authSlice';
+// import { RootState } from '../store/store';
+
 
 export default function Navbar() {
   // Theme state and effect at top level
@@ -27,7 +31,7 @@ export default function Navbar() {
     localStorage.setItem('theme', newTheme);
     setTheme(newTheme);
   };
-
+  const user = useAppSelector(selectUser);
   return (
     <nav className="navbar">
       <div className="navbar-search">
@@ -86,10 +90,10 @@ export default function Navbar() {
         <div className="navbar-profile">
         <div className="navbar-divider"></div>
           
-          <img src="/avatar.png" alt="Avatar" className="navbar-avatar" />
+          <img src="/avatar.jpeg" alt="Avatar" className="navbar-avatar" />
           <div>
-            <div className="navbar-name">{JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}</div>
-            <div className="navbar-role">{JSON.parse(localStorage.getItem('user') || '{}').role || 'Guest'}</div>
+            <div className="navbar-name">{user?.name || 'Guest'}</div>
+            <div className="navbar-role">{user?.role || 'Guest'}</div>
           </div>
           
         </div>
