@@ -70,6 +70,9 @@ export class SafeguardsService {
   }
 
   async findOne(id: string): Promise<Safeguard> {
+    if (!id || id === 'undefined' || id === 'null' || !id.trim()) {
+      throw new NotFoundException('Safeguard ID is required');
+    }
     const found = await this.safeguardModel.findById(id).populate('student staff location period').exec();
     if (!found) throw new NotFoundException('Safeguard not found');
     return found;

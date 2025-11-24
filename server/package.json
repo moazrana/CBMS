@@ -28,6 +28,7 @@
     "seed:teacher": "ts-node src/seeders/seed-teacher.ts",
     "seed:classes": "ts-node src/class-seed.ts",
     "seed:timetable-permissions": "nest start --entryFile cli -- seed:timetable-permissions",
+    "seed:staff-permissions": "nest start --entryFile cli -- seed:staff-permissions",
     "seed:student": "nest start --entryFile cli -- student-seed",
     "seed:staff": "nest start --entryFile cli -- staff-seed",
     "delete:users": "nest start --entryFile cli -- delete:users"

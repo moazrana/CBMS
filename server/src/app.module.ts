@@ -55,7 +55,7 @@ import { AttendanceModule } from './attendance/attendance.module';
     PeriodModule,
     ClassModule,
     StaffModule,
-AttendanceModule,
+    AttendanceModule,
   ],
   providers: [
     // MailService

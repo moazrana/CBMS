@@ -219,7 +219,7 @@ const BodyMapComponent: React.FC<BodyMapComponentProps> = ({
             <img 
               src={rightShoulder} 
               alt="Left Shoulder SVG" 
-              style={{ 
+            style={{ 
                 width: '15%', 
                 height: '15%', 
                 objectFit: 'contain',

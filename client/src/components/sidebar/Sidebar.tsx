@@ -17,6 +17,7 @@ import users from '../../assets/sidebar/users.svg';
 import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
 import timeTable from '../../assets/sidebar/timeTable.svg';
+import staff from '../../assets/dashboard/teachers.svg';
 import { PermissionGuard } from '../PermissionGuard';
 
 export default function Sidebar() {
@@ -70,6 +71,14 @@ export default function Sidebar() {
             </div>
           </Link>
         </PermissionGuard>
+        <PermissionGuard permission="read_staff">
+          <Link to="/staff" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={staff} alt="logo" className='sidebar-icon' />
+              Staff
+            </div>
+          </Link>
+        </PermissionGuard>
         <Link to="/sbt" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={studentBehavior} alt="logo" className='sidebar-icon' />
@@ -119,11 +128,11 @@ export default function Sidebar() {
           </div>
         </Link>
         <PermissionGuard permission="read_role">
-        <Link to="/roles" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <FontAwesomeIcon className='icon' icon={faGear} />Roles
-          </div>
-        </Link>
+          <Link to="/roles" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <FontAwesomeIcon className='icon' icon={faGear} />Roles
+            </div>
+          </Link>
         </PermissionGuard>
         <div className='sidebar-text' style={{ color: 'var(--sidebar-text)' }}></div>
         

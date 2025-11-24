@@ -7,6 +7,7 @@ interface InputProps {
     name: string;
     value?: string | number | Date | undefined;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
     placeholder?: string;
     error?: string;
     required?: boolean;
@@ -16,12 +17,13 @@ interface InputProps {
     labelFont?:number;
 }
 
-const Input: React.FC<InputProps> = ({
+const Input: React.FC<InputProps> = React.memo(({
     type = 'text',
     label,
     name,
     value,
     onChange,
+    onFocus,
     placeholder,
     error,
     required = false,
@@ -58,6 +60,7 @@ const Input: React.FC<InputProps> = ({
                 ? { value: value instanceof Date ? value.toISOString().slice(0, 10) : value }
                 : {})}
               onChange={onChange}
+              onFocus={onFocus}
               placeholder={placeholder}
               disabled={disabled}
               className={`input-field ${error ? 'error' : ''}`}
@@ -66,6 +69,8 @@ const Input: React.FC<InputProps> = ({
             {error && <span className="error-message">{error}</span>}
         </div>
     );
-};
+});
+
+Input.displayName = 'Input';
 
 export default Input; 

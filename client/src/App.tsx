@@ -17,6 +17,8 @@ import { useSelector } from 'react-redux';
 import { selectUser } from './store/slices/authSlice';
 import Attendance from './views/attendance/index';
 import TimeTable from './views/timeTable/index';
+import StaffList from './views/staff/list';
+import NewStaff from './views/staff/new';
 
 function App() {
   const user = useSelector(selectUser);
@@ -44,6 +46,9 @@ function App() {
               <Route path="/incidents/incident/:id" element={<NewIncident/>} />
               <Route path="/attendance" element={<Attendance/>}/>
               <Route path="/time-table" element={<TimeTable/>}/>
+              <Route path="/staff" element={<StaffList/>}/>
+              <Route path="/staff/add" element={<NewStaff/>}/>
+              <Route path="/staff/edit/:id" element={<NewStaff/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
           </RouteGuard>
