@@ -197,78 +197,19 @@ const DataTable: React.FC<DataTableProps> = ({
                         case 'string':
                           return row[column.accessor]!=null? <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{String(row[column.accessor])}</div></td>:<td key={column.accessor}><div className={last?"last-td-div":"td-div"}>--</div></td>;
                         case 'date': {
-                          const now = new Date();
                           const date = new Date(row[column.accessor] as string | number | Date);
-                          const diffInMilliseconds = date.getTime() - now.getTime();
-                          const diffInMinutes = Math.floor(Math.abs(diffInMilliseconds) / (1000 * 60));
-                          const diffInHours = Math.floor(diffInMinutes / 60);
-                          const diffInDays = Math.floor(diffInHours / 24);
                           
-                          // Calculate months and years more accurately
-                          const yearsDiff = date.getFullYear() - now.getFullYear();
-                          const monthsDiff = (date.getFullYear() - now.getFullYear()) * 12 + (date.getMonth() - now.getMonth());
-
-                          let timeDisplay: string;
+                          // Format date as dd/mm/yyyy hh:mm:ss
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const year = date.getFullYear();
+                          const hours = String(date.getHours()).padStart(2, '0');
+                          const minutes = String(date.getMinutes()).padStart(2, '0');
+                          const seconds = String(date.getSeconds()).padStart(2, '0');
                           
-                          // Check if date is in the future
-                          if (diffInMilliseconds > 0) {
-                            // Future date
-                            if (yearsDiff > 0) {
-                              // More than a year in the future
-                              if (yearsDiff === 1 && monthsDiff <= 12) {
-                                timeDisplay = 'a year later';
-                              } else {
-                                timeDisplay = `${yearsDiff} year${yearsDiff > 1 ? 's' : ''} later`;
-                              }
-                            } else if (monthsDiff > 0) {
-                              // More than a month but less than a year
-                              if (monthsDiff === 1) {
-                                timeDisplay = 'a month later';
-                              } else {
-                                timeDisplay = `${monthsDiff} months later`;
-                              }
-                            } else if (diffInDays === 1) {
-                              timeDisplay = 'tomorrow';
-                            } else if (diffInDays > 1) {
-                              timeDisplay = `in ${diffInDays} days`;
-                            } else if (diffInHours === 1) {
-                              timeDisplay = 'in 1 hour';
-                            } else if (diffInHours > 1) {
-                              timeDisplay = `in ${diffInHours} hours`;
-                            } else if (diffInMinutes === 1) {
-                              timeDisplay = 'in 1 minute';
-                            } else if (diffInMinutes > 1) {
-                              timeDisplay = `in ${diffInMinutes} minutes`;
-                            } else {
-                              timeDisplay = 'in a moment';
-                            }
-                          } else {
-                            // Past date
-                            if (Math.abs(yearsDiff) > 0) {
-                              // More than a year ago
-                              if (Math.abs(yearsDiff) === 1 && Math.abs(monthsDiff) <= 12) {
-                                timeDisplay = 'a year ago';
-                              } else {
-                                timeDisplay = `${Math.abs(yearsDiff)} year${Math.abs(yearsDiff) > 1 ? 's' : ''} ago`;
-                              }
-                            } else if (Math.abs(monthsDiff) > 0) {
-                              // More than a month ago but less than a year
-                              if (Math.abs(monthsDiff) === 1) {
-                                timeDisplay = 'a month ago';
-                              } else {
-                                timeDisplay = `${Math.abs(monthsDiff)} months ago`;
-                              }
-                            } else if (diffInDays < 0 && Math.abs(diffInDays) > 0) {
-                              timeDisplay = `${Math.abs(diffInDays)} day${Math.abs(diffInDays) > 1 ? 's' : ''} ago`;
-                            } else if (diffInHours < 0 && Math.abs(diffInHours) > 0) {
-                              timeDisplay = `${Math.abs(diffInHours)} hour${Math.abs(diffInHours) > 1 ? 's' : ''} ago`;
-                            } else if (diffInMinutes < 0 && Math.abs(diffInMinutes) > 0) {
-                              timeDisplay = `${Math.abs(diffInMinutes)} minute${Math.abs(diffInMinutes) > 1 ? 's' : ''} ago`;
-                            } else {
-                              timeDisplay = 'just now';
-                            }
-                          }
-                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{timeDisplay}</div></td>;
+                          const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                          
+                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{formattedDate}</div></td>;
                         }
                         case 'template':
                           if (column.template) {
