@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import './DataTable.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPencil, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import Popup from '../Popup/Popup';
 import { PermissionGuard } from '../PermissionGuard';
 interface Column {
@@ -23,6 +23,7 @@ interface DataTableProps {
   PerPage?: (number: number) => void;
   onAdd?: () => void;
   onEdit:  (row: Record<string, any>) => void;
+  onView?: (row: Record<string, any>) => void;
   showActions?: boolean;
   addButton?: boolean;
   showSearch?:boolean;
@@ -39,6 +40,7 @@ const DataTable: React.FC<DataTableProps> = ({
   PerPage,
   onAdd,
   onEdit,
+  onView,
   showActions = true,
   addButton = true,
   showSearch=true,
@@ -183,9 +185,9 @@ const DataTable: React.FC<DataTableProps> = ({
                       let tdClass=''
                       if(cindex==0)
                         tdClass='first-td-class'
-                      if(cindex==columns.length-1)
+                      if(cindex==(columns.length-1)&&!showActions)
                         tdClass='last-td-class'
-                      const last=cindex==columns.length-1
+                      const last=((cindex==columns.length-1)&&!showActions)
                       if(column.accessor === 'num'){
                         return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{index + 1}</div></td>;
                       }
@@ -197,24 +199,76 @@ const DataTable: React.FC<DataTableProps> = ({
                         case 'date': {
                           const now = new Date();
                           const date = new Date(row[column.accessor] as string | number | Date);
-                          const diffInMilliseconds = now.getTime() - date.getTime();
-                          const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
+                          const diffInMilliseconds = date.getTime() - now.getTime();
+                          const diffInMinutes = Math.floor(Math.abs(diffInMilliseconds) / (1000 * 60));
                           const diffInHours = Math.floor(diffInMinutes / 60);
                           const diffInDays = Math.floor(diffInHours / 24);
+                          
+                          // Calculate months and years more accurately
+                          const yearsDiff = date.getFullYear() - now.getFullYear();
+                          const monthsDiff = (date.getFullYear() - now.getFullYear()) * 12 + (date.getMonth() - now.getMonth());
 
-                          let timeAgo;
-                          if (diffInDays > 30) {
-                            return <td className={tdClass} key={column.accessor}>{date.toLocaleDateString()}</td>;
-                          } else if (diffInDays > 0) {
-                            timeAgo = `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-                          } else if (diffInHours > 0) {
-                            timeAgo = `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-                          } else if (diffInMinutes > 0) {
-                            timeAgo = `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+                          let timeDisplay: string;
+                          
+                          // Check if date is in the future
+                          if (diffInMilliseconds > 0) {
+                            // Future date
+                            if (yearsDiff > 0) {
+                              // More than a year in the future
+                              if (yearsDiff === 1 && monthsDiff <= 12) {
+                                timeDisplay = 'a year later';
+                              } else {
+                                timeDisplay = `${yearsDiff} year${yearsDiff > 1 ? 's' : ''} later`;
+                              }
+                            } else if (monthsDiff > 0) {
+                              // More than a month but less than a year
+                              if (monthsDiff === 1) {
+                                timeDisplay = 'a month later';
+                              } else {
+                                timeDisplay = `${monthsDiff} months later`;
+                              }
+                            } else if (diffInDays === 1) {
+                              timeDisplay = 'tomorrow';
+                            } else if (diffInDays > 1) {
+                              timeDisplay = `in ${diffInDays} days`;
+                            } else if (diffInHours === 1) {
+                              timeDisplay = 'in 1 hour';
+                            } else if (diffInHours > 1) {
+                              timeDisplay = `in ${diffInHours} hours`;
+                            } else if (diffInMinutes === 1) {
+                              timeDisplay = 'in 1 minute';
+                            } else if (diffInMinutes > 1) {
+                              timeDisplay = `in ${diffInMinutes} minutes`;
+                            } else {
+                              timeDisplay = 'in a moment';
+                            }
                           } else {
-                            timeAgo = 'just now';
+                            // Past date
+                            if (Math.abs(yearsDiff) > 0) {
+                              // More than a year ago
+                              if (Math.abs(yearsDiff) === 1 && Math.abs(monthsDiff) <= 12) {
+                                timeDisplay = 'a year ago';
+                              } else {
+                                timeDisplay = `${Math.abs(yearsDiff)} year${Math.abs(yearsDiff) > 1 ? 's' : ''} ago`;
+                              }
+                            } else if (Math.abs(monthsDiff) > 0) {
+                              // More than a month ago but less than a year
+                              if (Math.abs(monthsDiff) === 1) {
+                                timeDisplay = 'a month ago';
+                              } else {
+                                timeDisplay = `${Math.abs(monthsDiff)} months ago`;
+                              }
+                            } else if (diffInDays < 0 && Math.abs(diffInDays) > 0) {
+                              timeDisplay = `${Math.abs(diffInDays)} day${Math.abs(diffInDays) > 1 ? 's' : ''} ago`;
+                            } else if (diffInHours < 0 && Math.abs(diffInHours) > 0) {
+                              timeDisplay = `${Math.abs(diffInHours)} hour${Math.abs(diffInHours) > 1 ? 's' : ''} ago`;
+                            } else if (diffInMinutes < 0 && Math.abs(diffInMinutes) > 0) {
+                              timeDisplay = `${Math.abs(diffInMinutes)} minute${Math.abs(diffInMinutes) > 1 ? 's' : ''} ago`;
+                            } else {
+                              timeDisplay = 'just now';
+                            }
                           }
-                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{timeAgo}</div></td>;
+                          return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{timeDisplay}</div></td>;
                         }
                         case 'template':
                           if (column.template) {
@@ -231,10 +285,22 @@ const DataTable: React.FC<DataTableProps> = ({
                   ))}
                   {showActions && (
                    <td className='last-td-class'>
+                    <div className="lasttd-div">
+                      {onView && (
+                        <button 
+                          id="view" 
+                          className="action-button"
+                          onClick={()=>onView(row)}
+                          title="View"
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                      )}
                       <button 
                         id="edit" 
                         className="action-button"
                         onClick={()=>onEdit(row)}
+                        title="Edit"
                       >
                         <FontAwesomeIcon icon={faPencil} />
                       </button>
@@ -242,9 +308,11 @@ const DataTable: React.FC<DataTableProps> = ({
                         id="delete" 
                         className="action-button"
                         onClick={()=>handleDelete(row)}
+                        title="Delete"
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
+                    </div>
                     </td>
                   )}
                 </tr>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
@@ -160,14 +160,36 @@ interface StaffData {
   medicalNeeds?: MedicalNeeds;
 }
 
-const NewStaff = () => {
+const EditStaff = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { executeRequest, loading } = useApiRequest();
   const [activeTab, setActiveTab] = useState('basic');
   
   // Ref to track focused input
   const focusedInputRef = useRef<{ name: string; selectionStart: number | null } | null>(null);
-  
+
+  const [staffData, setStaffData] = useState<StaffData>({
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    preferredName: '',
+    email: '',
+    phoneWork: '',
+    phoneMobile: '',
+    jobRole: '',
+    department: '',
+    startDate: '',
+    endDate: '',
+    address: {},
+    emergencyContacts: [],
+    dbs: {},
+    cpdTraining: [],
+    qualifications: [],
+    hr: [],
+    medicalNeeds: {},
+  });
+
   // Save focus state before render
   const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -235,27 +257,59 @@ const NewStaff = () => {
     setStaffData((prev) => ({ ...prev, endDate: e.target.value }));
   }, []);
 
-  const [staffData, setStaffData] = useState<StaffData>({
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    preferredName: '',
-    email: '',
-    phoneWork: '',
-    phoneMobile: '',
-    jobRole: '',
-    department: '',
-    startDate: '',
-    endDate: '',
-    address: {},
-    emergencyContacts: [],
-    dbs: {},
-    cpdTraining: [],
-    qualifications: [],
-    hr: [],
-    medicalNeeds: {},
-  });
+  // Redirect if no id
+  useEffect(() => {
+    if (!id) {
+      navigate('/staff');
+    }
+  }, [id, navigate]);
 
+  // Fetch staff data
+  const fetchStaff = async () => {
+    try {
+      const response = await executeRequest('get', `/staff/${id}`);
+      const profile = response.profile || {};
+      setStaffData({
+        firstName: profile.firstName || '',
+        middleName: profile.middleName || '',
+        lastName: profile.lastName || '',
+        preferredName: profile.preferredName || '',
+        email: response.email || '',
+        phoneWork: profile.phoneWork || '',
+        phoneMobile: profile.phoneMobile || '',
+        jobRole: profile.jobRole || '',
+        department: profile.department || '',
+        startDate: profile.startDate ? profile.startDate.split('T')[0] : '',
+        endDate: profile.endDate ? profile.endDate.split('T')[0] : '',
+        address: profile.address || {},
+        emergencyContacts: response.emergencyContacts || [],
+        dbs: response.dbs ? {
+          ...response.dbs,
+          rightToWork: response.dbs.rightToWork || {},
+          overseas: response.dbs.overseas || {},
+          childrenBarredListCheck: response.dbs.childrenBarredListCheck || {},
+          prohibitionFromTeaching: response.dbs.prohibitionFromTeaching || {},
+          prohibitionFromManagement: response.dbs.prohibitionFromManagement || {},
+          disqualificationUnderChildrenAct: response.dbs.disqualificationUnderChildrenAct || {},
+          disqualifiedByAssociation: response.dbs.disqualifiedByAssociation || {},
+        } : {},
+        cpdTraining: response.cpdTraining || [],
+        qualifications: response.qualifications || [],
+        hr: response.hr || [],
+        medicalNeeds: response.medicalNeeds || {},
+      });
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      alert('Failed to load staff data');
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      fetchStaff();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Helper function to clean empty date strings recursively
   const cleanEmptyDateStrings = (obj: unknown): unknown => {
@@ -305,9 +359,9 @@ const NewStaff = () => {
     const cleanedData = cleanEmptyDateStrings(staffData);
 
     try {
-      // Create new staff
-      await executeRequest('post', '/staff', cleanedData);
-      alert('Staff member created successfully!');
+      // Update existing staff
+      await executeRequest('patch', `/staff/${id}`, cleanedData);
+      alert('Staff member updated successfully!');
       navigate('/staff');
     } catch (error: unknown) {
       console.error('Error saving staff:', error);
@@ -2244,7 +2298,7 @@ const NewStaff = () => {
     <Layout>
       <div className="new-staff">
         <div className="new-staff-header">
-          <h1>Add New Staff Member</h1>
+          <h1>Edit Staff Member</h1>
         </div>
         
         <form onSubmit={handleSubmit} className="new-staff-form">
@@ -2255,12 +2309,13 @@ const NewStaff = () => {
           />
 
           <div className="form-actions">
-            <button type="button" onClick={handleCancel} className="btn-cancel">
-              Cancel
-            </button>
             <button type="submit" className="btn-submit" disabled={loading}>
               {loading ? 'Saving...' :'Save'}
             </button>
+            <button type="button" onClick={handleCancel} className="btn-cancel">
+              Cancel
+            </button>
+            
           </div>
         </form>
       </div>
@@ -2268,4 +2323,4 @@ const NewStaff = () => {
   );
 };
 
-export default NewStaff;
+export default EditStaff;

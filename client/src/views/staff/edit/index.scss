@@ -4,10 +4,10 @@
   margin: 0 auto;
 
   .new-staff-header {
-    margin-bottom: 2rem;
+    margin-bottom: 0.1rem;
 
     h1 {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 600;
       color: var(--main-text);
       margin: 0;
@@ -24,7 +24,6 @@
       padding: 1rem 0;
 
       .section-header {
-        
         // display: flex;
         // justify-content: space-between;
         align-items: center;
@@ -35,7 +34,6 @@
             color: var(--main-text);
           }
 
-        }
         .btn-add-contact {
           display: flex;
           align-items: center;
@@ -55,6 +53,7 @@
             transform: translateY(-1px);
           }
         }
+      }
 
       .empty-state {
         text-align: center;
@@ -167,7 +166,6 @@
     }
 
     .form-section {
-      // width: 100%;
       margin-bottom: 2rem;
       padding-bottom: 2rem;
       border-bottom: 1px solid var(--border-color);

@@ -30,7 +30,7 @@ const Input: React.FC<InputProps> = React.memo(({
     disabled = false,
     className = '',
     icon,
-    labelFont=20
+    labelFont=15
 }) => {
     
     return (

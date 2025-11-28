@@ -10,6 +10,7 @@
   --icon-filter: brightness(1) invert(1);
   --nav-icon-filter: brightness(0) invert(0);
   --edit-bg: #ffffff;
+  --view-bg:#ffffff;
   --delete-bg: #ffffff;
   --input-bg:#FAFAFA;
   --input-text:#231f3a;
@@ -35,6 +36,7 @@
   --icon-filter: brightness(0) invert(1);
   --nav-icon-filter: brightness(0) invert(1);
   --edit-bg: #231F3A;
+  --view-bg:#1E1A36;
   --delete-bg: #471717;
   --input-bg:#333249;
   --input-text:#ffffff;
