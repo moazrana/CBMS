@@ -197,7 +197,19 @@ const DataTable: React.FC<DataTableProps> = ({
                         case 'string':
                           return row[column.accessor]!=null? <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>{String(row[column.accessor])}</div></td>:<td key={column.accessor}><div className={last?"last-td-div":"td-div"}>--</div></td>;
                         case 'date': {
-                          const date = new Date(row[column.accessor] as string | number | Date);
+                          const dateValue = row[column.accessor];
+                          
+                          // Check if date is not available
+                          if (dateValue == null || dateValue === '') {
+                            return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>--</div></td>;
+                          }
+                          
+                          const date = new Date(dateValue as string | number | Date);
+                          
+                          // Check if date is invalid
+                          if (isNaN(date.getTime())) {
+                            return <td className={tdClass} key={column.accessor}><div className={last?"last-td-div":"td-div"}>--</div></td>;
+                          }
                           
                           // Format date as dd/mm/yyyy hh:mm:ss
                           const day = String(date.getDate()).padStart(2, '0');
