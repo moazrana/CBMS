@@ -8,6 +8,7 @@ import { SafeguardingPermissionsSeeder } from './safeguarding-permissions.seeder
 import { IncidentsPermissionsSeeder } from './incidents-permissions.seeder';
 import { AttendancePermissionsSeeder } from './attendance-permissions.seeder';
 import { StaffPermissionsSeeder } from './staff-permissions.seeder';
+import { StudentPermissionsSeeder } from './student-permissions.seeder';
 import { LocationSeeder } from './location.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { StudentSeeder } from './student.seeder';
@@ -23,6 +24,7 @@ export class SeederService {
     private readonly incidentsPermissionsSeeder: IncidentsPermissionsSeeder,
     private readonly attendancePermissionsSeeder: AttendancePermissionsSeeder,
     private readonly staffPermissionsSeeder: StaffPermissionsSeeder,
+    private readonly studentPermissionsSeeder: StudentPermissionsSeeder,
     private readonly rolesSeeder: RolesSeeder,
     private readonly usersSeeder: UsersSeeder,
     private readonly locationSeeder: LocationSeeder,
@@ -42,6 +44,7 @@ export class SeederService {
     await this.incidentsPermissionsSeeder.seed();
     await this.attendancePermissionsSeeder.seed();
     await this.staffPermissionsSeeder.seed();
+    await this.studentPermissionsSeeder.seed();
     await this.rolesSeeder.seed();
     await this.usersSeeder.seed();
     await this.locationSeeder.seed();

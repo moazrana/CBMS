@@ -649,21 +649,50 @@ export class StaffService {
 
     const existingProfile = (user.profile as StaffProfile | undefined);
 
-    // Update profile fields
-    const profileUpdates: Partial<StaffProfile> = {
-      ...(existingProfile || {}),
-      ...(updateStaffDto.firstName !== undefined && { firstName: updateStaffDto.firstName }),
-      ...(updateStaffDto.middleName !== undefined && { middleName: updateStaffDto.middleName }),
-      ...(updateStaffDto.lastName !== undefined && { lastName: updateStaffDto.lastName }),
-      ...(updateStaffDto.preferredName !== undefined && { preferredName: updateStaffDto.preferredName }),
-      ...(updateStaffDto.jobRole !== undefined && { jobRole: updateStaffDto.jobRole }),
-      ...(updateStaffDto.department !== undefined && { department: updateStaffDto.department }),
-      ...(updateStaffDto.startDate && { startDate: new Date(updateStaffDto.startDate) }),
-      ...(updateStaffDto.endDate && { endDate: new Date(updateStaffDto.endDate) }),
-      ...(updateStaffDto.phoneWork !== undefined && { phoneWork: updateStaffDto.phoneWork }),
-      ...(updateStaffDto.phoneMobile !== undefined && { phoneMobile: updateStaffDto.phoneMobile }),
-      ...(updateStaffDto.address !== undefined && { address: updateStaffDto.address }),
-    };
+    // Update profile fields - use markModified for nested objects
+    if (!user.profile) {
+      user.profile = {} as StaffProfile;
+    }
+
+    const profile = user.profile as StaffProfile;
+
+    // Update individual profile fields
+    if (updateStaffDto.firstName !== undefined) {
+      profile.firstName = updateStaffDto.firstName;
+    }
+    if (updateStaffDto.middleName !== undefined) {
+      profile.middleName = updateStaffDto.middleName;
+    }
+    if (updateStaffDto.lastName !== undefined) {
+      profile.lastName = updateStaffDto.lastName;
+    }
+    if (updateStaffDto.preferredName !== undefined) {
+      profile.preferredName = updateStaffDto.preferredName;
+    }
+    if (updateStaffDto.jobRole !== undefined) {
+      profile.jobRole = updateStaffDto.jobRole;
+    }
+    if (updateStaffDto.department !== undefined) {
+      profile.department = updateStaffDto.department;
+    }
+    if (updateStaffDto.startDate !== undefined) {
+      profile.startDate = updateStaffDto.startDate ? new Date(updateStaffDto.startDate) : undefined;
+    }
+    if (updateStaffDto.endDate !== undefined) {
+      profile.endDate = updateStaffDto.endDate ? new Date(updateStaffDto.endDate) : undefined;
+    }
+    if (updateStaffDto.phoneWork !== undefined) {
+      profile.phoneWork = updateStaffDto.phoneWork;
+    }
+    if (updateStaffDto.phoneMobile !== undefined) {
+      profile.phoneMobile = updateStaffDto.phoneMobile;
+    }
+    if (updateStaffDto.address !== undefined) {
+      profile.address = updateStaffDto.address;
+    }
+
+    // Mark profile as modified for Mongoose to detect changes
+    user.markModified('profile');
 
     // Update user email if provided
     if (updateStaffDto.email) {
@@ -672,9 +701,9 @@ export class StaffService {
 
     // Update user display name if name fields changed
     const needsNameUpdate =
-      updateStaffDto.firstName ||
-      updateStaffDto.lastName ||
-      updateStaffDto.preferredName;
+      updateStaffDto.firstName !== undefined ||
+      updateStaffDto.lastName !== undefined ||
+      updateStaffDto.preferredName !== undefined;
 
     if (needsNameUpdate) {
       const displayName = this.buildDisplayName(updateStaffDto, existingProfile);
@@ -682,9 +711,6 @@ export class StaffService {
         user.name = displayName;
       }
     }
-
-    // Update profile
-    user.profile = profileUpdates as StaffProfile;
 
     // Update emergency contacts if provided
     if (updateStaffDto.emergencyContacts !== undefined) {
@@ -810,6 +836,25 @@ export class StaffService {
       }
 
       user.dbs = dbsData;
+      // Mark DBS as modified for Mongoose to detect changes
+      user.markModified('dbs');
+    }
+
+    // Mark other nested objects as modified if they were updated
+    if (updateStaffDto.emergencyContacts !== undefined) {
+      user.markModified('emergencyContacts');
+    }
+    if (updateStaffDto.cpdTraining !== undefined) {
+      user.markModified('cpdTraining');
+    }
+    if (updateStaffDto.qualifications !== undefined) {
+      user.markModified('qualifications');
+    }
+    if (updateStaffDto.hr !== undefined) {
+      user.markModified('hr');
+    }
+    if (updateStaffDto.medicalNeeds !== undefined) {
+      user.markModified('medicalNeeds');
     }
 
     try {

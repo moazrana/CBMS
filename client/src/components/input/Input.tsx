@@ -8,6 +8,7 @@ interface InputProps {
     value?: string | number | Date | undefined;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
     placeholder?: string;
     error?: string;
     required?: boolean;
@@ -24,6 +25,7 @@ const Input: React.FC<InputProps> = React.memo(({
     value,
     onChange,
     onFocus,
+    onBlur,
     placeholder,
     error,
     required = false,
@@ -61,6 +63,7 @@ const Input: React.FC<InputProps> = React.memo(({
                 : {})}
               onChange={onChange}
               onFocus={onFocus}
+              onBlur={onBlur}
               placeholder={placeholder}
               disabled={disabled}
               className={`input-field ${error ? 'error' : ''}`}

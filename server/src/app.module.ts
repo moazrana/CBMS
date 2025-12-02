@@ -17,6 +17,7 @@ import { PeriodModule } from './period/period.module';
 import { ClassModule } from './class/class.module';
 import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { StudentsModule } from './students/students.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -56,6 +57,7 @@ import { AttendanceModule } from './attendance/attendance.module';
     ClassModule,
     StaffModule,
     AttendanceModule,
+    StudentsModule,
   ],
   providers: [
     // MailService

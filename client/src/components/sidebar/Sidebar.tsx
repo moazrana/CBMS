@@ -18,6 +18,7 @@ import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
 import timeTable from '../../assets/sidebar/timeTable.svg';
 import staff from '../../assets/dashboard/teachers.svg';
+import students from '../../assets/dashboard/students.svg';
 import { PermissionGuard } from '../PermissionGuard';
 
 export default function Sidebar() {
@@ -76,6 +77,14 @@ export default function Sidebar() {
             <div className='link'>
               <img src={staff} alt="logo" className='sidebar-icon' />
               Staff
+            </div>
+          </Link>
+        </PermissionGuard>
+        <PermissionGuard permission="read_student">
+          <Link to="/students" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={students} alt="logo" className='sidebar-icon' />
+              Students
             </div>
           </Link>
         </PermissionGuard>

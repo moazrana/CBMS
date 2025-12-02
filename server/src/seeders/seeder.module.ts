@@ -19,11 +19,13 @@ import { IncidentsPermissionsSeeder } from './incidents-permissions.seeder';
 import { AttendancePermissionsSeeder } from './attendance-permissions.seeder';
 import { TimetablePermissionsSeeder } from './timetable-permissions.seeder';
 import { StaffPermissionsSeeder } from './staff-permissions.seeder';
+import { StudentPermissionsSeeder } from './student-permissions.seeder';
 import { SafeguardingPermissionsSeedCommand } from './safeguarding-permissions-seed.command';
 import { IncidentsPermissionsSeedCommand } from './incidents-permissions-seed.command';
 import { AttendancePermissionsSeedCommand } from './attendance-permissions-seed.command';
 import { TimetablePermissionsSeedCommand } from './timetable-permissions-seed.command';
 import { StaffPermissionsSeedCommand } from './staff-permissions-seed.command';
+import { StudentPermissionsSeedCommand } from './student-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { TeacherSeeder } from './teacher.seeder';
@@ -57,11 +59,13 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
     AttendancePermissionsSeeder,
     TimetablePermissionsSeeder,
     StaffPermissionsSeeder,
+    StudentPermissionsSeeder,
     SafeguardingPermissionsSeedCommand,
     IncidentsPermissionsSeedCommand,
     AttendancePermissionsSeedCommand,
     TimetablePermissionsSeedCommand,
     StaffPermissionsSeedCommand,
+    StudentPermissionsSeedCommand,
     LocationSeeder,
     PeriodSeeder,
     SeederService, 

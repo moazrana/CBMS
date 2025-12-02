@@ -35,16 +35,18 @@ export class StaffController {
   async findAllStaff() {
     return this.staffService.findAll();
   }
+  
+  @Patch(':id')
+  async updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
+    console.log('updateStaffDto', updateStaffDto);
+    return this.staffService.update(id, updateStaffDto);
+  }
 
   @Get(':id')
   async findStaffById(@Param('id') id: string) {
     return this.staffService.findOne(id);
   }
 
-  @Patch(':id')
-  async updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
-    return this.staffService.update(id, updateStaffDto);
-  }
 
   @Delete(':id')
   async removeStaff(@Param('id') id: string) {
