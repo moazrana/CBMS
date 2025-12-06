@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import Input from '../../../components/input/Input';
-import TextField from '../../../components/textField/TextField';
 import Select from '../../../components/Select/Select';
-import Popup from '../../../components/Popup/Popup';
 import { Tabs } from '../../../components/Tabs/Tabs';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import './index.scss';
@@ -466,12 +462,16 @@ const NewStudent = () => {
             label="Sex"
             name="sex"
             value={studentData.personalInfo.sex || ''}
-            onChange={(e) => setStudentData((prev) => ({
-              ...prev,
-              personalInfo: { ...prev.personalInfo, sex: e.target.value as 'Male' | 'Female' | 'Unknown' }
-            }))}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
+            onChange={(e) => {
+              setStudentData((prev) => ({
+                ...prev,
+                personalInfo: { ...prev.personalInfo, sex: e.target.value as 'Male' | 'Female' | 'Unknown' }
+              }));
+              // Trigger autosave on change for Select component
+              setTimeout(() => {
+                handleAutosave();
+              }, 100);
+            }}
             options={[
               { value: '', label: 'Select...' },
               { value: 'Male', label: 'Male' },
