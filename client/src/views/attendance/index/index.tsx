@@ -9,7 +9,7 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import FilterSec from '../../../components/FilterSec/FilterSec';
-import Input from '../../../components/input/Input';
+import DateInput from '../../../components/dateInput/DateInput';
 import Calendar from '../../../assets/safeguarding/calendar.svg';
 import Period from '../../../assets/safeguarding/period.svg';
 import Staff from '../../../assets/safeguarding/student.svg';
@@ -268,10 +268,9 @@ const Index=()=>{
             <>
             <div className='inputs-div-att'>
                 <div className='input-div-attendance'>
-                    <Input
+                    <DateInput
                         name='date'
                         label='Date'
-                        type='date'
                         onChange={(e)=>{setFilterDate(e.target.value)}}
                         value={filterDate}
                         icon={Calendar}
@@ -578,8 +577,7 @@ const Index=()=>{
     }, []);
     return (
         <Layout
-            heading='Attendance'
-            note='Attendance & Leave Management.'
+            
             showPagination={true}
         >
             <div className="attendance-overview-body">

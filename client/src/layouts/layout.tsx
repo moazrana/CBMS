@@ -12,8 +12,6 @@ import { PermissionGuard } from '../components/PermissionGuard';
 
 type LayoutProps = {
   children: React.ReactNode;
-  heading?: string;
-  note?: string;
   showNew?: boolean;
   showPagination?: boolean;
   showFilter?: boolean;
@@ -29,8 +27,6 @@ type LayoutProps = {
 
 export default function Layout({
   children,
-  heading = '',
-  note = '',
   showNew = false,
   showPagination = false,
   showFilter = false,

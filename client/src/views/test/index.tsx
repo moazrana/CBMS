@@ -64,7 +64,7 @@ const TestPage: React.FC = () => {
   ];
   
   return (
-    <Layout heading="Test Page">
+    <Layout>
       <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
     </Layout>
   );

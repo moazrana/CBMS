@@ -15,10 +15,10 @@ import Calendar from "../../../assets/safeguarding/calendar.svg";
 import Period from "../../../assets/safeguarding/period.svg";
 import Location from "../../../assets/safeguarding/location.svg";
 import Teacher from "../../../assets/dashboard/teachers.svg";
-import Input from "../../../components/input/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { DropdownOption } from "../../../types/DropDownOption";
+import DateInput from "../../../components/dateInput/DateInput";
 const Index = () => {
     const [studentOptions, setStudentOptions] = useState<any[]>([]);
     const [student, setStudent] = useState<string>("");
@@ -100,11 +100,10 @@ const Index = () => {
                                         placeholder="Select Year Group"
                                         icon={YearGroup}
                                     />
-                                    <Input
+                                    <DateInput
                                         label="Start Date"
                                         name="startDate"
                                         value={startDate}
-                                        type="date"
                                         onChange={(e) => setStartDate(e.target.value)}
                                         placeholder="Select Start Date"
                                         icon={Calendar}
@@ -112,11 +111,10 @@ const Index = () => {
                                 </div>
                                 <div className="inputs-div">
                                     <div className="input-div">
-                                        <Input
+                                        <DateInput
                                             label="End Date"
                                             name="endDate"
                                             value={endDate}
-                                            type="date"
                                             onChange={(e) => setEndDate(e.target.value)}
                                             placeholder="Select End Date"
                                             icon={Calendar}
@@ -318,8 +316,6 @@ const Index = () => {
     }, []);
     return (
         <Layout
-            heading="Time Table"
-            note="Easily Switch Between & Staff Timetables. Plan, Print Or Update With One Click"
             showNew={false}
             showPagination={true}
         >

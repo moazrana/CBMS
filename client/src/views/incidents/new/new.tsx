@@ -21,7 +21,7 @@ import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import { useLocation,useParams, useNavigate } from 'react-router-dom';
 import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
-
+import DateInput from '../../../components/dateInput/DateInput';
 
 const New=()=>{
     const navigate = useNavigate();
@@ -210,8 +210,6 @@ const New=()=>{
 
     return (
         <Layout
-            heading='Incident Management'
-            note='LOG INCIDENT'
             showFilter={false}
             showNew={false}
             showPagination={false}
@@ -273,10 +271,9 @@ const New=()=>{
                                 />
                             </div>
                             <div className="input-div">
-                                <Input
+                                <DateInput
                                     name='doi'
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{setDoi(e.target.value)}}
-                                    type='date'
                                     value={doi}
                                     label='Date of incident'
                                     icon={Calender}
@@ -685,8 +682,7 @@ const New=()=>{
                                         </label>
                                         {meeting.haveDate && (
                                            <div className='meeting-input-div'>
-                                                <Input
-                                                    type="date"
+                                                <DateInput
                                                     name={`meeting-date-${idx}`}
                                                     value={meeting.date ? meeting.date.toISOString().split('T')[0] : ''}
                                                     onChange={e => {

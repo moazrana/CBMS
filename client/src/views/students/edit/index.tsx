@@ -11,7 +11,7 @@ import { Tabs } from '../../../components/Tabs/Tabs';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import './index.scss';
-
+import DateInput from '../../../components/dateInput/DateInput';
 interface StudentData {
   personalInfo: {
     legalFirstName: string;
@@ -509,10 +509,9 @@ const EditStudent = () => {
         </div>
 
         <div className="form-row">
-          <Input
+          <DateInput
             label="Date of Birth"
             name="dateOfBirth"
-            type="date"
             value={studentData.personalInfo.dateOfBirth || ''}
             onChange={(e) => setStudentData((prev) => ({
               ...prev,
@@ -557,7 +556,6 @@ const EditStudent = () => {
           <Input
             label="Admission Date"
             name="admissionDate"
-            type="date"
             value={studentData.personalInfo.admissionDate || ''}
             onChange={(e) => setStudentData((prev) => ({
               ...prev,

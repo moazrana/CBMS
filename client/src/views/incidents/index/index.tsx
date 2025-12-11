@@ -59,7 +59,7 @@ import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import Print from '../../../assets/safeguarding/printed.svg'
 import Email from '../../../assets/safeguarding/email.svg'
 import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
-
+import DateInput from '../../../components/dateInput/DateInput';
 interface incident{
     student:string
     location:string
@@ -1292,8 +1292,7 @@ const Index=()=>{
                                 </label>
                                 {meeting.haveDate && (
                                     <div className='meeting-input-div'>
-                                        <Input
-                                            type="date"
+                                        <DateInput
                                             name={`meeting-date-${idx}`}
                                             value={meeting.date
                                                 ? (typeof meeting.date === 'string'
@@ -1554,8 +1553,6 @@ const Index=()=>{
     return (
         <>
             <Layout
-                heading='Incident Management'
-                note='Log Track, & Resolve Student Incidents With Ease.'
                 showNew={true}
                 showPagination={true}
                 showFilter={true}

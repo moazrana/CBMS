@@ -6,7 +6,7 @@ import Select from '../../../components/Select/Select';
 import { Tabs } from '../../../components/Tabs/Tabs';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import './index.scss';
-
+import DateInput from '../../../components/dateInput/DateInput';
 interface StudentData {
   personalInfo: {
     legalFirstName: string;
@@ -482,7 +482,6 @@ const NewStudent = () => {
           <Input
             label="Date of Birth"
             name="dateOfBirth"
-            type="date"
             value={studentData.personalInfo.dateOfBirth || ''}
             onChange={(e) => setStudentData((prev) => ({
               ...prev,
@@ -524,10 +523,9 @@ const NewStudent = () => {
           <h2>Admission Information</h2>
         </div>
         <div className="form-row">
-          <Input
+          <DateInput
             label="Admission Date"
             name="admissionDate"
-            type="date"
             value={studentData.personalInfo.admissionDate || ''}
             onChange={(e) => setStudentData((prev) => ({
               ...prev,
