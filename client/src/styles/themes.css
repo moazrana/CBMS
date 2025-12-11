@@ -22,6 +22,7 @@
   --cancel-bg:#F6F6F6;
   --standard-padding:30px;
   --event-bg:transparent;
+  --label-font-size:15px;
 }
 
 :root[data-theme="dark"] {
@@ -49,4 +50,5 @@
   --standard-padding:30px;
   --secondary-background:#201C37;
   --event-bg:transparent;
+  --label-font-size:15px;
 } 

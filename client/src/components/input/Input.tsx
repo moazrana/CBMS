@@ -2,7 +2,7 @@ import React from 'react';
 import './Input.scss';
 
 interface InputProps {
-    type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'time' | 'file';
+    type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'time' | 'file';
     label?: string;
     name: string;
     value?: string | number | Date | undefined;
@@ -32,7 +32,7 @@ const Input: React.FC<InputProps> = React.memo(({
     disabled = false,
     className = '',
     icon,
-    labelFont=15
+    labelFont='var(--label-font-size)'
 }) => {
     
     return (

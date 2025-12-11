@@ -304,125 +304,122 @@ export class User extends Document {
   }])
   emergencyContacts?: EmergencyContact[];
 
-  @Prop({
-    type: {
-      staffMember: { type: String },
-      checkLevel: { type: String },
-      applicationSentDate: { type: Date },
-      applicationReferenceNumber: { type: String },
-      certificateDateReceived: { type: Date },
-      certificateNumber: { type: String },
-      dbsSeenBy: { type: String },
-      dbsCheckedDate: { type: Date },
-      updateServiceId: { type: String },
-      updateServiceCheckDate: { type: Date },
-      rightToWork: {
-        type: {
-          type: { type: String },
-          verifiedDate: { type: Date },
-          verifiedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
+  @Prop([{
+    staffMember: { type: String },
+    checkLevel: { type: String },
+    applicationSentDate: { type: Date },
+    applicationReferenceNumber: { type: String },
+    certificateDateReceived: { type: Date },
+    certificateNumber: { type: String },
+    dbsSeenBy: { type: String },
+    dbsCheckedDate: { type: Date },
+    updateServiceId: { type: String },
+    updateServiceCheckDate: { type: Date },
+    rightToWork: {
+      type: {
+        type: { type: String },
+        verifiedDate: { type: Date },
+        verifiedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
           },
-          expiry: { type: Date },
-          evidence: { type: String },
+          _id: false,
         },
-        _id: false,
+        expiry: { type: Date },
+        evidence: { type: String },
       },
-      overseas: {
-        type: {
-          checkNeeded: { type: Boolean },
-          evidenceProduced: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-          uploadEvidence: { type: String },
-        },
-        _id: false,
-      },
-      childrenBarredListCheck: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      prohibitionFromTeaching: {
-        type: {
-          checked: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      prohibitionFromManagement: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-          notes: { type: String },
-        },
-        _id: false,
-      },
-      disqualificationUnderChildrenAct: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      disqualifiedByAssociation: {
-        type: {
-          completed: { type: Boolean },
-          checkedDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
+      _id: false,
     },
-    _id: false,
-  })
-  dbs?: DBS;
+    overseas: {
+      type: {
+        checkNeeded: { type: Boolean },
+        evidenceProduced: { type: Boolean },
+        checkDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+        uploadEvidence: { type: String },
+      },
+      _id: false,
+    },
+    childrenBarredListCheck: {
+      type: {
+        completed: { type: Boolean },
+        checkDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+      },
+      _id: false,
+    },
+    prohibitionFromTeaching: {
+      type: {
+        checked: { type: Boolean },
+        checkDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+      },
+      _id: false,
+    },
+    prohibitionFromManagement: {
+      type: {
+        completed: { type: Boolean },
+        checkDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+        notes: { type: String },
+      },
+      _id: false,
+    },
+    disqualificationUnderChildrenAct: {
+      type: {
+        completed: { type: Boolean },
+        checkDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+      },
+      _id: false,
+    },
+    disqualifiedByAssociation: {
+      type: {
+        completed: { type: Boolean },
+        checkedDate: { type: Date },
+        checkedBy: {
+          type: {
+            _id: { type: Types.ObjectId },
+            name: { type: String },
+          },
+          _id: false,
+        },
+      },
+      _id: false,
+    },
+  }])
+  dbs?: DBS[];
 
   @Prop([
     {

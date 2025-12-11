@@ -1,6 +1,6 @@
 .new-staff {
-  padding: 2rem;
-  max-width: 1200px;
+  // padding: 2rem;
+  // max-width: 1200px;
   margin: 0 auto;
 
   .new-staff-header {
@@ -17,7 +17,7 @@
   .new-staff-form {
     background: var(--card-bg);
     border-radius: 8px;
-    padding: 2rem;
+    // padding: 2rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
     .tab-content {
@@ -41,7 +41,7 @@
           padding: 0.5rem 1rem;
           background: var(--primary-color);
           color: white;
-          border: none;
+          // border: none;
           border-radius: 6px;
           font-size: 0.9rem;
           font-weight: 500;
@@ -51,6 +51,7 @@
           &:hover {
             opacity: 0.9;
             transform: translateY(-1px);
+            border: 1px solid var(--main-text);
           }
         }
       }
@@ -182,6 +183,9 @@
       }
 
       .form-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;  
         background-color: #FF7C95;
         padding: 0.75rem 1rem;
         border-radius: 6px;
@@ -255,7 +259,7 @@
 
     .form-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
       margin-bottom: 1.5rem;
 
@@ -279,7 +283,7 @@
         gap: 0.5rem;
         color: var(--main-text);
         cursor: pointer;
-        font-size: 1rem;
+        font-size: var(--label-font-size);
 
         input[type="checkbox"] {
           width: 18px;
@@ -379,5 +383,23 @@
       }
     }
   }
+  .add-btn-div{
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+  .btn-add-dbs{
+    color: var(--main-text);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+  }
 }
-
+.file-input-label{
+  font-size: var(--label-font-size);
+}

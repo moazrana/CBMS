@@ -51,11 +51,8 @@ export default function Layout({
             <div className="app-main">
                 <Navbar />
                 <main className="app-content">
-                  <div className="head">
-                    <div className="heading-div">
-                      <p className='heading'>{heading}</p>
-                      <p className='note'>{note}</p>
-                    </div>
+                  {/* <div className="head"> */}
+                    
                     <div className="btn-div">
                       {showNew && (
                         <PermissionGuard permission={newPermission}>
@@ -110,7 +107,7 @@ export default function Layout({
                         </>
                       )}
                     </div>
-                  </div>
+                  {/* </div> */}
                   {openFilters&&(
                     <div id="filter-div">
                       <div className="filter-header-div">

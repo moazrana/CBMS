@@ -316,6 +316,69 @@ export class StaffService {
     return Object.keys(result).length > 0 ? result : undefined;
   }
 
+  private async mapDBSDtoToDBS(dbsDto: any): Promise<DBS> {
+    const dbsData: DBS = {
+      staffMember: dbsDto.staffMember,
+      checkLevel: dbsDto.checkLevel,
+      applicationSentDate: dbsDto.applicationSentDate ? new Date(dbsDto.applicationSentDate) : undefined,
+      applicationReferenceNumber: dbsDto.applicationReferenceNumber,
+      certificateDateReceived: dbsDto.certificateDateReceived ? new Date(dbsDto.certificateDateReceived) : undefined,
+      certificateNumber: dbsDto.certificateNumber,
+      dbsSeenBy: dbsDto.dbsSeenBy,
+      dbsCheckedDate: dbsDto.dbsCheckedDate ? new Date(dbsDto.dbsCheckedDate) : undefined,
+      updateServiceId: dbsDto.updateServiceId,
+      updateServiceCheckDate: dbsDto.updateServiceCheckDate ? new Date(dbsDto.updateServiceCheckDate) : undefined,
+    };
+
+    const rightToWork = await this.mapRightToWorkData(dbsDto.rightToWork);
+    if (rightToWork) {
+      dbsData.rightToWork = rightToWork;
+    }
+
+    const overseas = await this.mapOverseasData(dbsDto.overseas);
+    if (overseas) {
+      dbsData.overseas = overseas;
+    }
+
+    const childrenBarredListCheck = await this.mapChildrenBarredListData(
+      dbsDto.childrenBarredListCheck,
+    );
+    if (childrenBarredListCheck) {
+      dbsData.childrenBarredListCheck = childrenBarredListCheck;
+    }
+
+    const prohibitionFromTeaching = await this.mapProhibitionFromTeachingData(
+      dbsDto.prohibitionFromTeaching,
+    );
+    if (prohibitionFromTeaching) {
+      dbsData.prohibitionFromTeaching = prohibitionFromTeaching;
+    }
+
+    const prohibitionFromManagement = await this.mapProhibitionFromManagementData(
+      dbsDto.prohibitionFromManagement,
+    );
+    if (prohibitionFromManagement) {
+      dbsData.prohibitionFromManagement = prohibitionFromManagement;
+    }
+
+    const disqualificationUnderChildrenAct =
+      await this.mapDisqualificationUnderChildrenActData(
+        dbsDto.disqualificationUnderChildrenAct,
+      );
+    if (disqualificationUnderChildrenAct) {
+      dbsData.disqualificationUnderChildrenAct = disqualificationUnderChildrenAct;
+    }
+
+    const disqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
+      dbsDto.disqualifiedByAssociation,
+    );
+    if (disqualifiedByAssociation) {
+      dbsData.disqualifiedByAssociation = disqualifiedByAssociation;
+    }
+
+    return dbsData;
+  }
+
   private mapTrainingRecords(
     records?: TrainingRecordInput[],
   ): TrainingRecord[] | undefined {
@@ -478,67 +541,13 @@ export class StaffService {
     }
     
     // Set DBS information if provided
-    if (createStaffDto.dbs) {
-      const dbsData: DBS = {
-        staffMember: createStaffDto.dbs.staffMember,
-        checkLevel: createStaffDto.dbs.checkLevel,
-        applicationSentDate: createStaffDto.dbs.applicationSentDate ? new Date(createStaffDto.dbs.applicationSentDate) : undefined,
-        applicationReferenceNumber: createStaffDto.dbs.applicationReferenceNumber,
-        certificateDateReceived: createStaffDto.dbs.certificateDateReceived ? new Date(createStaffDto.dbs.certificateDateReceived) : undefined,
-        certificateNumber: createStaffDto.dbs.certificateNumber,
-        dbsSeenBy: createStaffDto.dbs.dbsSeenBy,
-        dbsCheckedDate: createStaffDto.dbs.dbsCheckedDate ? new Date(createStaffDto.dbs.dbsCheckedDate) : undefined,
-        updateServiceId: createStaffDto.dbs.updateServiceId,
-        updateServiceCheckDate: createStaffDto.dbs.updateServiceCheckDate ? new Date(createStaffDto.dbs.updateServiceCheckDate) : undefined,
-      };
-
-      const rightToWork = await this.mapRightToWorkData(createStaffDto.dbs.rightToWork);
-      if (rightToWork) {
-        dbsData.rightToWork = rightToWork;
+    if (createStaffDto.dbs && createStaffDto.dbs.length > 0) {
+      const dbsArray: DBS[] = [];
+      for (const dbsDto of createStaffDto.dbs) {
+        const dbsData = await this.mapDBSDtoToDBS(dbsDto);
+        dbsArray.push(dbsData);
       }
-
-      const overseas = await this.mapOverseasData(createStaffDto.dbs.overseas);
-      if (overseas) {
-        dbsData.overseas = overseas;
-      }
-
-      const childrenBarredListCheck = await this.mapChildrenBarredListData(
-        createStaffDto.dbs.childrenBarredListCheck,
-      );
-      if (childrenBarredListCheck) {
-        dbsData.childrenBarredListCheck = childrenBarredListCheck;
-      }
-
-      const prohibitionFromTeaching = await this.mapProhibitionFromTeachingData(
-        createStaffDto.dbs.prohibitionFromTeaching,
-      );
-      if (prohibitionFromTeaching) {
-        dbsData.prohibitionFromTeaching = prohibitionFromTeaching;
-      }
-
-      const prohibitionFromManagement = await this.mapProhibitionFromManagementData(
-        createStaffDto.dbs.prohibitionFromManagement,
-      );
-      if (prohibitionFromManagement) {
-        dbsData.prohibitionFromManagement = prohibitionFromManagement;
-      }
-
-      const disqualificationUnderChildrenAct =
-        await this.mapDisqualificationUnderChildrenActData(
-          createStaffDto.dbs.disqualificationUnderChildrenAct,
-        );
-      if (disqualificationUnderChildrenAct) {
-        dbsData.disqualificationUnderChildrenAct = disqualificationUnderChildrenAct;
-      }
-
-      const disqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
-        createStaffDto.dbs.disqualifiedByAssociation,
-      );
-      if (disqualifiedByAssociation) {
-        dbsData.disqualifiedByAssociation = disqualifiedByAssociation;
-      }
-
-      user.dbs = dbsData;
+      user.dbs = dbsArray;
     }
     
     await user.save();
@@ -736,106 +745,117 @@ export class StaffService {
 
     // Update DBS information if provided
     if (updateStaffDto.dbs !== undefined) {
-      const dbsData: DBS = {
-        ...(user.dbs || {}),
-        ...(updateStaffDto.dbs.staffMember !== undefined && { staffMember: updateStaffDto.dbs.staffMember }),
-        ...(updateStaffDto.dbs.checkLevel !== undefined && { checkLevel: updateStaffDto.dbs.checkLevel }),
-        ...(updateStaffDto.dbs.applicationSentDate && { applicationSentDate: new Date(updateStaffDto.dbs.applicationSentDate) }),
-        ...(updateStaffDto.dbs.applicationReferenceNumber !== undefined && { applicationReferenceNumber: updateStaffDto.dbs.applicationReferenceNumber }),
-        ...(updateStaffDto.dbs.certificateDateReceived && { certificateDateReceived: new Date(updateStaffDto.dbs.certificateDateReceived) }),
-        ...(updateStaffDto.dbs.certificateNumber !== undefined && { certificateNumber: updateStaffDto.dbs.certificateNumber }),
-        ...(updateStaffDto.dbs.dbsSeenBy !== undefined && { dbsSeenBy: updateStaffDto.dbs.dbsSeenBy }),
-        ...(updateStaffDto.dbs.dbsCheckedDate && { dbsCheckedDate: new Date(updateStaffDto.dbs.dbsCheckedDate) }),
-        ...(updateStaffDto.dbs.updateServiceId !== undefined && { updateServiceId: updateStaffDto.dbs.updateServiceId }),
-        ...(updateStaffDto.dbs.updateServiceCheckDate && { updateServiceCheckDate: new Date(updateStaffDto.dbs.updateServiceCheckDate) }),
-      };
+      // Handle backward compatibility: if a single object is sent, convert to array
+      const dbsArray = Array.isArray(updateStaffDto.dbs) ? updateStaffDto.dbs : [updateStaffDto.dbs];
+      
+      const mappedDBSArray: DBS[] = [];
+      for (const dbsDto of dbsArray) {
+        // If updating existing DBS, merge with existing data
+        const existingDBS = Array.isArray(user.dbs) && user.dbs.length > 0 ? user.dbs[0] : undefined;
+        
+        const dbsData: DBS = {
+          ...(existingDBS || {}),
+          ...(dbsDto.staffMember !== undefined && { staffMember: dbsDto.staffMember }),
+          ...(dbsDto.checkLevel !== undefined && { checkLevel: dbsDto.checkLevel }),
+          ...(dbsDto.applicationSentDate && { applicationSentDate: new Date(dbsDto.applicationSentDate) }),
+          ...(dbsDto.applicationReferenceNumber !== undefined && { applicationReferenceNumber: dbsDto.applicationReferenceNumber }),
+          ...(dbsDto.certificateDateReceived && { certificateDateReceived: new Date(dbsDto.certificateDateReceived) }),
+          ...(dbsDto.certificateNumber !== undefined && { certificateNumber: dbsDto.certificateNumber }),
+          ...(dbsDto.dbsSeenBy !== undefined && { dbsSeenBy: dbsDto.dbsSeenBy }),
+          ...(dbsDto.dbsCheckedDate && { dbsCheckedDate: new Date(dbsDto.dbsCheckedDate) }),
+          ...(dbsDto.updateServiceId !== undefined && { updateServiceId: dbsDto.updateServiceId }),
+          ...(dbsDto.updateServiceCheckDate && { updateServiceCheckDate: new Date(dbsDto.updateServiceCheckDate) }),
+        };
 
-      if (updateStaffDto.dbs.rightToWork !== undefined) {
-        const mappedRightToWork = await this.mapRightToWorkData(
-          updateStaffDto.dbs.rightToWork,
-          user.dbs?.rightToWork,
-        );
-        if (mappedRightToWork) {
-          dbsData.rightToWork = mappedRightToWork;
-        } else {
-          delete dbsData.rightToWork;
-        }
-      }
-
-      if (updateStaffDto.dbs.overseas !== undefined) {
-        const mappedOverseas = await this.mapOverseasData(
-          updateStaffDto.dbs.overseas,
-          user.dbs?.overseas,
-        );
-        if (mappedOverseas) {
-          dbsData.overseas = mappedOverseas;
-        } else {
-          delete dbsData.overseas;
-        }
-      }
-
-      if (updateStaffDto.dbs.childrenBarredListCheck !== undefined) {
-        const mappedChildrenBarredList = await this.mapChildrenBarredListData(
-          updateStaffDto.dbs.childrenBarredListCheck,
-          user.dbs?.childrenBarredListCheck,
-        );
-        if (mappedChildrenBarredList) {
-          dbsData.childrenBarredListCheck = mappedChildrenBarredList;
-        } else {
-          delete dbsData.childrenBarredListCheck;
-        }
-      }
-
-      if (updateStaffDto.dbs.prohibitionFromTeaching !== undefined) {
-        const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
-          updateStaffDto.dbs.prohibitionFromTeaching,
-          user.dbs?.prohibitionFromTeaching,
-        );
-        if (mappedProhibitionTeaching) {
-          dbsData.prohibitionFromTeaching = mappedProhibitionTeaching;
-        } else {
-          delete dbsData.prohibitionFromTeaching;
-        }
-      }
-
-      if (updateStaffDto.dbs.prohibitionFromManagement !== undefined) {
-        const mappedProhibitionManagement = await this.mapProhibitionFromManagementData(
-          updateStaffDto.dbs.prohibitionFromManagement,
-          user.dbs?.prohibitionFromManagement,
-        );
-        if (mappedProhibitionManagement) {
-          dbsData.prohibitionFromManagement = mappedProhibitionManagement;
-        } else {
-          delete dbsData.prohibitionFromManagement;
-        }
-      }
-
-      if (updateStaffDto.dbs.disqualificationUnderChildrenAct !== undefined) {
-        const mappedDisqualificationChildrenAct =
-          await this.mapDisqualificationUnderChildrenActData(
-            updateStaffDto.dbs.disqualificationUnderChildrenAct,
-            user.dbs?.disqualificationUnderChildrenAct,
+        if (dbsDto.rightToWork !== undefined) {
+          const mappedRightToWork = await this.mapRightToWorkData(
+            dbsDto.rightToWork,
+            existingDBS?.rightToWork,
           );
-        if (mappedDisqualificationChildrenAct) {
-          dbsData.disqualificationUnderChildrenAct = mappedDisqualificationChildrenAct;
-        } else {
-          delete dbsData.disqualificationUnderChildrenAct;
+          if (mappedRightToWork) {
+            dbsData.rightToWork = mappedRightToWork;
+          } else {
+            delete dbsData.rightToWork;
+          }
         }
+
+        if (dbsDto.overseas !== undefined) {
+          const mappedOverseas = await this.mapOverseasData(
+            dbsDto.overseas,
+            existingDBS?.overseas,
+          );
+          if (mappedOverseas) {
+            dbsData.overseas = mappedOverseas;
+          } else {
+            delete dbsData.overseas;
+          }
+        }
+
+        if (dbsDto.childrenBarredListCheck !== undefined) {
+          const mappedChildrenBarredList = await this.mapChildrenBarredListData(
+            dbsDto.childrenBarredListCheck,
+            existingDBS?.childrenBarredListCheck,
+          );
+          if (mappedChildrenBarredList) {
+            dbsData.childrenBarredListCheck = mappedChildrenBarredList;
+          } else {
+            delete dbsData.childrenBarredListCheck;
+          }
+        }
+
+        if (dbsDto.prohibitionFromTeaching !== undefined) {
+          const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
+            dbsDto.prohibitionFromTeaching,
+            existingDBS?.prohibitionFromTeaching,
+          );
+          if (mappedProhibitionTeaching) {
+            dbsData.prohibitionFromTeaching = mappedProhibitionTeaching;
+          } else {
+            delete dbsData.prohibitionFromTeaching;
+          }
+        }
+
+        if (dbsDto.prohibitionFromManagement !== undefined) {
+          const mappedProhibitionManagement = await this.mapProhibitionFromManagementData(
+            dbsDto.prohibitionFromManagement,
+            existingDBS?.prohibitionFromManagement,
+          );
+          if (mappedProhibitionManagement) {
+            dbsData.prohibitionFromManagement = mappedProhibitionManagement;
+          } else {
+            delete dbsData.prohibitionFromManagement;
+          }
+        }
+
+        if (dbsDto.disqualificationUnderChildrenAct !== undefined) {
+          const mappedDisqualificationChildrenAct =
+            await this.mapDisqualificationUnderChildrenActData(
+              dbsDto.disqualificationUnderChildrenAct,
+              existingDBS?.disqualificationUnderChildrenAct,
+            );
+          if (mappedDisqualificationChildrenAct) {
+            dbsData.disqualificationUnderChildrenAct = mappedDisqualificationChildrenAct;
+          } else {
+            delete dbsData.disqualificationUnderChildrenAct;
+          }
+        }
+
+        if (dbsDto.disqualifiedByAssociation !== undefined) {
+          const mappedDisqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
+            dbsDto.disqualifiedByAssociation,
+            existingDBS?.disqualifiedByAssociation,
+          );
+          if (mappedDisqualifiedByAssociation) {
+            dbsData.disqualifiedByAssociation = mappedDisqualifiedByAssociation;
+          } else {
+            delete dbsData.disqualifiedByAssociation;
+          }
+        }
+
+        mappedDBSArray.push(dbsData);
       }
 
-      if (updateStaffDto.dbs.disqualifiedByAssociation !== undefined) {
-        const mappedDisqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
-          updateStaffDto.dbs.disqualifiedByAssociation,
-          user.dbs?.disqualifiedByAssociation,
-        );
-        if (mappedDisqualifiedByAssociation) {
-          dbsData.disqualifiedByAssociation = mappedDisqualifiedByAssociation;
-        } else {
-          delete dbsData.disqualifiedByAssociation;
-        }
-      }
-
-      user.dbs = dbsData;
+      user.dbs = mappedDBSArray;
       // Mark DBS as modified for Mongoose to detect changes
       user.markModified('dbs');
     }

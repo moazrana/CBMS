@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
+import TextField from '../../../components/textField/TextField';
+import Popup from '../../../components/Popup/Popup';
 import { Tabs } from '../../../components/Tabs/Tabs';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 import './index.scss';
 
 interface StudentData {
@@ -365,17 +370,17 @@ const EditStudent = () => {
       // Clean data
       const cleanedData = cleanEmptyDateStrings(currentData);
 
-      // Perform autosave - always update in edit mode
-      executeRequest('patch', `/students/${currentId}`, cleanedData)
+      // Perform autosave - use API directly to avoid triggering loading state
+      api.patch(`/students/${currentId}`, cleanedData)
         .then((response) => {
-          console.log('Autosave successful:', response);
+          console.log('Autosave successful:', response.data);
         })
         .catch((error) => {
           // Silently log autosave errors
           console.error('Autosave error:', error);
         });
     }, 100); // Small delay to ensure state is updated
-  }, [executeRequest, cleanEmptyDateStrings, id]);
+  }, [cleanEmptyDateStrings, id]);
 
   const handleCancel = () => {
     navigate('/students');
@@ -400,13 +405,6 @@ const EditStudent = () => {
     setStudentData((prev) => ({
       ...prev,
       personalInfo: { ...prev.personalInfo, lastName: e.target.value }
-    }));
-  }, []);
-
-  const handlePreferredNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setStudentData((prev) => ({
-      ...prev,
-      personalInfo: { ...prev.personalInfo, preferredName: e.target.value }
     }));
   }, []);
 
@@ -449,9 +447,6 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Last Name *"
             name="lastName"
@@ -461,14 +456,10 @@ const EditStudent = () => {
             onBlur={handleAutosave}
             required
           />
-          <Input
-            label="Preferred Name"
-            name="preferredName"
-            value={studentData.personalInfo.preferredName || ''}
-            onChange={handlePreferredNameChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
+        </div>
+        
+        <div className="form-row">
+          
         </div>
 
         <div className="form-row">
@@ -494,9 +485,6 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-
-        <div className="form-row">
           <Select
             label="Sex"
             name="sex"
@@ -518,6 +506,9 @@ const EditStudent = () => {
               { value: 'Unknown', label: 'Unknown' },
             ]}
           />
+        </div>
+
+        <div className="form-row">
           <Input
             label="Date of Birth"
             name="dateOfBirth"
@@ -530,14 +521,6 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-      </div>
-
-      <div className="form-section">
-        <div className="form-heading">
-          <h2>Contact Information</h2>
-        </div>
-        <div className="form-row">
           <Input
             label="Email"
             name="email"
@@ -557,6 +540,14 @@ const EditStudent = () => {
           />
         </div>
       </div>
+
+      {/* <div className="form-section">
+        <div className="form-heading">
+          <h2>Contact Information</h2>
+        </div>
+        <div className="form-row">
+        </div>
+      </div> */}
 
       <div className="form-section">
         <div className="form-heading">
@@ -586,9 +577,6 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Ethnicity"
             name="ethnicity"
@@ -600,6 +588,9 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
+        </div>
+        
+        <div className="form-row">
           <Input
             label="Photo URL"
             name="photo"
@@ -614,23 +605,457 @@ const EditStudent = () => {
         </div>
       </div>
     </div>
-  ), [studentData, handleLegalFirstNameChange, handleMiddleNameChange, handleLastNameChange, handlePreferredNameChange, handleEmailChange, handleMobileChange, saveFocus, handleAutosave]);
+  ), [studentData, handleLegalFirstNameChange, handleMiddleNameChange, handleLastNameChange, handleEmailChange, handleMobileChange, saveFocus, handleAutosave]);
 
   const BasicInfoTab = () => BasicInfoTabContent;
 
-  // Parents Tab - simplified for now, can be expanded
-  const ParentsTab = () => (
-    <div className="tab-content">
-      <div className="form-section">
-        <div className="form-heading">
-          <h2>Parents/Guardians</h2>
+  // Parents Tab
+  const ParentsTab = () => {
+    const parents = studentData.parents || [];
+    const [isParentPopupOpen, setIsParentPopupOpen] = useState(false);
+    const [editingParentIndex, setEditingParentIndex] = useState<number | null>(null);
+    type ParentType = NonNullable<StudentData['parents']>[0];
+    const [currentParent, setCurrentParent] = useState<ParentType>({
+      salutation: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      relationship: '',
+      priority: 'Primary',
+      sex: 'Unknown',
+      email: '',
+      homePhone: '',
+      mobile: '',
+      workPhone: '',
+      alternateHomeNo: '',
+      parentalResponsibility: false,
+      doNotContact: false,
+      parentLivesWithStudent: false,
+      estrangedParent: false,
+      copyInLetters: false,
+      address: {},
+      notes: '',
+    });
+
+    const openAddParentPopup = () => {
+      setCurrentParent({
+        salutation: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        relationship: '',
+        priority: 'Primary',
+        sex: 'Unknown',
+        email: '',
+        homePhone: '',
+        mobile: '',
+        workPhone: '',
+        alternateHomeNo: '',
+        parentalResponsibility: false,
+        doNotContact: false,
+        parentLivesWithStudent: false,
+        estrangedParent: false,
+        copyInLetters: false,
+        address: {},
+        notes: '',
+      });
+      setEditingParentIndex(null);
+      setIsParentPopupOpen(true);
+    };
+
+    const openEditParentPopup = (index: number) => {
+      setCurrentParent({ ...parents[index] });
+      setEditingParentIndex(index);
+      setIsParentPopupOpen(true);
+    };
+
+    const closeParentPopup = () => {
+      setIsParentPopupOpen(false);
+      setEditingParentIndex(null);
+      setCurrentParent({
+        salutation: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        relationship: '',
+        priority: 'Primary',
+        sex: 'Unknown',
+        email: '',
+        homePhone: '',
+        mobile: '',
+        workPhone: '',
+        alternateHomeNo: '',
+        parentalResponsibility: false,
+        doNotContact: false,
+        parentLivesWithStudent: false,
+        estrangedParent: false,
+        copyInLetters: false,
+        address: {},
+        notes: '',
+      });
+    };
+
+    const saveParent = () => {
+      const updatedParents = [...parents];
+      
+      if (editingParentIndex !== null) {
+        // Update existing parent
+        updatedParents[editingParentIndex] = { ...currentParent };
+      } else {
+        // Add new parent
+        updatedParents.push({ ...currentParent });
+      }
+
+      setStudentData({
+        ...studentData,
+        parents: updatedParents,
+      });
+      
+      closeParentPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
+    };
+
+    const removeParent = (index: number) => {
+      if (window.confirm('Are you sure you want to remove this parent?')) {
+        setStudentData({
+          ...studentData,
+          parents: parents.filter((_, i) => i !== index),
+        });
+        
+        // Trigger autosave after removal
+        setTimeout(() => {
+          handleAutosave();
+        }, 100);
+      }
+    };
+
+    return (
+      <div className="tab-content">
+        <div className="form-section">
+          <div className="section-header">
+            <div className="form-heading">
+              <h2>Parents/Guardians</h2>
+              <button
+                type="button"
+                className="btn-add-contact"
+                onClick={openAddParentPopup}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Parent
+              </button>
+            </div>
+          </div>
+
+          {parents.length === 0 ? (
+            <div className="empty-state">
+              <p>No parents added. Click "Add Parent" to add one.</p>
+            </div>
+          ) : (
+            <div className="contacts-table-container">
+              <table className="contacts-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Relationship</th>
+                    <th>Priority</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Home Phone</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parents.map((parent, index) => (
+                    <tr key={index}>
+                      <td>{[parent.salutation, parent.firstName, parent.middleName, parent.lastName].filter(Boolean).join(' ') || 'N/A'}</td>
+                      <td>{parent.relationship || 'N/A'}</td>
+                      <td>{parent.priority || 'N/A'}</td>
+                      <td>{parent.email || 'N/A'}</td>
+                      <td>{parent.mobile || 'N/A'}</td>
+                      <td>{parent.homePhone || 'N/A'}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            className="btn-edit-contact"
+                            onClick={() => openEditParentPopup(index)}
+                            title="Edit"
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-remove-contact"
+                            onClick={() => removeParent(index)}
+                            title="Delete"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-        <div className="empty-state">
-          <p>Parent management will be implemented here</p>
-        </div>
+
+        <Popup
+          isOpen={isParentPopupOpen}
+          onClose={closeParentPopup}
+          title={editingParentIndex !== null ? 'Edit Parent' : 'Add Parent'}
+          width="1200px"
+          confirmText="Save"
+          cancelText="Cancel"
+          onConfirm={saveParent}
+        >
+          <form className="contact-popup-form">
+            <div className="form-row">
+              <Input
+                label="Salutation"
+                name="parent-salutation"
+                value={currentParent.salutation || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, salutation: e.target.value })}
+              />
+              <Input
+                label="First Name"
+                name="parent-first-name"
+                value={currentParent.firstName || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, firstName: e.target.value })}
+              />
+              <Input
+                label="Middle Name"
+                name="parent-middle-name"
+                value={currentParent.middleName || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, middleName: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row">
+              <Input
+                label="Last Name"
+                name="parent-last-name"
+                value={currentParent.lastName || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, lastName: e.target.value })}
+              />
+              <Input
+                label="Relationship"
+                name="parent-relationship"
+                value={currentParent.relationship || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, relationship: e.target.value })}
+              />
+              <Select
+                label="Priority"
+                name="parent-priority"
+                value={currentParent.priority || 'Primary'}
+                onChange={(e) => setCurrentParent({ ...currentParent, priority: e.target.value as 'Primary' | 'Secondary' | 'Emergency' })}
+                options={[
+                  { value: 'Primary', label: 'Primary' },
+                  { value: 'Secondary', label: 'Secondary' },
+                  { value: 'Emergency', label: 'Emergency' },
+                ]}
+              />
+            </div>
+
+            <div className="form-row">
+              <Select
+                label="Sex"
+                name="parent-sex"
+                value={currentParent.sex || 'Unknown'}
+                onChange={(e) => setCurrentParent({ ...currentParent, sex: e.target.value as 'Male' | 'Female' | 'Unknown' })}
+                options={[
+                  { value: 'Male', label: 'Male' },
+                  { value: 'Female', label: 'Female' },
+                  { value: 'Unknown', label: 'Unknown' },
+                ]}
+              />
+              <Input
+                label="Email"
+                name="parent-email"
+                type="email"
+                value={currentParent.email || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, email: e.target.value })}
+              />
+              <Input
+                label="Home Phone"
+                name="parent-home-phone"
+                value={currentParent.homePhone || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, homePhone: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row">
+              <Input
+                label="Mobile"
+                name="parent-mobile"
+                value={currentParent.mobile || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, mobile: e.target.value })}
+              />
+              <Input
+                label="Work Phone"
+                name="parent-work-phone"
+                value={currentParent.workPhone || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, workPhone: e.target.value })}
+              />
+              <Input
+                label="Alternate Home No"
+                name="parent-alternate-home"
+                value={currentParent.alternateHomeNo || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, alternateHomeNo: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="checkbox-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={currentParent.parentalResponsibility || false}
+                    onChange={(e) => setCurrentParent({ ...currentParent, parentalResponsibility: e.target.checked })}
+                  />
+                  Parental Responsibility
+                </label>
+              </div>
+              <div className="checkbox-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={currentParent.doNotContact || false}
+                    onChange={(e) => setCurrentParent({ ...currentParent, doNotContact: e.target.checked })}
+                  />
+                  Do Not Contact
+                </label>
+              </div>
+              <div className="checkbox-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={currentParent.parentLivesWithStudent || false}
+                    onChange={(e) => setCurrentParent({ ...currentParent, parentLivesWithStudent: e.target.checked })}
+                  />
+                  Parent Lives With Student
+                </label>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="checkbox-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={currentParent.estrangedParent || false}
+                    onChange={(e) => setCurrentParent({ ...currentParent, estrangedParent: e.target.checked })}
+                  />
+                  Estranged Parent
+                </label>
+              </div>
+              <div className="checkbox-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={currentParent.copyInLetters || false}
+                    onChange={(e) => setCurrentParent({ ...currentParent, copyInLetters: e.target.checked })}
+                  />
+                  Copy in Letters
+                </label>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Address</h2>
+              </div>
+              <div className="form-row">
+                <Input
+                  label="Apartment"
+                  name="parent-address-apartment"
+                  value={currentParent.address?.apartment || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, apartment: e.target.value } })}
+                />
+                <Input
+                  label="House Name"
+                  name="parent-address-house-name"
+                  value={currentParent.address?.houseName || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, houseName: e.target.value } })}
+                />
+                <Input
+                  label="House Number"
+                  name="parent-address-house-number"
+                  value={currentParent.address?.houseNumber || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, houseNumber: e.target.value } })}
+                />
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="Street"
+                  name="parent-address-street"
+                  value={currentParent.address?.street || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, street: e.target.value } })}
+                />
+                <Input
+                  label="Town/City"
+                  name="parent-address-town-city"
+                  value={currentParent.address?.townCity || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, townCity: e.target.value } })}
+                />
+                <Input
+                  label="District"
+                  name="parent-address-district"
+                  value={currentParent.address?.district || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, district: e.target.value } })}
+                />
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="County"
+                  name="parent-address-county"
+                  value={currentParent.address?.county || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, county: e.target.value } })}
+                />
+                <Input
+                  label="Administrative Area"
+                  name="parent-address-administrative-area"
+                  value={currentParent.address?.administrativeArea || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, administrativeArea: e.target.value } })}
+                />
+                <Input
+                  label="Post Town"
+                  name="parent-address-post-town"
+                  value={currentParent.address?.postTown || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, postTown: e.target.value } })}
+                />
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="Postcode"
+                  name="parent-address-postcode"
+                  value={currentParent.address?.postcode || ''}
+                  onChange={(e) => setCurrentParent({ ...currentParent, address: { ...currentParent.address, postcode: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <TextField
+                label="Notes"
+                name="parent-notes"
+                value={currentParent.notes || ''}
+                onChange={(e) => setCurrentParent({ ...currentParent, notes: e.target.value })}
+                rows={4}
+              />
+            </div>
+          </form>
+        </Popup>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Emergency Contacts Tab
   const EmergencyContactsTab = () => (

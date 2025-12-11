@@ -465,9 +465,10 @@ export class CreateStaffDto {
   emergencyContacts?: EmergencyContactDto[];
 
   @IsOptional()
-  @ValidateNested()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => DBSDto)
-  dbs?: DBSDto;
+  dbs?: DBSDto[];
 
   @IsOptional()
   @IsArray()

@@ -18,11 +18,11 @@ import { selectUser } from './store/slices/authSlice';
 import Attendance from './views/attendance/index';
 import TimeTable from './views/timeTable/index';
 import StaffList from './views/staff/list';
-import NewStaff from './views/staff/new';
 import EditStaff from './views/staff/edit';
 import StudentList from './views/students/list';
 import NewStudent from './views/students/new';
 import EditStudent from './views/students/edit';
+import TestPage from './views/test';
 
 function App() {
   const user = useSelector(selectUser);
@@ -51,11 +51,12 @@ function App() {
               <Route path="/attendance" element={<Attendance/>}/>
               <Route path="/time-table" element={<TimeTable/>}/>
               <Route path="/staff" element={<StaffList/>}/>
-              <Route path="/staff/add" element={<NewStaff/>}/>
+              <Route path="/staff/add" element={<EditStaff/>}/>
               <Route path="/staff/edit/:id" element={<EditStaff/>}/>
               <Route path="/students" element={<StudentList/>}/>
               <Route path="/students/add" element={<NewStudent/>}/>
               <Route path="/students/edit/:id" element={<EditStudent/>}/>
+              <Route path="/test" element={<TestPage/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
           </RouteGuard>

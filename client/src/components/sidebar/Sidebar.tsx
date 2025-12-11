@@ -91,7 +91,7 @@ export default function Sidebar() {
         <Link to="/sbt" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={studentBehavior} alt="logo" className='sidebar-icon' />
-            Student Behavior Trends
+            Student Behavior
           </div>
         </Link>
         <hr />

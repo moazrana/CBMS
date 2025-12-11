@@ -3,16 +3,22 @@
     color: var(--main-text);
 }
 .welcome{
+    margin-top: 20px;
+    margin-left: 20px;
     font-size: x-large;
     font-weight: 500;
     margin-bottom: 0px;
 }
 .note{
+    margin-left: 20px;
     font-size: small;
     margin-top: 0px;
 }
 .counts{
     // background-color: aqua;
+    width: 97%;
+    margin-top: 20px;
+    margin-left: 20px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -65,4 +71,7 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+}
+.div-one{
+    width: 100%;
 }

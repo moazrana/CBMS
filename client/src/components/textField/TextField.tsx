@@ -7,10 +7,12 @@ interface TextFieldProps {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   error?: string;
   rows?: number;
   icon?:string;
+  textFieldWidth?:string;
 }
 
 const TextField: React.FC<TextFieldProps> = ({
@@ -18,10 +20,12 @@ const TextField: React.FC<TextFieldProps> = ({
   name,
   value,
   onChange,
+  onBlur,
   placeholder,
   error,
   rows = 4,
-  icon
+  icon,
+  textFieldWidth='90%'
 }) => {
   return (
     <div className="text-field">
@@ -46,9 +50,11 @@ const TextField: React.FC<TextFieldProps> = ({
         name={name}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={error ? 'error' : ''}
         rows={rows}
+        style={{ width: textFieldWidth }}
       />
       {error && <span className="error-message">{error}</span>}
     </div>

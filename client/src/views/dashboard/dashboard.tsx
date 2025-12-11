@@ -3,6 +3,7 @@ import Layout from '../../layouts/layout';
 import students from '../../assets/dashboard/students.svg'
 import teachers from '../../assets/dashboard/teachers.svg'
 import staff from '../../assets/dashboard/staff.svg'
+import pic from '../../assets/dashboard/pic.png'
 import './dashboard.scss'
 const Dashboard: React.FC = () => {
     return (
@@ -39,7 +40,10 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className='graphs'>
+                <div className='div-one'>
+                    <img src={pic} alt="graph" style={{ width: '100%', height: '100%' }} />
+                </div>
+                {/* <div className='graphs'>
                     <div className="overview-div attendance">
                         <div className="overview-header">
                             <div className="overview-heading">
@@ -48,7 +52,7 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> */}
             </div>
         </Layout>
     );

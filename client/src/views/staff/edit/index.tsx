@@ -8,7 +8,9 @@ import TextField from '../../../components/textField/TextField';
 import Select from '../../../components/Select/Select';
 import Popup from '../../../components/Popup/Popup';
 import { Tabs } from '../../../components/Tabs/Tabs';
+import DateInput from '../../../components/dateInput/DateInput';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 import './index.scss';
 
 interface Address {
@@ -153,7 +155,7 @@ interface StaffData {
   endDate?: string;
   address?: Address;
   emergencyContacts?: EmergencyContact[];
-  dbs?: DBS;
+  dbs?: DBS[];
   cpdTraining?: TrainingRecord[];
   qualifications?: Qualification[];
   hr?: HRRecord[];
@@ -161,10 +163,11 @@ interface StaffData {
 }
 
 const EditStaff = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const { executeRequest, loading } = useApiRequest();
   const [activeTab, setActiveTab] = useState('basic');
+  const isEditMode = !!id;
   
   // Ref to track focused input
   const focusedInputRef = useRef<{ name: string; selectionStart: number | null } | null>(null);
@@ -183,13 +186,13 @@ const EditStaff = () => {
     endDate: '',
     address: {},
     emergencyContacts: [],
-    dbs: {},
+    dbs: [],
     cpdTraining: [],
     qualifications: [],
     hr: [],
     medicalNeeds: {},
   });
-  
+
   // Save focus state before render
   const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
     const input = e.target;
@@ -199,15 +202,29 @@ const EditStaff = () => {
     };
   }, []);
   
-  // Restore focus after render
+  // Restore focus after render - but only if input actually lost focus
   useEffect(() => {
     if (focusedInputRef.current) {
       const input = document.querySelector(`input[name="${focusedInputRef.current.name}"]`) as HTMLInputElement;
-      if (input) {
-        input.focus();
-        if (focusedInputRef.current.selectionStart !== null) {
-          input.setSelectionRange(focusedInputRef.current.selectionStart, focusedInputRef.current.selectionStart);
-        }
+      // Only restore focus if:
+      // 1. Input exists
+      // 2. Input is NOT currently focused (user is not actively typing)
+      // 3. Input is NOT a date type (to avoid interfering with date picker)
+      if (input && 
+          document.activeElement !== input &&
+          input.type !== 'date') {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          // Double-check the input is still not focused (user might have clicked elsewhere)
+          if (focusedInputRef.current && 
+              document.activeElement !== input &&
+              input.type !== 'date') {
+            input.focus();
+            if (focusedInputRef.current.selectionStart !== null) {
+              input.setSelectionRange(focusedInputRef.current.selectionStart, focusedInputRef.current.selectionStart);
+            }
+          }
+        });
       }
     }
   });
@@ -223,10 +240,6 @@ const EditStaff = () => {
   
   const handleLastNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setStaffData((prev) => ({ ...prev, lastName: e.target.value }));
-  }, []);
-  
-  const handlePreferredNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setStaffData((prev) => ({ ...prev, preferredName: e.target.value }));
   }, []);
   
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,12 +270,13 @@ const EditStaff = () => {
     setStaffData((prev) => ({ ...prev, endDate: e.target.value }));
   }, []);
 
-  // Redirect if no id
+  // Redirect if no id in edit mode
   useEffect(() => {
-    if (!id) {
+    console.log('use effect 1')
+    if (isEditMode && !id) {
       navigate('/staff');
     }
-  }, [id, navigate]);
+  }, [isEditMode, id, navigate]);
 
   // Fetch staff data
   const fetchStaff = async () => {
@@ -283,16 +297,42 @@ const EditStaff = () => {
         endDate: profile.endDate ? profile.endDate.split('T')[0] : '',
         address: profile.address || {},
         emergencyContacts: response.emergencyContacts || [],
-        dbs: response.dbs ? {
-          ...response.dbs,
-          rightToWork: response.dbs.rightToWork || {},
-          overseas: response.dbs.overseas || {},
-          childrenBarredListCheck: response.dbs.childrenBarredListCheck || {},
-          prohibitionFromTeaching: response.dbs.prohibitionFromTeaching || {},
-          prohibitionFromManagement: response.dbs.prohibitionFromManagement || {},
-          disqualificationUnderChildrenAct: response.dbs.disqualificationUnderChildrenAct || {},
-          disqualifiedByAssociation: response.dbs.disqualifiedByAssociation || {},
-        } : {},
+        dbs: Array.isArray(response.dbs) ? response.dbs.map((dbsItem: DBS) => ({
+          ...dbsItem,
+          applicationSentDate: dbsItem.applicationSentDate ? dbsItem.applicationSentDate.split('T')[0] : undefined,
+          certificateDateReceived: dbsItem.certificateDateReceived ? dbsItem.certificateDateReceived.split('T')[0] : undefined,
+          dbsCheckedDate: dbsItem.dbsCheckedDate ? dbsItem.dbsCheckedDate.split('T')[0] : undefined,
+          updateServiceCheckDate: dbsItem.updateServiceCheckDate ? dbsItem.updateServiceCheckDate.split('T')[0] : undefined,
+          rightToWork: dbsItem.rightToWork ? {
+            ...dbsItem.rightToWork,
+            verifiedDate: dbsItem.rightToWork.verifiedDate ? dbsItem.rightToWork.verifiedDate.split('T')[0] : undefined,
+            expiry: dbsItem.rightToWork.expiry ? dbsItem.rightToWork.expiry.split('T')[0] : undefined,
+          } : {},
+          overseas: dbsItem.overseas ? {
+            ...dbsItem.overseas,
+            checkDate: dbsItem.overseas.checkDate ? dbsItem.overseas.checkDate.split('T')[0] : undefined,
+          } : {},
+          childrenBarredListCheck: dbsItem.childrenBarredListCheck ? {
+            ...dbsItem.childrenBarredListCheck,
+            checkDate: dbsItem.childrenBarredListCheck.checkDate ? dbsItem.childrenBarredListCheck.checkDate.split('T')[0] : undefined,
+          } : {},
+          prohibitionFromTeaching: dbsItem.prohibitionFromTeaching ? {
+            ...dbsItem.prohibitionFromTeaching,
+            checkDate: dbsItem.prohibitionFromTeaching.checkDate ? dbsItem.prohibitionFromTeaching.checkDate.split('T')[0] : undefined,
+          } : {},
+          prohibitionFromManagement: dbsItem.prohibitionFromManagement ? {
+            ...dbsItem.prohibitionFromManagement,
+            checkDate: dbsItem.prohibitionFromManagement.checkDate ? dbsItem.prohibitionFromManagement.checkDate.split('T')[0] : undefined,
+          } : {},
+          disqualificationUnderChildrenAct: dbsItem.disqualificationUnderChildrenAct ? {
+            ...dbsItem.disqualificationUnderChildrenAct,
+            checkDate: dbsItem.disqualificationUnderChildrenAct.checkDate ? dbsItem.disqualificationUnderChildrenAct.checkDate.split('T')[0] : undefined,
+          } : {},
+          disqualifiedByAssociation: dbsItem.disqualifiedByAssociation ? {
+            ...dbsItem.disqualifiedByAssociation,
+            checkedDate: dbsItem.disqualifiedByAssociation.checkedDate ? dbsItem.disqualifiedByAssociation.checkedDate.split('T')[0] : undefined,
+          } : {},
+        })) : [],
         cpdTraining: response.cpdTraining || [],
         qualifications: response.qualifications || [],
         hr: response.hr || [],
@@ -305,11 +345,15 @@ const EditStaff = () => {
   };
 
   useEffect(() => {
-    if (id) {
+    console.log('use effect 2')
+    if (isEditMode && id) {
       fetchStaff();
+      // Set staffId for edit mode
+      setStaffId(id);
+      staffIdRef.current = id;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isEditMode]);
 
   // Helper function to clean empty date strings recursively
   const cleanEmptyDateStrings = useCallback((obj: unknown): unknown => {
@@ -346,24 +390,30 @@ const EditStaff = () => {
     return obj;
   }, []);
 
+  // Track if staff has been created (for autosave in new mode) or use id in edit mode
+  const [staffId, setStaffId] = useState<string | null>(id || null);
   const staffDataRef = useRef(staffData);
+  const staffIdRef = useRef(staffId);
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
+    console.log('use effect 3')
     staffDataRef.current = staffData;
   }, [staffData]);
+
+  useEffect(() => {
+    console.log('use effect 4')
+    staffIdRef.current = staffId;
+  }, [staffId]);
 
   const handleSubmit = async (e?: React.FormEvent, isAutosave: boolean = false) => {
     if (e) {
     e.preventDefault();
     }
 
-    if (!id) {
-      return;
-    }
-
-    // Use ref for autosave to get latest state, or state for manual save
+    // Use refs for autosave to get latest state, or state for manual save
     const currentData = isAutosave ? staffDataRef.current : staffData;
+    const currentId = isAutosave ? staffIdRef.current : staffId;
 
     // Skip validation for autosave
     if (!isAutosave) {
@@ -383,12 +433,23 @@ const EditStaff = () => {
     const cleanedData = cleanEmptyDateStrings(currentData);
 
     try {
-        // Update existing staff
-        await executeRequest('patch', `/staff/${id}`, cleanedData);
+      if (currentId) {
+        // Update existing staff (edit mode or autosave after initial creation)
+        await executeRequest('patch', `/staff/${currentId}`, cleanedData);
+      } else {
+        // Create new staff
+        const response = await executeRequest('post', '/staff', cleanedData);
+        // Store the created staff ID for future autosaves
+        if (response && response._id) {
+          const newId = response._id;
+          setStaffId(newId);
+          staffIdRef.current = newId;
+        }
+      }
 
       // Only show alerts and navigate for manual saves
       if (!isAutosave) {
-        alert('Staff member updated successfully!');
+        alert(currentId ? 'Staff member updated successfully!' : 'Staff member created successfully!');
       navigate('/staff');
       }
     } catch (error: unknown) {
@@ -418,24 +479,36 @@ const EditStaff = () => {
 
     // Use setTimeout to ensure state updates are processed
     setTimeout(() => {
-      // Only autosave if we have an id and minimum required data
-      if (!id || !staffDataRef.current.firstName || !staffDataRef.current.email) {
+      // Use refs to get latest state without dependencies
+      const currentData = staffDataRef.current;
+      const currentId = staffIdRef.current;
+
+      // Skip if required fields are missing
+      if (!currentData.firstName || !currentData.email) {
         return;
       }
-
-      const currentData = staffDataRef.current;
 
       // Clean data: convert empty date strings to undefined recursively
       const cleanedData = cleanEmptyDateStrings(currentData);
 
-      // Perform autosave silently
-      executeRequest('patch', `/staff/${id}`, cleanedData)
+      // Perform autosave - use API directly to avoid triggering loading state
+      const method = currentId ? 'patch' : 'post';
+      const url = currentId ? `/staff/${currentId}` : '/staff';
+      
+      api[method](url, cleanedData)
+        .then((response) => {
+          if (!currentId && response.data && response.data._id) {
+            const newId = response.data._id;
+            setStaffId(newId);
+            staffIdRef.current = newId;
+          }
+        })
         .catch((error) => {
           // Silently log autosave errors
           console.error('Autosave error:', error);
         });
     }, 100); // Small delay to ensure state is updated
-  }, [id, executeRequest, cleanEmptyDateStrings]);
+  }, [cleanEmptyDateStrings]);
 
   const handleCancel = () => {
     navigate('/staff');
@@ -446,7 +519,7 @@ const EditStaff = () => {
     <div className="tab-content">
       <div className="form-section">
         <div className="form-heading">
-        <h2>Personal Information</h2>
+          <h2>Personal Information</h2>
         </div>
         <div className="form-row">
           <Input
@@ -466,9 +539,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Last Name"
             name="lastName"
@@ -477,20 +547,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-          <Input
-            label="Preferred Name"
-            name="preferredName"
-            value={staffData.preferredName || ''}
-            onChange={handlePreferredNameChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
-        </div>
-      </div>
-
-      <div className="form-section">
-        <div className="form-heading">
-        <h2>Contact Information</h2>
         </div>
         <div className="form-row">
           <Input
@@ -511,9 +567,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Mobile Phone"
             name="phoneMobile"
@@ -522,68 +575,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-      </div>
-
-      <div className="form-section">
-        <div className="form-heading">
-        <h2>Employment Information</h2>
-        </div>
-        <div className="form-row">
-          <Input
-            label="Job Role"
-            name="jobRole"
-            value={staffData.jobRole || ''}
-            onChange={handleJobRoleChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
-        </div>
-        
-        <div className="form-row">
-          <Input
-            label="Department"
-            name="department"
-            value={staffData.department || ''}
-            onChange={handleDepartmentChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
-          <Input
-            label="Start Date"
-            name="startDate"
-            type="date"
-            value={staffData.startDate || ''}
-            onChange={handleStartDateChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
-        </div>
-        
-        <div className="form-row">
-          <Input
-            label="End Date"
-            name="endDate"
-            type="date"
-            value={staffData.endDate || ''}
-            onChange={handleEndDateChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
-          />
-        </div>
-      </div>
-    </div>
-  ), [staffData, handleFirstNameChange, handleMiddleNameChange, handleLastNameChange, handlePreferredNameChange, handleEmailChange, handlePhoneWorkChange, handlePhoneMobileChange, handleJobRoleChange, handleDepartmentChange, handleStartDateChange, handleEndDateChange, saveFocus, handleAutosave]);
-
-  const BasicInfoTab = () => BasicInfoTabContent;
-
-  const AddressTab = () => (
-    <div className="tab-content">
-      <div className="form-section">
-        <div className="form-heading">
-        <h2>Address Information</h2>
-        </div>
-        <div className="form-row">
           <Input
             label="Address Line 1"
             name="addressLine1"
@@ -606,9 +597,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="City"
             name="city"
@@ -631,9 +619,6 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Postal Code"
             name="postalCode"
@@ -645,11 +630,155 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
+        </div>
+        {/* <div className="form-row">
           
+          <Input
+            label="Preferred Name"
+            name="preferredName"
+            value={staffData.preferredName || ''}
+            onChange={handlePreferredNameChange}
+            onFocus={saveFocus}
+            onBlur={handleAutosave}
+          />
+        </div> */}
+      </div>
+
+      {/* <div className="form-section"> */}
+        {/* <div className="form-heading">
+        <h2>Contact Information</h2>
+        </div> */}
+        
+        
+        {/* <div className="form-row">
+          
+        </div> */}
+      {/* </div> */}
+
+      <div className="form-section">
+        <div className="form-heading">
+        <h2>Employment Information</h2>
+        </div>
+        <div className="form-row">
+          <Input
+            label="Job Role"
+            name="jobRole"
+            value={staffData.jobRole || ''}
+            onChange={handleJobRoleChange}
+            onFocus={saveFocus}
+            onBlur={handleAutosave}
+          />
+          <Input
+            label="Department"
+            name="department"
+            value={staffData.department || ''}
+            onChange={handleDepartmentChange}
+            onFocus={saveFocus}
+            onBlur={handleAutosave}
+          />
+        </div>
+        
+        {/* <div className="form-row">
+        </div> */}
+        
+        <div className="form-row">
+          <DateInput
+            label="Start Date"
+            name="startDate"
+            value={staffData.startDate || ''}
+            onChange={handleStartDateChange}
+            onFocus={saveFocus}
+            onBlur={handleAutosave}
+          />
+         
+          <DateInput
+            label="End Date"
+            name="endDate"
+            value={staffData.endDate || ''}
+            onChange={handleEndDateChange}
+            onFocus={saveFocus}
+            onBlur={handleAutosave}
+          />
         </div>
       </div>
     </div>
-  );
+  ), [staffData, handleFirstNameChange, handleMiddleNameChange, handleLastNameChange, handleEmailChange, handlePhoneWorkChange, handlePhoneMobileChange, handleJobRoleChange, handleDepartmentChange, handleStartDateChange, handleEndDateChange, saveFocus, handleAutosave]);
+
+  const BasicInfoTab = () => BasicInfoTabContent;
+
+  // const AddressTab = () => (
+  //   <div className="tab-content">
+  //     <div className="form-section">
+  //       <div className="form-heading">
+  //       <h2>Address Information</h2>
+  //       </div>
+  //       <div className="form-row">
+  //         <Input
+  //           label="Address Line 1"
+  //           name="addressLine1"
+  //           value={staffData.address?.line1 || ''}
+  //           onChange={(e) => setStaffData((prev) => ({ 
+  //             ...prev, 
+  //             address: { ...prev.address, line1: e.target.value } 
+  //           }))}
+  //           onFocus={saveFocus}
+  //           onBlur={handleAutosave}
+  //         />
+  //         <Input
+  //           label="Address Line 2"
+  //           name="addressLine2"
+  //           value={staffData.address?.line2 || ''}
+  //           onChange={(e) => setStaffData((prev) => ({ 
+  //             ...prev, 
+  //             address: { ...prev.address, line2: e.target.value } 
+  //           }))}
+  //           onFocus={saveFocus}
+  //           onBlur={handleAutosave}
+  //         />
+  //       </div>
+        
+  //       <div className="form-row">
+  //         <Input
+  //           label="City"
+  //           name="city"
+  //           value={staffData.address?.city || ''}
+  //           onChange={(e) => setStaffData((prev) => ({ 
+  //             ...prev, 
+  //             address: { ...prev.address, city: e.target.value } 
+  //           }))}
+  //           onFocus={saveFocus}
+  //           onBlur={handleAutosave}
+  //         />
+  //         <Input
+  //           label="Country"
+  //           name="country"
+  //           value={staffData.address?.country || 'United Kingdom'}
+  //           onChange={(e) => setStaffData((prev) => ({ 
+  //             ...prev, 
+  //             address: { ...prev.address, country: e.target.value } 
+  //           }))}
+  //           onFocus={saveFocus}
+  //           onBlur={handleAutosave}
+  //         />
+  //       </div>
+        
+  //       <div className="form-row">
+  //         <Input
+  //           label="Postal Code"
+  //           name="postalCode"
+  //           value={staffData.address?.postalCode || ''}
+  //           onChange={(e) => setStaffData((prev) => ({ 
+  //             ...prev, 
+  //             address: { ...prev.address, postalCode: e.target.value } 
+  //           }))}
+  //           onFocus={saveFocus}
+  //           onBlur={handleAutosave}
+  //         />
+          
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
 
   const EmergencyContactsTab = () => {
     const contacts = staffData.emergencyContacts || [];
@@ -719,6 +848,11 @@ const EditStaff = () => {
       });
       
       closeContactPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
     };
 
     const removeEmergencyContact = (index: number) => {
@@ -735,15 +869,15 @@ const EditStaff = () => {
         <div className="form-section">
           <div className="section-header">
             <div className="form-heading">
-            <h2>Emergency Contacts</h2>
+              <h2>Emergency Contacts</h2>
+              <button
+                type="button"
+                className="btn-add-contact"
+                onClick={openAddContactPopup}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Contact
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn-add-contact"
-              onClick={openAddContactPopup}
-            >
-              <FontAwesomeIcon icon={faPlus} /> Add Contact
-            </button>
           </div>
 
           {contacts.length === 0 ? (
@@ -821,46 +955,33 @@ const EditStaff = () => {
                 name="contact-name"
                 value={currentContact.name || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, name: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
               <Input
                 label="Relationship"
                 name="contact-relationship"
                 value={currentContact.relationship || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, relationship: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
-            </div>
-
-            <div className="form-row">
               <Input
                 label="Daytime Telephone"
                 name="contact-daytime"
                 value={currentContact.daytimeTelephone || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, daytimeTelephone: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
-              <Input
-                label="Evening Telephone"
-                name="contact-evening"
-                value={currentContact.eveningTelephone || ''}
-                onChange={(e) => setCurrentContact({ ...currentContact, eveningTelephone: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
             </div>
 
             <div className="form-row">
               <Input
+                label="Evening Telephone"
+                name="contact-evening"
+                value={currentContact.eveningTelephone || ''}
+                onChange={(e) => setCurrentContact({ ...currentContact, eveningTelephone: e.target.value })}
+              />
+              <Input
                 label="Mobile"
                 name="contact-mobile"
                 value={currentContact.mobile || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, mobile: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
               <Input
                 label="Email"
@@ -868,8 +989,6 @@ const EditStaff = () => {
                 type="email"
                 value={currentContact.email || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, email: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
             </div>
 
@@ -879,12 +998,7 @@ const EditStaff = () => {
                 name="contact-address"
                 value={currentContact.address || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, address: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
-            </div>
-
-            <div className="form-row">
               <TextField
                 label="Notes"
                 name="contact-notes"
@@ -893,6 +1007,7 @@ const EditStaff = () => {
                 rows={4}
               />
             </div>
+
           </form>
         </Popup>
       </div>
@@ -900,389 +1015,501 @@ const EditStaff = () => {
   };
 
   const DBSTab = () => {
-    const dbs = staffData.dbs || {};
+    const dbsRecords = staffData.dbs || [];
+    const [isDBSPopupOpen, setIsDBSPopupOpen] = useState(false);
+    const [editingDBSIndex, setEditingDBSIndex] = useState<number | null>(null);
+    const [currentDBS, setCurrentDBS] = useState<DBS>({
+      staffMember: '',
+      checkLevel: '',
+      applicationSentDate: '',
+      applicationReferenceNumber: '',
+      certificateDateReceived: '',
+      certificateNumber: '',
+      dbsSeenBy: '',
+      dbsCheckedDate: '',
+      updateServiceId: '',
+      updateServiceCheckDate: '',
+      rightToWork: {},
+      overseas: {},
+      childrenBarredListCheck: {},
+      prohibitionFromTeaching: {},
+      prohibitionFromManagement: {},
+      disqualificationUnderChildrenAct: {},
+      disqualifiedByAssociation: {},
+    });
 
-    const updateDBSField = (field: keyof DBS, value: string | undefined) => {
-      setStaffData({
-        ...staffData,
-        dbs: {
-          ...dbs,
-          [field]: value,
-        },
+    const openAddDBSPopup = () => {
+      setCurrentDBS({
+        staffMember: '',
+        checkLevel: '',
+        applicationSentDate: '',
+        applicationReferenceNumber: '',
+        certificateDateReceived: '',
+        certificateNumber: '',
+        dbsSeenBy: '',
+        dbsCheckedDate: '',
+        updateServiceId: '',
+        updateServiceCheckDate: '',
+        rightToWork: {},
+        overseas: {},
+        childrenBarredListCheck: {},
+        prohibitionFromTeaching: {},
+        prohibitionFromManagement: {},
+        disqualificationUnderChildrenAct: {},
+        disqualifiedByAssociation: {},
+      });
+      setEditingDBSIndex(null);
+      setIsDBSPopupOpen(true);
+    };
+
+    const openEditDBSPopup = (index: number) => {
+      setCurrentDBS({ ...dbsRecords[index] });
+      setEditingDBSIndex(index);
+      setIsDBSPopupOpen(true);
+    };
+
+    const closeDBSPopup = () => {
+      setIsDBSPopupOpen(false);
+      setEditingDBSIndex(null);
+      setCurrentDBS({
+        staffMember: '',
+        checkLevel: '',
+        applicationSentDate: '',
+        applicationReferenceNumber: '',
+        certificateDateReceived: '',
+        certificateNumber: '',
+        dbsSeenBy: '',
+        dbsCheckedDate: '',
+        updateServiceId: '',
+        updateServiceCheckDate: '',
+        rightToWork: {},
+        overseas: {},
+        childrenBarredListCheck: {},
+        prohibitionFromTeaching: {},
+        prohibitionFromManagement: {},
+        disqualificationUnderChildrenAct: {},
+        disqualifiedByAssociation: {},
       });
     };
 
-    const updateDBSNestedField = (nestedObject: keyof DBS, field: string, value: string | boolean | undefined) => {
-      const currentNested = dbs[nestedObject] as Record<string, unknown> | undefined;
+    const saveDBS = () => {
+      const updatedDBS = [...dbsRecords];
+      
+      if (editingDBSIndex !== null) {
+        // Update existing DBS
+        updatedDBS[editingDBSIndex] = { ...currentDBS };
+      } else {
+        // Add new DBS
+        updatedDBS.push({ ...currentDBS });
+      }
+
       setStaffData({
         ...staffData,
-        dbs: {
-          ...dbs,
-          [nestedObject]: {
-            ...(currentNested || {}),
-            [field]: value,
-          },
-        },
+        dbs: updatedDBS,
       });
+      
+      closeDBSPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
+    };
+
+    const removeDBS = (index: number) => {
+      if (window.confirm('Are you sure you want to remove this DBS record?')) {
+        setStaffData({
+          ...staffData,
+          dbs: dbsRecords.filter((_, i) => i !== index),
+        });
+        
+        // Trigger autosave after removal
+        setTimeout(() => {
+          handleAutosave();
+        }, 100);
+      }
     };
 
     return (
       <div className="tab-content">
-        {/* Basic DBS Information */}
         <div className="form-section">
-          <div className="form-heading">
-          <h2>Basic DBS Information</h2>
-          </div>
-          <div className="form-row">
-            <Input
-              label="Staff Member"
-              name="dbs-staff-member"
-              value={dbs.staffMember || ''}
-              onChange={(e) => updateDBSField('staffMember', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Check Level"
-              name="dbs-check-level"
-              value={dbs.checkLevel || ''}
-              onChange={(e) => updateDBSField('checkLevel', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <Input
-              label="Application Sent Date"
-              name="dbs-application-sent-date"
-              type="date"
-              value={dbs.applicationSentDate ? dbs.applicationSentDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSField('applicationSentDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Application Reference Number"
-              name="dbs-application-ref-number"
-              value={dbs.applicationReferenceNumber || ''}
-              onChange={(e) => updateDBSField('applicationReferenceNumber', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <Input
-              label="Certificate Date Received"
-              name="dbs-certificate-date-received"
-              type="date"
-              value={dbs.certificateDateReceived ? dbs.certificateDateReceived.split('T')[0] : ''}
-              onChange={(e) => updateDBSField('certificateDateReceived', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Certificate Number"
-              name="dbs-certificate-number"
-              value={dbs.certificateNumber || ''}
-              onChange={(e) => updateDBSField('certificateNumber', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <Input
-              label="DBS Seen By"
-              name="dbs-seen-by"
-              value={dbs.dbsSeenBy || ''}
-              onChange={(e) => updateDBSField('dbsSeenBy', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="DBS Checked Date"
-              name="dbs-checked-date"
-              type="date"
-              value={dbs.dbsCheckedDate ? dbs.dbsCheckedDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSField('dbsCheckedDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <Input
-              label="Update Service ID"
-              name="dbs-update-service-id"
-              value={dbs.updateServiceId || ''}
-              onChange={(e) => updateDBSField('updateServiceId', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Update Service Check Date"
-              name="dbs-update-service-check-date"
-              type="date"
-              value={dbs.updateServiceCheckDate ? dbs.updateServiceCheckDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSField('updateServiceCheckDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-        </div>
-
-        {/* Right to Work */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Right to Work</h2>
-          </div>
-          <div className="form-row">
-            <Input
-              label="Type"
-              name="right-to-work-type"
-              value={dbs.rightToWork?.type || ''}
-              onChange={(e) => updateDBSNestedField('rightToWork', 'type', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Verified Date"
-              name="right-to-work-verified-date"
-              type="date"
-              value={dbs.rightToWork?.verifiedDate ? dbs.rightToWork.verifiedDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('rightToWork', 'verifiedDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <Input
-              label="Expiry"
-              name="right-to-work-expiry"
-              type="date"
-              value={dbs.rightToWork?.expiry ? dbs.rightToWork.expiry.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('rightToWork', 'expiry', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Evidence"
-              name="right-to-work-evidence"
-              value={dbs.rightToWork?.evidence || ''}
-              onChange={(e) => updateDBSNestedField('rightToWork', 'evidence', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-        </div>
-
-        {/* Overseas Check */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Overseas Check</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.overseas?.checkNeeded || false}
-                  onChange={(e) => updateDBSNestedField('overseas', 'checkNeeded', e.target.checked)}
-                />
-                Check Needed
-              </label>
-            </div>
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.overseas?.evidenceProduced || false}
-                  onChange={(e) => updateDBSNestedField('overseas', 'evidenceProduced', e.target.checked)}
-                />
-                Evidence Produced
-              </label>
+          <div className="section-header">
+            <div className="form-heading">
+              <h2>DBS Records</h2>
+              <button
+                type="button"
+                className="btn-add-contact"
+                onClick={openAddDBSPopup}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add DBS
+              </button>
             </div>
           </div>
 
-          <div className="form-row">
-            <Input
-              label="Check Date"
-              name="overseas-check-date"
-              type="date"
-              value={dbs.overseas?.checkDate ? dbs.overseas.checkDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('overseas', 'checkDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-            <Input
-              label="Upload Evidence"
-              name="overseas-upload-evidence"
-              value={dbs.overseas?.uploadEvidence || ''}
-              onChange={(e) => updateDBSNestedField('overseas', 'uploadEvidence', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-        </div>
-
-        {/* Children Barred List Check */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Children Barred List Check</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.childrenBarredListCheck?.completed || false}
-                  onChange={(e) => updateDBSNestedField('childrenBarredListCheck', 'completed', e.target.checked)}
-                />
-                Completed
-              </label>
+          {dbsRecords.length === 0 ? (
+            <div className="empty-state">
+              <p>No DBS records added. Click "Add DBS" to add one.</p>
             </div>
-            <Input
-              label="Check Date"
-              name="children-barred-check-date"
-              type="date"
-              value={dbs.childrenBarredListCheck?.checkDate ? dbs.childrenBarredListCheck.checkDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('childrenBarredListCheck', 'checkDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-        </div>
-
-        {/* Prohibition from Teaching */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Prohibition from Teaching</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.prohibitionFromTeaching?.checked || false}
-                  onChange={(e) => updateDBSNestedField('prohibitionFromTeaching', 'checked', e.target.checked)}
-                />
-                Checked
-              </label>
+          ) : (
+            <div className="contacts-table-container">
+              <table className="contacts-table">
+                <thead>
+                  <tr>
+                    <th>Staff Member</th>
+                    <th>Check Level</th>
+                    <th>Certificate Number</th>
+                    <th>Certificate Date</th>
+                    <th>DBS Checked Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dbsRecords.map((dbs, index) => (
+                    <tr key={index}>
+                      <td>{dbs.staffMember || 'N/A'}</td>
+                      <td>{dbs.checkLevel || 'N/A'}</td>
+                      <td>{dbs.certificateNumber || 'N/A'}</td>
+                      <td>{dbs.certificateDateReceived ? (typeof dbs.certificateDateReceived === 'string' ? dbs.certificateDateReceived.split('T')[0] : dbs.certificateDateReceived) : 'N/A'}</td>
+                      <td>{dbs.dbsCheckedDate ? (typeof dbs.dbsCheckedDate === 'string' ? dbs.dbsCheckedDate.split('T')[0] : dbs.dbsCheckedDate) : 'N/A'}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            className="btn-edit-contact"
+                            onClick={() => openEditDBSPopup(index)}
+                            title="Edit"
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-remove-contact"
+                            onClick={() => removeDBS(index)}
+                            title="Delete"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <Input
-              label="Check Date"
-              name="prohibition-teaching-check-date"
-              type="date"
-              value={dbs.prohibitionFromTeaching?.checkDate ? dbs.prohibitionFromTeaching.checkDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('prohibitionFromTeaching', 'checkDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
+          )}
         </div>
 
-        {/* Prohibition from Management */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Prohibition from Management</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.prohibitionFromManagement?.completed || false}
-                  onChange={(e) => updateDBSNestedField('prohibitionFromManagement', 'completed', e.target.checked)}
+        <Popup
+          isOpen={isDBSPopupOpen}
+          onClose={closeDBSPopup}
+          title={editingDBSIndex !== null ? 'Edit DBS' : 'Add DBS'}
+          width="1200px"
+          confirmText="Save"
+          cancelText="Cancel"
+          onConfirm={saveDBS}
+        >
+          <div className="tab-content">
+            {/* Basic DBS Information */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Basic DBS Information</h2>
+              </div>
+              <div className="form-row">
+                <Input
+                  label="Staff Member"
+                  name="dbs-staff-member"
+                  value={currentDBS.staffMember || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, staffMember: e.target.value })}
                 />
-                Completed
-              </label>
-            </div>
-            <Input
-              label="Check Date"
-              name="prohibition-management-check-date"
-              type="date"
-              value={dbs.prohibitionFromManagement?.checkDate ? dbs.prohibitionFromManagement.checkDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('prohibitionFromManagement', 'checkDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <TextField
-              label="Notes"
-              name="prohibition-management-notes"
-              value={dbs.prohibitionFromManagement?.notes || ''}
-              onChange={(e) => updateDBSNestedField('prohibitionFromManagement', 'notes', e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
-
-        {/* Disqualification under Children Act */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Disqualification under Children Act</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.disqualificationUnderChildrenAct?.completed || false}
-                  onChange={(e) => updateDBSNestedField('disqualificationUnderChildrenAct', 'completed', e.target.checked)}
+                <Input
+                  label="Check Level"
+                  name="dbs-check-level"
+                  value={currentDBS.checkLevel || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, checkLevel: e.target.value })}
                 />
-                Completed
-              </label>
-            </div>
-            <Input
-              label="Check Date"
-              name="disqualification-children-act-check-date"
-              type="date"
-              value={dbs.disqualificationUnderChildrenAct?.checkDate ? dbs.disqualificationUnderChildrenAct.checkDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('disqualificationUnderChildrenAct', 'checkDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-        </div>
-
-        {/* Disqualified by Association */}
-        <div className="form-section">
-          <div className="form-heading">
-          <h2>Disqualified by Association</h2>
-          </div>
-          <div className="form-row">
-            <div className="checkbox-field">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={dbs.disqualifiedByAssociation?.completed || false}
-                  onChange={(e) => updateDBSNestedField('disqualifiedByAssociation', 'completed', e.target.checked)}
+                <DateInput
+                  label="Application Sent Date"
+                  name="dbs-application-sent-date"
+                  value={currentDBS.applicationSentDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, applicationSentDate: e.target.value })}
                 />
-                Completed
-              </label>
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="Application Reference Number"
+                  name="dbs-application-ref-number"
+                  value={currentDBS.applicationReferenceNumber || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, applicationReferenceNumber: e.target.value })}
+                />
+                <DateInput
+                  label="Certificate Date Received"
+                  name="dbs-certificate-date-received"
+                  value={currentDBS.certificateDateReceived}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, certificateDateReceived: e.target.value })}
+                />
+                <Input
+                  label="Certificate Number"
+                  name="dbs-certificate-number"
+                  value={currentDBS.certificateNumber || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, certificateNumber: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="DBS Seen By"
+                  name="dbs-seen-by"
+                  value={currentDBS.dbsSeenBy || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, dbsSeenBy: e.target.value })}
+                />
+                <DateInput
+                  label="DBS Checked Date"
+                  name="dbs-checked-date"
+                  value={currentDBS.dbsCheckedDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, dbsCheckedDate: e.target.value })}
+                />
+                <Input
+                  label="Update Service ID"
+                  name="dbs-update-service-id"
+                  value={currentDBS.updateServiceId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, updateServiceId: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <DateInput
+                  label="Update Service Check Date"
+                  name="dbs-update-service-check-date"
+                  value={currentDBS.updateServiceCheckDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, updateServiceCheckDate: e.target.value })}
+                />
+              </div>
             </div>
-            <Input
-              label="Checked Date"
-              name="disqualified-association-checked-date"
-              type="date"
-              value={dbs.disqualifiedByAssociation?.checkedDate ? dbs.disqualifiedByAssociation.checkedDate.split('T')[0] : ''}
-              onChange={(e) => updateDBSNestedField('disqualifiedByAssociation', 'checkedDate', e.target.value)}
-              onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
+
+            {/* Right to Work */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Right to Work</h2>
+              </div>
+              <div className="form-row">
+                <Input
+                  label="Type"
+                  name="right-to-work-type"
+                  value={currentDBS.rightToWork?.type || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, type: e.target.value } })}
+                />
+                <DateInput
+                  label="Verified Date"
+                  name="right-to-work-verified-date"
+                  value={currentDBS.rightToWork?.verifiedDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, verifiedDate: e.target.value } })}
+                />
+                <DateInput
+                  label="Expiry"
+                  name="right-to-work-expiry"
+                  value={currentDBS.rightToWork?.expiry}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, expiry: e.target.value } })}
+                />
+              </div>
+
+              <div className="form-row">
+                <Input
+                  label="Evidence"
+                  name="right-to-work-evidence"
+                  value={currentDBS.rightToWork?.evidence || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, evidence: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            {/* Overseas Check */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Overseas Check</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.overseas?.checkNeeded || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, checkNeeded: e.target.checked } })}
+                    />
+                    Check Needed
+                  </label>
+                </div>
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.overseas?.evidenceProduced || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, evidenceProduced: e.target.checked } })}
+                    />
+                    Evidence Produced
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <DateInput
+                  label="Check Date"
+                  name="overseas-check-date"
+                  value={currentDBS.overseas?.checkDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, checkDate: e.target.value } })}
+                />
+                <Input
+                  label="Upload Evidence"
+                  name="overseas-upload-evidence"
+                  value={currentDBS.overseas?.uploadEvidence || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, uploadEvidence: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            {/* Children Barred List Check */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Children Barred List Check</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.childrenBarredListCheck?.completed || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, childrenBarredListCheck: { ...currentDBS.childrenBarredListCheck, completed: e.target.checked } })}
+                    />
+                    Completed
+                  </label>
+                </div>
+                <DateInput
+                  label="Check Date"
+                  name="children-barred-check-date"
+                  value={currentDBS.childrenBarredListCheck?.checkDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, childrenBarredListCheck: { ...currentDBS.childrenBarredListCheck, checkDate: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            {/* Prohibition from Teaching */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Prohibition from Teaching</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.prohibitionFromTeaching?.checked || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromTeaching: { ...currentDBS.prohibitionFromTeaching, checked: e.target.checked } })}
+                    />
+                    Checked
+                  </label>
+                </div>
+                <DateInput
+                  label="Check Date"
+                  name="prohibition-teaching-check-date"
+                  value={currentDBS.prohibitionFromTeaching?.checkDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromTeaching: { ...currentDBS.prohibitionFromTeaching, checkDate: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            {/* Prohibition from Management */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Prohibition from Management</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.prohibitionFromManagement?.completed || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, completed: e.target.checked } })}
+                    />
+                    Completed
+                  </label>
+                </div>
+                <DateInput
+                  label="Check Date"
+                  name="prohibition-management-check-date"
+                  value={currentDBS.prohibitionFromManagement?.checkDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, checkDate: e.target.value } })}
+                />
+              </div>
+
+              <div className="form-row">
+                <TextField
+                  label="Notes"
+                  name="prohibition-management-notes"
+                  value={currentDBS.prohibitionFromManagement?.notes || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, notes: e.target.value } })}
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Disqualification under Children Act */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Disqualification under Children Act</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.disqualificationUnderChildrenAct?.completed || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, disqualificationUnderChildrenAct: { ...currentDBS.disqualificationUnderChildrenAct, completed: e.target.checked } })}
+                    />
+                    Completed
+                  </label>
+                </div>
+                <DateInput
+                  label="Check Date"
+                  name="disqualification-children-act-check-date"
+                  value={currentDBS.disqualificationUnderChildrenAct?.checkDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, disqualificationUnderChildrenAct: { ...currentDBS.disqualificationUnderChildrenAct, checkDate: e.target.value } })}
+                />
+              </div>
+            </div>
+
+            {/* Disqualified by Association */}
+            <div className="form-section">
+              <div className="form-heading">
+                <h2>Disqualified by Association</h2>
+              </div>
+              <div className="form-row">
+                <div className="checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={currentDBS.disqualifiedByAssociation?.completed || false}
+                      onChange={(e) => setCurrentDBS({ ...currentDBS, disqualifiedByAssociation: { ...currentDBS.disqualifiedByAssociation, completed: e.target.checked } })}
+                    />
+                    Completed
+                  </label>
+                </div>
+                <DateInput
+                  label="Checked Date"
+                  name="disqualified-association-checked-date"
+                  value={currentDBS.disqualifiedByAssociation?.checkedDate}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, disqualifiedByAssociation: { ...currentDBS.disqualifiedByAssociation, checkedDate: e.target.value } })}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </Popup>
       </div>
     );
   };
 
   const CPDTrainingTab = () => {
     const trainingRecords = staffData.cpdTraining || [];
+    const [isTrainingPopupOpen, setIsTrainingPopupOpen] = useState(false);
     const [editingTrainingIndex, setEditingTrainingIndex] = useState<number | null>(null);
     const [currentTraining, setCurrentTraining] = useState<TrainingRecord>({
       courseName: '',
@@ -1293,7 +1520,7 @@ const EditStaff = () => {
       uploadCertificate: '',
     });
 
-    const resetForm = () => {
+    const openAddTrainingPopup = () => {
       setCurrentTraining({
         courseName: '',
         dateCompleted: '',
@@ -1303,11 +1530,26 @@ const EditStaff = () => {
         uploadCertificate: '',
       });
       setEditingTrainingIndex(null);
+      setIsTrainingPopupOpen(true);
     };
 
-    const openEditTraining = (index: number) => {
+    const openEditTrainingPopup = (index: number) => {
       setCurrentTraining({ ...trainingRecords[index] });
       setEditingTrainingIndex(index);
+      setIsTrainingPopupOpen(true);
+    };
+
+    const closeTrainingPopup = () => {
+      setIsTrainingPopupOpen(false);
+      setEditingTrainingIndex(null);
+      setCurrentTraining({
+        courseName: '',
+        dateCompleted: '',
+        expiryDate: '',
+        status: '',
+        notes: '',
+        uploadCertificate: '',
+      });
     };
 
     const saveTraining = () => {
@@ -1331,7 +1573,12 @@ const EditStaff = () => {
         cpdTraining: updatedTraining,
       });
       
-      resetForm();
+      closeTrainingPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
     };
 
     const removeTraining = (index: number) => {
@@ -1348,115 +1595,20 @@ const EditStaff = () => {
         <div className="form-section">
           <div className="section-header">
             <div className="form-heading">
-            <h2>CPD Training</h2>
-          </div>
-        </div>
-
-          {/* CPD Training Form */}
-          <div className="training-form-container">
-            <h3>{editingTrainingIndex !== null ? 'Edit Training' : 'Add New Training'}</h3>
-            <form className="training-form">
-            <div className="form-row">
-              <Input
-                label="Course Name *"
-                name="training-course-name"
-                value={currentTraining.courseName}
-                onChange={(e) => setCurrentTraining({ ...currentTraining, courseName: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-                required
-              />
-              <Select
-                label="Status"
-                name="training-status"
-                value={currentTraining.status || ''}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCurrentTraining({ ...currentTraining, status: e.target.value })}
-                options={[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'expired', label: 'Expired' },
-                ]}
-                placeholder="Select Status"
-              />
+              <h2>CPD Training</h2>
+              <button
+                type="button"
+                className="btn-add-contact"
+                onClick={openAddTrainingPopup}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Training
+              </button>
             </div>
-
-            <div className="form-row">
-              <Input
-                label="Date Completed"
-                name="training-date-completed"
-                type="date"
-                value={currentTraining.dateCompleted ? currentTraining.dateCompleted.split('T')[0] : ''}
-                onChange={(e) => setCurrentTraining({ ...currentTraining, dateCompleted: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
-              <Input
-                label="Expiry Date"
-                name="training-expiry-date"
-                type="date"
-                value={currentTraining.expiryDate ? currentTraining.expiryDate.split('T')[0] : ''}
-                onChange={(e) => setCurrentTraining({ ...currentTraining, expiryDate: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="file-input-field">
-                <label htmlFor="training-upload-certificate">Upload Certificate</label>
-                <input
-                  id="training-upload-certificate"
-                  type="file"
-                  name="training-upload-certificate"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setCurrentTraining({ ...currentTraining, uploadCertificate: file.name });
-                    }
-                  }}
-                />
-                {currentTraining.uploadCertificate && (
-                  <span className="file-name">{currentTraining.uploadCertificate}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <TextField
-                label="Notes"
-                name="training-notes"
-                value={currentTraining.notes || ''}
-                onChange={(e) => setCurrentTraining({ ...currentTraining, notes: e.target.value })}
-                rows={4}
-              />
-            </div>
-
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-save"
-                  onClick={saveTraining}
-                >
-                  {editingTrainingIndex !== null ? 'Update Training' : 'Add Training'}
-                </button>
-                {editingTrainingIndex !== null && (
-                  <button
-                    type="button"
-                    className="btn-cancel"
-                    onClick={resetForm}
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-          </form>
           </div>
 
-          {/* CPD Training Table */}
           {trainingRecords.length === 0 ? (
             <div className="empty-state">
-              <p>No CPD training records added. Fill in the form above to add one.</p>
+              <p>No CPD training records added. Click "Add Training" to add one.</p>
             </div>
           ) : (
             <div className="contacts-table-container">
@@ -1484,7 +1636,7 @@ const EditStaff = () => {
                           <button
                             type="button"
                             className="btn-edit-contact"
-                            onClick={() => openEditTraining(index)}
+                            onClick={() => openEditTrainingPopup(index)}
                             title="Edit"
                           >
                             <FontAwesomeIcon icon={faEdit} />
@@ -1506,6 +1658,87 @@ const EditStaff = () => {
             </div>
           )}
         </div>
+
+        <Popup
+          isOpen={isTrainingPopupOpen}
+          onClose={closeTrainingPopup}
+          title={editingTrainingIndex !== null ? 'Edit Training' : 'Add Training'}
+          width="800px"
+          confirmText="Save"
+          cancelText="Cancel"
+          onConfirm={saveTraining}
+        >
+          <form className="contact-popup-form">
+            <div className="form-row">
+              <Input
+                label="Course Name *"
+                name="training-course-name"
+                value={currentTraining.courseName}
+                onChange={(e) => setCurrentTraining({ ...currentTraining, courseName: e.target.value })}
+                required
+              />
+              <Select
+                label="Status"
+                name="training-status"
+                value={currentTraining.status || ''}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCurrentTraining({ ...currentTraining, status: e.target.value })}
+                options={[
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'expired', label: 'Expired' },
+                ]}
+                placeholder="Select Status"
+              />
+              <div className="file-input-field">
+                <label htmlFor="training-upload-certificate" className="file-input-label">Upload Certificate</label>
+                <input
+                  id="training-upload-certificate"
+                  type="file"
+                  name="training-upload-certificate"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setCurrentTraining({ ...currentTraining, uploadCertificate: file.name });
+                    }
+                  }}
+                />
+                {currentTraining.uploadCertificate && (
+                  <span className="file-name">{currentTraining.uploadCertificate}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <DateInput
+                label="Date Completed"
+                name="training-date-completed"
+                value={currentTraining.dateCompleted}
+                onChange={(e) => setCurrentTraining({ ...currentTraining, dateCompleted: e.target.value })}
+              />
+              <DateInput
+                label="Expiry Date"
+                name="training-expiry-date"
+                value={currentTraining.expiryDate}
+                onChange={(e) => setCurrentTraining({ ...currentTraining, expiryDate: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row">
+              
+            </div>
+
+            <div className="form-row">
+              <TextField
+                label="Notes"
+                name="training-notes"
+                value={currentTraining.notes || ''}
+                onChange={(e) => setCurrentTraining({ ...currentTraining, notes: e.target.value })}
+                rows={4}
+              />
+            </div>
+          </form>
+        </Popup>
       </div>
     );
   };
@@ -1600,6 +1833,11 @@ const EditStaff = () => {
       });
       
       closeQualificationPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
     };
 
     const removeQualification = (index: number) => {
@@ -1617,7 +1855,6 @@ const EditStaff = () => {
           <div className="section-header">
             <div className="form-heading">
             <h2>Qualifications</h2>
-            </div>
             <button
               type="button"
               className="btn-add-contact"
@@ -1625,6 +1862,7 @@ const EditStaff = () => {
             >
               <FontAwesomeIcon icon={faPlus} /> Add Qualification
             </button>
+            </div>
           </div>
 
           {qualifications.length === 0 ? (
@@ -1700,8 +1938,6 @@ const EditStaff = () => {
                 name="qualification-name"
                 value={currentQualification.qualificationName}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, qualificationName: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
                 required
               />
               <Input
@@ -1709,47 +1945,37 @@ const EditStaff = () => {
                 name="qualification-type"
                 value={currentQualification.qualificationType || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, qualificationType: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
-            </div>
-
-            <div className="form-row">
               <Input
                 label="Class of Degree"
                 name="qualification-class-degree"
                 value={currentQualification.classOfDegree || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, classOfDegree: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
-              <Input
-                label="QT Status"
-                name="qualification-qt-status"
-                value={currentQualification.qtStatus || ''}
-                onChange={(e) => setCurrentQualification({ ...currentQualification, qtStatus: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
             </div>
 
             <div className="form-row">
               <Input
+                label="QT Status"
+                name="qualification-qt-status"
+                value={currentQualification.qtStatus || ''}
+                onChange={(e) => setCurrentQualification({ ...currentQualification, qtStatus: e.target.value })}
+              />
+              <Input
                 label="NQT/ECT Status"
                 name="qualification-nqt-ect-status"
                 value={currentQualification.nqtEctStatus || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, nqtEctStatus: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
               <Input
                 label="Subject 1"
                 name="qualification-subject1"
                 value={currentQualification.subject1 || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, subject1: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
+            </div>
+
+            <div className="form-row">
             </div>
 
             <div className="form-row">
@@ -1758,30 +1984,22 @@ const EditStaff = () => {
                 name="qualification-subject2"
                 value={currentQualification.subject2 || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, subject2: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
+              />
+              <DateInput
+                label="Achieved Date"
+                name="qualification-achieved-date"
+                value={currentQualification.achievedDate}
+                onChange={(e) => setCurrentQualification({ ...currentQualification, achievedDate: e.target.value })}
+              />
+              <DateInput
+                label="Expiry Date"
+                name="qualification-expiry-date"
+                value={currentQualification.expiryDate}
+                onChange={(e) => setCurrentQualification({ ...currentQualification, expiryDate: e.target.value })}
               />
             </div>
 
             <div className="form-row">
-              <Input
-                label="Achieved Date"
-                name="qualification-achieved-date"
-                type="date"
-                value={currentQualification.achievedDate ? currentQualification.achievedDate.split('T')[0] : ''}
-                onChange={(e) => setCurrentQualification({ ...currentQualification, achievedDate: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
-              <Input
-                label="Expiry Date"
-                name="qualification-expiry-date"
-                type="date"
-                value={currentQualification.expiryDate ? currentQualification.expiryDate.split('T')[0] : ''}
-                onChange={(e) => setCurrentQualification({ ...currentQualification, expiryDate: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
-              />
             </div>
 
             <div className="form-row">
@@ -1805,9 +2023,6 @@ const EditStaff = () => {
                   CCRS Qualification
                 </label>
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="file-input-field">
                 <label htmlFor="qualification-upload-evidence">Upload Qualification Evidence</label>
                 <input
@@ -1826,6 +2041,9 @@ const EditStaff = () => {
                   <span className="file-name">{currentQualification.uploadQualificationEvidence}</span>
                 )}
               </div>
+            </div>
+
+            <div className="form-row">
             </div>
 
             <div className="form-row">
@@ -1899,6 +2117,11 @@ const EditStaff = () => {
       });
       
       closeHRPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
     };
 
     const removeHR = (index: number) => {
@@ -1915,15 +2138,15 @@ const EditStaff = () => {
         <div className="form-section">
           <div className="section-header">
             <div className="form-heading">
-            <h2>HR Records</h2>
+              <h2>HR Records</h2>
+              <button
+                type="button"
+                className="btn-add-contact"
+                onClick={openAddHRPopup}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add HR Record
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn-add-contact"
-              onClick={openAddHRPopup}
-            >
-              <FontAwesomeIcon icon={faPlus} /> Add HR Record
-            </button>
           </div>
 
           {hrRecords.length === 0 ? (
@@ -1993,31 +2216,13 @@ const EditStaff = () => {
                 name="hr-absence-type"
                 value={currentHR.absenceType || ''}
                 onChange={(e) => setCurrentHR({ ...currentHR, absenceType: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
-              <Input
+              <DateInput
                 label="Absence Date"
                 name="hr-absence-date"
-                type="date"
-                value={currentHR.absenceDate ? currentHR.absenceDate.split('T')[0] : ''}
+                value={currentHR.absenceDate}
                 onChange={(e) => setCurrentHR({ ...currentHR, absenceDate: e.target.value })}
-                onFocus={saveFocus}
-            onBlur={handleAutosave}
               />
-            </div>
-
-            <div className="form-row">
-              <TextField
-                label="Reason"
-                name="hr-reason"
-                value={currentHR.reason || ''}
-                onChange={(e) => setCurrentHR({ ...currentHR, reason: e.target.value })}
-                rows={4}
-              />
-            </div>
-
-            <div className="form-row">
               <div className="file-input-field">
                 <label htmlFor="hr-evidence-upload">Upload Evidence</label>
                 <input
@@ -2036,6 +2241,16 @@ const EditStaff = () => {
                   <span className="file-name">{currentHR.evidenceUpload}</span>
                 )}
               </div>
+            </div>
+
+            <div className="form-row">
+              <TextField
+                label="Reason"
+                name="hr-reason"
+                value={currentHR.reason || ''}
+                onChange={(e) => setCurrentHR({ ...currentHR, reason: e.target.value })}
+                rows={4}
+              />
             </div>
           </form>
         </Popup>
@@ -2107,6 +2322,11 @@ const EditStaff = () => {
       });
       
       closeDoctorPopup();
+      
+      // Trigger autosave after state update
+      setTimeout(() => {
+        handleAutosave();
+      }, 100);
     };
 
     const removeDoctor = (index: number) => {
@@ -2139,9 +2359,6 @@ const EditStaff = () => {
               })}
               rows={4}
             />
-          </div>
-
-          <div className="form-row">
             <TextField
               label="Conditions / Syndrome"
               name="conditions-syndrome"
@@ -2152,19 +2369,16 @@ const EditStaff = () => {
               })}
               rows={4}
             />
-          </div>
-
-          <div className="form-row">
-            <TextField
-              label="Medication"
-              name="medication"
-              value={medicalNeeds.medication || ''}
-              onChange={(e) => setStaffData({
-                ...staffData,
-                medicalNeeds: { ...medicalNeeds, medication: e.target.value },
-              })}
-              rows={4}
-            />
+              <TextField
+                label="Medication"
+                name="medication"
+                value={medicalNeeds.medication || ''}
+                onChange={(e) => setStaffData({
+                  ...staffData,
+                  medicalNeeds: { ...medicalNeeds, medication: e.target.value },
+                })}
+                rows={4}
+              />
           </div>
 
           <div className="form-row">
@@ -2178,9 +2392,6 @@ const EditStaff = () => {
               })}
               rows={3}
             />
-          </div>
-
-          <div className="form-row">
             <TextField
               label="Impairments"
               name="impairments"
@@ -2191,9 +2402,6 @@ const EditStaff = () => {
               })}
               rows={3}
             />
-          </div>
-
-          <div className="form-row">
             <TextField
               label="Allergies"
               name="allergies"
@@ -2216,6 +2424,16 @@ const EditStaff = () => {
                 medicalNeeds: { ...medicalNeeds, assistanceRequired: e.target.value },
               })}
               rows={3}
+            />
+            <TextField
+              label="Medical Notes"
+              name="medical-notes"
+              value={medicalNeeds.medicalNotes || ''}
+              onChange={(e) => setStaffData({
+                ...staffData,
+                medicalNeeds: { ...medicalNeeds, medicalNotes: e.target.value },
+              })}
+              rows={4}
             />
           </div>
 
@@ -2242,33 +2460,16 @@ const EditStaff = () => {
               onFocus={saveFocus}
             onBlur={handleAutosave}
             />
-          </div>
-
-          <div className="form-row">
-            <Input
+            <DateInput
               label="Last Medical Check"
               name="last-medical-check"
-              type="date"
-              value={medicalNeeds.lastMedicalCheck ? medicalNeeds.lastMedicalCheck.split('T')[0] : ''}
+              value={medicalNeeds.lastMedicalCheck}
               onChange={(e) => setStaffData({
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, lastMedicalCheck: e.target.value },
               })}
               onFocus={saveFocus}
-            onBlur={handleAutosave}
-            />
-          </div>
-
-          <div className="form-row">
-            <TextField
-              label="Medical Notes"
-              name="medical-notes"
-              value={medicalNeeds.medicalNotes || ''}
-              onChange={(e) => setStaffData({
-                ...staffData,
-                medicalNeeds: { ...medicalNeeds, medicalNotes: e.target.value },
-              })}
-              rows={4}
+              onBlur={handleAutosave}
             />
           </div>
 
@@ -2357,16 +2558,12 @@ const EditStaff = () => {
                   name="doctor-name"
                   value={currentDoctor.name || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, name: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
                 <Input
                   label="Relationship"
                   name="doctor-relationship"
                   value={currentDoctor.relationship || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, relationship: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
               </div>
 
@@ -2376,16 +2573,12 @@ const EditStaff = () => {
                   name="doctor-mobile"
                   value={currentDoctor.mobile || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, mobile: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
                 <Input
                   label="Daytime Phone"
                   name="doctor-daytime-phone"
                   value={currentDoctor.daytimePhone || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, daytimePhone: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
               </div>
 
@@ -2395,8 +2588,6 @@ const EditStaff = () => {
                   name="doctor-evening-phone"
                   value={currentDoctor.eveningPhone || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, eveningPhone: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
                 <Input
                   label="Email"
@@ -2404,8 +2595,6 @@ const EditStaff = () => {
                   type="email"
                   value={currentDoctor.email || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, email: e.target.value })}
-                  onFocus={saveFocus}
-            onBlur={handleAutosave}
                 />
               </div>
             </form>
@@ -2417,7 +2606,7 @@ const EditStaff = () => {
 
   const tabs = [
     { id: 'basic', label: 'Basic Information', content: <BasicInfoTab /> },
-    { id: 'address', label: 'Address', content: <AddressTab /> },
+    // { id: 'address', label: 'Address', content: <AddressTab /> },
     { id: 'emergency', label: 'Emergency Contacts', content: <EmergencyContactsTab /> },
     { id: 'dbs', label: 'DBS', content: <DBSTab /> },
     { id: 'cpd', label: 'CPD and Safeguarding Training', content: <CPDTrainingTab /> },
@@ -2430,7 +2619,7 @@ const EditStaff = () => {
     <Layout>
       <div className="new-staff">
         <div className="new-staff-header">
-          <h1>Edit Staff Member</h1>
+          <h1>{isEditMode ? 'Edit Staff Member' : 'Add New Staff Member'}</h1>
         </div>
         
         <form onSubmit={handleSubmit} className="new-staff-form">

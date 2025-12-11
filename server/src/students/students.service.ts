@@ -100,25 +100,16 @@ export class StudentsService {
       }
     }
 
-    // Validate UPN if provided
+    // Handle UPN if provided (no validation, just check uniqueness)
     if (personalInfo.upn) {
-      if (!this.validateUPN(personalInfo.upn)) {
-        throw new BadRequestException(
-          'Invalid UPN format. UPN must be 13 alphanumeric characters.',
-        );
-      }
-
       // Check if UPN already exists
       const existingUPN = await this.studentModel.findOne({
-        'personalInfo.upn': personalInfo.upn.toUpperCase(),
+        'personalInfo.upn': personalInfo.upn,
         deletedAt: null,
       });
       if (existingUPN) {
         throw new ConflictException(`UPN ${personalInfo.upn} already exists`);
       }
-
-      // Normalize UPN to uppercase
-      personalInfo.upn = personalInfo.upn.toUpperCase();
     }
 
     // Build medical object with proper type conversions
@@ -301,24 +292,18 @@ export class StudentsService {
         personalInfo.adno = updateData.adno;
       }
 
-      // Handle UPN update
+      // Handle UPN update (no validation, just check uniqueness)
       if (updateData.upn !== undefined && updateData.upn !== personalInfo.upn) {
-        if (!this.validateUPN(updateData.upn)) {
-          throw new BadRequestException(
-            'Invalid UPN format. UPN must be 13 alphanumeric characters.',
-          );
-        }
-
         // Check if new UPN already exists
         const existingUPN = await this.studentModel.findOne({
-          'personalInfo.upn': updateData.upn.toUpperCase(),
+          'personalInfo.upn': updateData.upn,
           _id: { $ne: id },
           deletedAt: null,
         });
         if (existingUPN) {
           throw new ConflictException(`UPN ${updateData.upn} already exists`);
         }
-        personalInfo.upn = updateData.upn.toUpperCase();
+        personalInfo.upn = updateData.upn;
       }
 
       if (updateData.sex !== undefined) {
