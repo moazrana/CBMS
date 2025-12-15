@@ -166,6 +166,7 @@ export interface StaffProfile {
   preferredName?: string;
   jobRole?: string;
   department?: string;
+  workLocation?: string;
   startDate?: Date;
   endDate?: Date;
   phoneWork?: string;
@@ -224,6 +225,7 @@ export class User extends Document {
       preferredName: { type: String },
       jobRole: { type: String },
       department: { type: String },
+      workLocation: { type: String },
       startDate: { type: Date },
       endDate: { type: Date },
       phoneWork: { type: String },

@@ -434,6 +434,10 @@ export class CreateStaffDto {
   department?: string;
 
   @IsOptional()
+  @IsString()
+  workLocation?: string;
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 

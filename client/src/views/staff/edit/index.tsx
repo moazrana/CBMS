@@ -151,6 +151,7 @@ interface StaffData {
   phoneMobile?: string;
   jobRole?: string;
   department?: string;
+  workLocation?: string;
   startDate?: string;
   endDate?: string;
   address?: Address;
@@ -182,6 +183,7 @@ const EditStaff = () => {
     phoneMobile: '',
     jobRole: '',
     department: '',
+    workLocation: '',
     startDate: '',
     endDate: '',
     address: {},
@@ -192,6 +194,8 @@ const EditStaff = () => {
     hr: [],
     medicalNeeds: {},
   });
+
+  const [users, setUsers] = useState<Array<{ _id: string; name: string }>>([]);
 
   // Save focus state before render
   const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
@@ -254,12 +258,42 @@ const EditStaff = () => {
     setStaffData((prev) => ({ ...prev, phoneMobile: e.target.value }));
   }, []);
   
-  const handleJobRoleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleJobRoleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setStaffData((prev) => ({ ...prev, jobRole: e.target.value }));
+    // Trigger autosave on change for dropdown
+    setTimeout(() => {
+      const currentData = staffDataRef.current;
+      const currentId = staffIdRef.current;
+      if (currentData.firstName && currentData.email && currentId) {
+        // Use the same autosave pattern as handleAutosave
+        const cleanedData = cleanEmptyDateStrings(currentData);
+        api.patch(`/staff/${currentId}`, cleanedData).catch((error) => {
+          console.error('Autosave error:', error);
+        });
+      }
+    }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const handleDepartmentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setStaffData((prev) => ({ ...prev, department: e.target.value }));
+  }, []);
+
+  const handleWorkLocationChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStaffData((prev) => ({ ...prev, workLocation: e.target.value }));
+    // Trigger autosave on change for dropdown
+    setTimeout(() => {
+      const currentData = staffDataRef.current;
+      const currentId = staffIdRef.current;
+      if (currentData.firstName && currentData.email && currentId) {
+        // Use the same autosave pattern as handleAutosave
+        const cleanedData = cleanEmptyDateStrings(currentData);
+        api.patch(`/staff/${currentId}`, cleanedData).catch((error) => {
+          console.error('Autosave error:', error);
+        });
+      }
+    }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const handleStartDateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,6 +327,7 @@ const EditStaff = () => {
         phoneMobile: profile.phoneMobile || '',
         jobRole: profile.jobRole || '',
         department: profile.department || '',
+        workLocation: profile.workLocation || '',
         startDate: profile.startDate ? profile.startDate.split('T')[0] : '',
         endDate: profile.endDate ? profile.endDate.split('T')[0] : '',
         address: profile.address || {},
@@ -354,6 +389,20 @@ const EditStaff = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEditMode]);
+
+  // Fetch users for dropdowns
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await executeRequest('get', '/users?perPage=1000');
+        setUsers(response || []);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Helper function to clean empty date strings recursively
   const cleanEmptyDateStrings = useCallback((obj: unknown): unknown => {
@@ -660,13 +709,16 @@ const EditStaff = () => {
         <h2>Employment Information</h2>
         </div>
         <div className="form-row">
-          <Input
+          <Select
             label="Job Role"
             name="jobRole"
             value={staffData.jobRole || ''}
             onChange={handleJobRoleChange}
-            onFocus={saveFocus}
-            onBlur={handleAutosave}
+            options={[
+              { value: 'teacher', label: 'Teacher' },
+              { value: 'staff', label: 'Staff' }
+            ]}
+            placeholder="Select job role"
           />
           <Input
             label="Department"
@@ -676,6 +728,19 @@ const EditStaff = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
+          <Select
+            label="Work Location"
+            name="workLocation"
+            value={staffData.workLocation || ''}
+            onChange={handleWorkLocationChange}
+            options={[
+              { value: 'Achieve Warrington', label: 'Achieve Warrington' },
+              { value: 'Achieve Training', label: 'Achieve Training' }
+            ]}
+            placeholder="Select work location"
+          />
+        </div>
+        <div className="form-row">
         </div>
         
         {/* <div className="form-row">
@@ -702,7 +767,7 @@ const EditStaff = () => {
         </div>
       </div>
     </div>
-  ), [staffData, handleFirstNameChange, handleMiddleNameChange, handleLastNameChange, handleEmailChange, handlePhoneWorkChange, handlePhoneMobileChange, handleJobRoleChange, handleDepartmentChange, handleStartDateChange, handleEndDateChange, saveFocus, handleAutosave]);
+  ), [staffData, handleFirstNameChange, handleMiddleNameChange, handleLastNameChange, handleEmailChange, handlePhoneWorkChange, handlePhoneMobileChange, handleJobRoleChange, handleDepartmentChange, handleWorkLocationChange, handleStartDateChange, handleEndDateChange, saveFocus, handleAutosave]);
 
   const BasicInfoTab = () => BasicInfoTabContent;
 
@@ -956,11 +1021,17 @@ const EditStaff = () => {
                 value={currentContact.name || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, name: e.target.value })}
               />
-              <Input
+              <Select
                 label="Relationship"
                 name="contact-relationship"
                 value={currentContact.relationship || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, relationship: e.target.value })}
+                options={[
+                  { value: 'father', label: 'Father' },
+                  { value: 'mother', label: 'Mother' },
+                  { value: 'guardian', label: 'Guardian' }
+                ]}
+                placeholder="Select relationship"
               />
               <Input
                 label="Daytime Telephone"
@@ -1038,9 +1109,19 @@ const EditStaff = () => {
       disqualifiedByAssociation: {},
     });
 
+    // Helper function to build full name from firstName, middleName, lastName
+    const getFullName = () => {
+      const parts = [
+        staffData.firstName,
+        staffData.middleName,
+        staffData.lastName
+      ].filter(Boolean);
+      return parts.join(' ').trim();
+    };
+
     const openAddDBSPopup = () => {
       setCurrentDBS({
-        staffMember: '',
+        staffMember: getFullName(),
         checkLevel: '',
         applicationSentDate: '',
         applicationReferenceNumber: '',
@@ -1221,11 +1302,17 @@ const EditStaff = () => {
                   value={currentDBS.staffMember || ''}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, staffMember: e.target.value })}
                 />
-                <Input
+                <Select
                   label="Check Level"
                   name="dbs-check-level"
                   value={currentDBS.checkLevel || ''}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, checkLevel: e.target.value })}
+                  options={[
+                    { value: 'Standard', label: 'Standard' },
+                    { value: 'Enhanced', label: 'Enhanced' },
+                    { value: 'Enhanced with Barred List', label: 'Enhanced with Barred List' }
+                  ]}
+                  placeholder="Select check level"
                 />
                 <DateInput
                   label="Application Sent Date"
@@ -1293,11 +1380,17 @@ const EditStaff = () => {
                 <h2>Right to Work</h2>
               </div>
               <div className="form-row">
-                <Input
+                <Select
                   label="Type"
                   name="right-to-work-type"
                   value={currentDBS.rightToWork?.type || ''}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, type: e.target.value } })}
+                  options={[
+                    { value: 'passport', label: 'Passport' },
+                    { value: 'visa', label: 'Visa' },
+                    { value: 'BRP', label: 'BRP' }
+                  ]}
+                  placeholder="Select type"
                 />
                 <DateInput
                   label="Verified Date"
@@ -1314,6 +1407,17 @@ const EditStaff = () => {
               </div>
 
               <div className="form-row">
+                <Select
+                  label="Verified By"
+                  name="right-to-work-verified-by"
+                  value={currentDBS.rightToWork?.verifiedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, rightToWork: { ...currentDBS.rightToWork, verifiedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
+                />
                 <Input
                   label="Evidence"
                   name="right-to-work-evidence"
@@ -1358,6 +1462,17 @@ const EditStaff = () => {
                   value={currentDBS.overseas?.checkDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, checkDate: e.target.value } })}
                 />
+                <Select
+                  label="Check By"
+                  name="overseas-checked-by"
+                  value={currentDBS.overseas?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, overseas: { ...currentDBS.overseas, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
+                />
                 <Input
                   label="Upload Evidence"
                   name="overseas-upload-evidence"
@@ -1389,6 +1504,17 @@ const EditStaff = () => {
                   value={currentDBS.childrenBarredListCheck?.checkDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, childrenBarredListCheck: { ...currentDBS.childrenBarredListCheck, checkDate: e.target.value } })}
                 />
+                <Select
+                  label="Check By"
+                  name="children-barred-checked-by"
+                  value={currentDBS.childrenBarredListCheck?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, childrenBarredListCheck: { ...currentDBS.childrenBarredListCheck, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
+                />
               </div>
             </div>
 
@@ -1414,6 +1540,17 @@ const EditStaff = () => {
                   value={currentDBS.prohibitionFromTeaching?.checkDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromTeaching: { ...currentDBS.prohibitionFromTeaching, checkDate: e.target.value } })}
                 />
+                <Select
+                  label="Checked By"
+                  name="prohibition-teaching-checked-by"
+                  value={currentDBS.prohibitionFromTeaching?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromTeaching: { ...currentDBS.prohibitionFromTeaching, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
+                />
               </div>
             </div>
 
@@ -1438,6 +1575,17 @@ const EditStaff = () => {
                   name="prohibition-management-check-date"
                   value={currentDBS.prohibitionFromManagement?.checkDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, checkDate: e.target.value } })}
+                />
+                <Select
+                  label="Checked By"
+                  name="prohibition-management-checked-by"
+                  value={currentDBS.prohibitionFromManagement?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
                 />
               </div>
 
@@ -1474,6 +1622,17 @@ const EditStaff = () => {
                   value={currentDBS.disqualificationUnderChildrenAct?.checkDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, disqualificationUnderChildrenAct: { ...currentDBS.disqualificationUnderChildrenAct, checkDate: e.target.value } })}
                 />
+                <Select
+                  label="Checked By"
+                  name="disqualification-children-act-checked-by"
+                  value={currentDBS.disqualificationUnderChildrenAct?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, disqualificationUnderChildrenAct: { ...currentDBS.disqualificationUnderChildrenAct, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
+                />
               </div>
             </div>
 
@@ -1498,6 +1657,17 @@ const EditStaff = () => {
                   name="disqualified-association-checked-date"
                   value={currentDBS.disqualifiedByAssociation?.checkedDate}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, disqualifiedByAssociation: { ...currentDBS.disqualifiedByAssociation, checkedDate: e.target.value } })}
+                />
+                <Select
+                  label="Checked By"
+                  name="disqualified-association-checked-by"
+                  value={currentDBS.disqualifiedByAssociation?.checkedByUserId || ''}
+                  onChange={(e) => setCurrentDBS({ ...currentDBS, disqualifiedByAssociation: { ...currentDBS.disqualifiedByAssociation, checkedByUserId: e.target.value } })}
+                  options={users.map(user => ({
+                    value: user._id,
+                    label: user.name
+                  }))}
+                  placeholder="Select user"
                 />
               </div>
             </div>
@@ -1683,9 +1853,9 @@ const EditStaff = () => {
                 value={currentTraining.status || ''}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCurrentTraining({ ...currentTraining, status: e.target.value })}
                 options={[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'expired', label: 'Expired' },
+                  { value: 'Pending', label: 'Pending' },
+                  { value: 'Completed', label: 'Completed' },
+                  { value: 'Expired', label: 'Expired' },
                 ]}
                 placeholder="Select Status"
               />
