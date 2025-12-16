@@ -307,119 +307,119 @@ export class User extends Document {
   emergencyContacts?: EmergencyContact[];
 
   @Prop([{
-    staffMember: { type: String },
-    checkLevel: { type: String },
-    applicationSentDate: { type: Date },
-    applicationReferenceNumber: { type: String },
-    certificateDateReceived: { type: Date },
-    certificateNumber: { type: String },
-    dbsSeenBy: { type: String },
-    dbsCheckedDate: { type: Date },
-    updateServiceId: { type: String },
-    updateServiceCheckDate: { type: Date },
-    rightToWork: {
-      type: {
-        type: { type: String },
-        verifiedDate: { type: Date },
-        verifiedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      staffMember: { type: String },
+      checkLevel: { type: String },
+      applicationSentDate: { type: Date },
+      applicationReferenceNumber: { type: String },
+      certificateDateReceived: { type: Date },
+      certificateNumber: { type: String },
+      dbsSeenBy: { type: String },
+      dbsCheckedDate: { type: Date },
+      updateServiceId: { type: String },
+      updateServiceCheckDate: { type: Date },
+      rightToWork: {
+        type: {
+          type: { type: String },
+          verifiedDate: { type: Date },
+          verifiedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
+          expiry: { type: Date },
+          evidence: { type: String },
         },
-        expiry: { type: Date },
-        evidence: { type: String },
+        _id: false,
       },
-      _id: false,
-    },
-    overseas: {
-      type: {
-        checkNeeded: { type: Boolean },
-        evidenceProduced: { type: Boolean },
-        checkDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      overseas: {
+        type: {
+          checkNeeded: { type: Boolean },
+          evidenceProduced: { type: Boolean },
+          checkDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
+          uploadEvidence: { type: String },
         },
-        uploadEvidence: { type: String },
+        _id: false,
       },
-      _id: false,
-    },
-    childrenBarredListCheck: {
-      type: {
-        completed: { type: Boolean },
-        checkDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      childrenBarredListCheck: {
+        type: {
+          completed: { type: Boolean },
+          checkDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
         },
+        _id: false,
       },
-      _id: false,
-    },
-    prohibitionFromTeaching: {
-      type: {
-        checked: { type: Boolean },
-        checkDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      prohibitionFromTeaching: {
+        type: {
+          checked: { type: Boolean },
+          checkDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
         },
+        _id: false,
       },
-      _id: false,
-    },
-    prohibitionFromManagement: {
-      type: {
-        completed: { type: Boolean },
-        checkDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      prohibitionFromManagement: {
+        type: {
+          completed: { type: Boolean },
+          checkDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
+          notes: { type: String },
         },
-        notes: { type: String },
+        _id: false,
       },
-      _id: false,
-    },
-    disqualificationUnderChildrenAct: {
-      type: {
-        completed: { type: Boolean },
-        checkDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      disqualificationUnderChildrenAct: {
+        type: {
+          completed: { type: Boolean },
+          checkDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
         },
+        _id: false,
       },
-      _id: false,
-    },
-    disqualifiedByAssociation: {
-      type: {
-        completed: { type: Boolean },
-        checkedDate: { type: Date },
-        checkedBy: {
-          type: {
-            _id: { type: Types.ObjectId },
-            name: { type: String },
+      disqualifiedByAssociation: {
+        type: {
+          completed: { type: Boolean },
+          checkedDate: { type: Date },
+          checkedBy: {
+            type: {
+              _id: { type: Types.ObjectId },
+              name: { type: String },
+            },
+            _id: false,
           },
-          _id: false,
         },
+        _id: false,
       },
-      _id: false,
-    },
   }])
   dbs?: DBS[];
 
@@ -437,15 +437,21 @@ export class User extends Document {
 
   @Prop([
     {
-      courseName: { type: String, required: true },
-      dateCompleted: { type: Date },
+      qualificationName: { type: String, required: true },
+      qualificationType: { type: String },
+      classOfDegree: { type: String },
+      achievedDate: { type: Date },
       expiryDate: { type: Date },
-      status: { type: String },
+      subject1: { type: String },
+      subject2: { type: String },
+      qtStatus: { type: String },
+      nqtEctStatus: { type: String },
+      npqhQualification: { type: Boolean },
+      ccrsQualification: { type: Boolean },
       notes: { type: String },
-      uploadCertificate: { type: String },
+      uploadQualificationEvidence: { type: String },
     },
   ])
-  
   qualifications?: QualificationRecord[];
 
   @Prop([

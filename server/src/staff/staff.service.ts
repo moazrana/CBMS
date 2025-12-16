@@ -753,7 +753,7 @@ export class StaffService {
         // If updating existing DBS, merge with existing data
         const existingDBS = Array.isArray(user.dbs) && user.dbs.length > 0 ? user.dbs[0] : undefined;
         
-        const dbsData: DBS = {
+      const dbsData: DBS = {
           ...(existingDBS || {}),
           ...(dbsDto.staffMember !== undefined && { staffMember: dbsDto.staffMember }),
           ...(dbsDto.checkLevel !== undefined && { checkLevel: dbsDto.checkLevel }),
@@ -765,92 +765,92 @@ export class StaffService {
           ...(dbsDto.dbsCheckedDate && { dbsCheckedDate: new Date(dbsDto.dbsCheckedDate) }),
           ...(dbsDto.updateServiceId !== undefined && { updateServiceId: dbsDto.updateServiceId }),
           ...(dbsDto.updateServiceCheckDate && { updateServiceCheckDate: new Date(dbsDto.updateServiceCheckDate) }),
-        };
+      };
 
         if (dbsDto.rightToWork !== undefined) {
-          const mappedRightToWork = await this.mapRightToWorkData(
+        const mappedRightToWork = await this.mapRightToWorkData(
             dbsDto.rightToWork,
             existingDBS?.rightToWork,
-          );
-          if (mappedRightToWork) {
-            dbsData.rightToWork = mappedRightToWork;
-          } else {
-            delete dbsData.rightToWork;
-          }
+        );
+        if (mappedRightToWork) {
+          dbsData.rightToWork = mappedRightToWork;
+        } else {
+          delete dbsData.rightToWork;
         }
+      }
 
         if (dbsDto.overseas !== undefined) {
-          const mappedOverseas = await this.mapOverseasData(
+        const mappedOverseas = await this.mapOverseasData(
             dbsDto.overseas,
             existingDBS?.overseas,
-          );
-          if (mappedOverseas) {
-            dbsData.overseas = mappedOverseas;
-          } else {
-            delete dbsData.overseas;
-          }
+        );
+        if (mappedOverseas) {
+          dbsData.overseas = mappedOverseas;
+        } else {
+          delete dbsData.overseas;
         }
+      }
 
         if (dbsDto.childrenBarredListCheck !== undefined) {
-          const mappedChildrenBarredList = await this.mapChildrenBarredListData(
+        const mappedChildrenBarredList = await this.mapChildrenBarredListData(
             dbsDto.childrenBarredListCheck,
             existingDBS?.childrenBarredListCheck,
-          );
-          if (mappedChildrenBarredList) {
-            dbsData.childrenBarredListCheck = mappedChildrenBarredList;
-          } else {
-            delete dbsData.childrenBarredListCheck;
-          }
+        );
+        if (mappedChildrenBarredList) {
+          dbsData.childrenBarredListCheck = mappedChildrenBarredList;
+        } else {
+          delete dbsData.childrenBarredListCheck;
         }
+      }
 
         if (dbsDto.prohibitionFromTeaching !== undefined) {
-          const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
+        const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
             dbsDto.prohibitionFromTeaching,
             existingDBS?.prohibitionFromTeaching,
-          );
-          if (mappedProhibitionTeaching) {
-            dbsData.prohibitionFromTeaching = mappedProhibitionTeaching;
-          } else {
-            delete dbsData.prohibitionFromTeaching;
-          }
+        );
+        if (mappedProhibitionTeaching) {
+          dbsData.prohibitionFromTeaching = mappedProhibitionTeaching;
+        } else {
+          delete dbsData.prohibitionFromTeaching;
         }
+      }
 
         if (dbsDto.prohibitionFromManagement !== undefined) {
-          const mappedProhibitionManagement = await this.mapProhibitionFromManagementData(
+        const mappedProhibitionManagement = await this.mapProhibitionFromManagementData(
             dbsDto.prohibitionFromManagement,
             existingDBS?.prohibitionFromManagement,
-          );
-          if (mappedProhibitionManagement) {
-            dbsData.prohibitionFromManagement = mappedProhibitionManagement;
-          } else {
-            delete dbsData.prohibitionFromManagement;
-          }
+        );
+        if (mappedProhibitionManagement) {
+          dbsData.prohibitionFromManagement = mappedProhibitionManagement;
+        } else {
+          delete dbsData.prohibitionFromManagement;
         }
+      }
 
         if (dbsDto.disqualificationUnderChildrenAct !== undefined) {
-          const mappedDisqualificationChildrenAct =
-            await this.mapDisqualificationUnderChildrenActData(
+        const mappedDisqualificationChildrenAct =
+          await this.mapDisqualificationUnderChildrenActData(
               dbsDto.disqualificationUnderChildrenAct,
               existingDBS?.disqualificationUnderChildrenAct,
-            );
-          if (mappedDisqualificationChildrenAct) {
-            dbsData.disqualificationUnderChildrenAct = mappedDisqualificationChildrenAct;
-          } else {
-            delete dbsData.disqualificationUnderChildrenAct;
-          }
+          );
+        if (mappedDisqualificationChildrenAct) {
+          dbsData.disqualificationUnderChildrenAct = mappedDisqualificationChildrenAct;
+        } else {
+          delete dbsData.disqualificationUnderChildrenAct;
         }
+      }
 
         if (dbsDto.disqualifiedByAssociation !== undefined) {
-          const mappedDisqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
+        const mappedDisqualifiedByAssociation = await this.mapDisqualifiedByAssociationData(
             dbsDto.disqualifiedByAssociation,
             existingDBS?.disqualifiedByAssociation,
-          );
-          if (mappedDisqualifiedByAssociation) {
-            dbsData.disqualifiedByAssociation = mappedDisqualifiedByAssociation;
-          } else {
-            delete dbsData.disqualifiedByAssociation;
-          }
+        );
+        if (mappedDisqualifiedByAssociation) {
+          dbsData.disqualifiedByAssociation = mappedDisqualifiedByAssociation;
+        } else {
+          delete dbsData.disqualifiedByAssociation;
         }
+      }
 
         mappedDBSArray.push(dbsData);
       }

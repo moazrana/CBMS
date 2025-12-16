@@ -20,7 +20,6 @@ import TimeTable from './views/timeTable/index';
 import StaffList from './views/staff/list';
 import EditStaff from './views/staff/edit';
 import StudentList from './views/students/list';
-import NewStudent from './views/students/new';
 import EditStudent from './views/students/edit';
 import TestPage from './views/test';
 
@@ -54,7 +53,7 @@ function App() {
               <Route path="/staff/add" element={<EditStaff/>}/>
               <Route path="/staff/edit/:id" element={<EditStaff/>}/>
               <Route path="/students" element={<StudentList/>}/>
-              <Route path="/students/add" element={<NewStudent/>}/>
+              <Route path="/students/add" element={<EditStudent/>}/>
               <Route path="/students/edit/:id" element={<EditStudent/>}/>
               <Route path="/test" element={<TestPage/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />

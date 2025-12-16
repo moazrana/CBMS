@@ -7,6 +7,7 @@ interface TextFieldProps {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   error?: string;
@@ -20,6 +21,7 @@ const TextField: React.FC<TextFieldProps> = ({
   name,
   value,
   onChange,
+  onFocus,
   onBlur,
   placeholder,
   error,
@@ -50,6 +52,7 @@ const TextField: React.FC<TextFieldProps> = ({
         name={name}
         value={value}
         onChange={onChange}
+        onFocus={onFocus}
         onBlur={onBlur}
         placeholder={placeholder}
         className={error ? 'error' : ''}

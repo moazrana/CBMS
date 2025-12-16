@@ -171,7 +171,7 @@ const EditStaff = () => {
   const isEditMode = !!id;
   
   // Ref to track focused input
-  const focusedInputRef = useRef<{ name: string; selectionStart: number | null } | null>(null);
+  const focusedInputRef = useRef<{ name: string; selectionStart: number | null; selectionEnd: number | null } | null>(null);
 
   const [staffData, setStaffData] = useState<StaffData>({
     firstName: '',
@@ -197,38 +197,70 @@ const EditStaff = () => {
 
   const [users, setUsers] = useState<Array<{ _id: string; name: string }>>([]);
 
-  // Save focus state before render
-  const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    const input = e.target;
-    focusedInputRef.current = {
-      name: input.name,
-      selectionStart: input.selectionStart,
-    };
+  // Save cursor position from an element
+  const saveCursorPosition = useCallback((element: HTMLInputElement | HTMLTextAreaElement) => {
+    if (element && element.name) {
+      focusedInputRef.current = {
+        name: element.name,
+        selectionStart: 'selectionStart' in element ? element.selectionStart : null,
+        selectionEnd: 'selectionEnd' in element ? element.selectionEnd : null,
+      };
+    }
   }, []);
+
+  // Save focus state before render
+  const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Clear focus ref if user is moving to a different element (allows Tab navigation)
+    if (focusedInputRef.current && focusedInputRef.current.name !== e.target.name) {
+      focusedInputRef.current = null;
+    }
+    saveCursorPosition(e.target);
+  }, [saveCursorPosition]);
+
+  // Wrapper for textarea focus events
+  const saveFocusTextarea = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
+    saveFocus(e as React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>);
+  }, [saveFocus]);
   
-  // Restore focus after render - but only if input actually lost focus
+  // Restore focus after render - simple logic: only restore if no form element is focused
   useEffect(() => {
-    if (focusedInputRef.current) {
-      const input = document.querySelector(`input[name="${focusedInputRef.current.name}"]`) as HTMLInputElement;
-      // Only restore focus if:
-      // 1. Input exists
-      // 2. Input is NOT currently focused (user is not actively typing)
-      // 3. Input is NOT a date type (to avoid interfering with date picker)
-      if (input && 
-          document.activeElement !== input &&
-          input.type !== 'date') {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          // Double-check the input is still not focused (user might have clicked elsewhere)
-          if (focusedInputRef.current && 
-              document.activeElement !== input &&
-              input.type !== 'date') {
-            input.focus();
-            if (focusedInputRef.current.selectionStart !== null) {
-              input.setSelectionRange(focusedInputRef.current.selectionStart, focusedInputRef.current.selectionStart);
-            }
-          }
-        });
+    if (!focusedInputRef.current) {
+      return;
+    }
+
+    // Check if any form element is currently focused
+    const activeElement = document.activeElement;
+    const isFormElementFocused = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.tagName === 'BUTTON'
+    );
+
+    // If a form element is focused, don't restore (user is navigating with Tab/click)
+    if (isFormElementFocused) {
+      return;
+    }
+
+    // Try to find both input and textarea elements
+    const input = document.querySelector(`input[name="${focusedInputRef.current.name}"]`) as HTMLInputElement;
+    const textarea = document.querySelector(`textarea[name="${focusedInputRef.current.name}"]`) as HTMLTextAreaElement;
+    const element = input || textarea;
+    
+    // Only restore if element exists, is not focused, and is not a date input
+    if (element && 
+        document.activeElement !== element &&
+        (!input || input.type !== 'date')) {
+      element.focus();
+      // Set cursor to end of text instead of saved position
+      if (element.value) {
+        const end = element.value.length;
+        element.setSelectionRange(end, end);
+      } else if (focusedInputRef.current.selectionStart !== null && 'setSelectionRange' in element) {
+        // Fallback to saved position if no value
+        const start = focusedInputRef.current.selectionStart;
+        const end = focusedInputRef.current.selectionEnd !== null ? focusedInputRef.current.selectionEnd : start;
+        element.setSelectionRange(start, end);
       }
     }
   });
@@ -517,7 +549,7 @@ const EditStaff = () => {
   };
 
   // Autosave handler for blur events
-  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement>) => {
+  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     // Don't autosave if user clicked on a button or link (relatedTarget)
     if (e?.relatedTarget) {
       const target = e.relatedTarget as HTMLElement;
@@ -558,6 +590,15 @@ const EditStaff = () => {
         });
     }, 100); // Small delay to ensure state is updated
   }, [cleanEmptyDateStrings]);
+
+  // Wrapper for textarea blur events
+  const handleAutosaveTextarea = useCallback((e: React.FocusEvent<HTMLTextAreaElement>) => {
+    // Clear focus ref when textarea blurs so focus restoration doesn't interfere
+    if (focusedInputRef.current && focusedInputRef.current.name === e.target.name) {
+      focusedInputRef.current = null;
+    }
+    handleAutosave(e as React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>);
+  }, [handleAutosave]);
 
   const handleCancel = () => {
     navigate('/staff');
@@ -937,7 +978,7 @@ const EditStaff = () => {
               <h2>Emergency Contacts</h2>
               <button
                 type="button"
-                className="btn-add-contact"
+                className="btn-add"
                 onClick={openAddContactPopup}
               >
                 <FontAwesomeIcon icon={faPlus} /> Add Contact
@@ -1070,15 +1111,17 @@ const EditStaff = () => {
                 value={currentContact.address || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, address: e.target.value })}
               />
+            </div>
+              <div>
               <TextField
                 label="Notes"
                 name="contact-notes"
                 value={currentContact.notes || ''}
                 onChange={(e) => setCurrentContact({ ...currentContact, notes: e.target.value })}
                 rows={4}
+                textFieldWidth="97.7%"
               />
             </div>
-
           </form>
         </Popup>
       </div>
@@ -1219,7 +1262,7 @@ const EditStaff = () => {
               <h2>DBS Records</h2>
               <button
                 type="button"
-                className="btn-add-contact"
+                className="btn-add"
                 onClick={openAddDBSPopup}
               >
                 <FontAwesomeIcon icon={faPlus} /> Add DBS
@@ -1589,13 +1632,14 @@ const EditStaff = () => {
                 />
               </div>
 
-              <div className="form-row">
+              <div>
                 <TextField
                   label="Notes"
                   name="prohibition-management-notes"
                   value={currentDBS.prohibitionFromManagement?.notes || ''}
                   onChange={(e) => setCurrentDBS({ ...currentDBS, prohibitionFromManagement: { ...currentDBS.prohibitionFromManagement, notes: e.target.value } })}
                   rows={3}
+                  textFieldWidth="97.7%"
                 />
               </div>
             </div>
@@ -1768,7 +1812,7 @@ const EditStaff = () => {
               <h2>CPD Training</h2>
               <button
                 type="button"
-                className="btn-add-contact"
+                className="btn-add"
                 onClick={openAddTrainingPopup}
               >
                 <FontAwesomeIcon icon={faPlus} /> Add Training
@@ -1898,13 +1942,14 @@ const EditStaff = () => {
               
             </div>
 
-            <div className="form-row">
+            <div>
               <TextField
                 label="Notes"
                 name="training-notes"
                 value={currentTraining.notes || ''}
                 onChange={(e) => setCurrentTraining({ ...currentTraining, notes: e.target.value })}
                 rows={4}
+                textFieldWidth="97.7%"
               />
             </div>
           </form>
@@ -2027,7 +2072,7 @@ const EditStaff = () => {
             <h2>Qualifications</h2>
             <button
               type="button"
-              className="btn-add-contact"
+              className="btn-add"
               onClick={openAddQualificationPopup}
             >
               <FontAwesomeIcon icon={faPlus} /> Add Qualification
@@ -2216,13 +2261,14 @@ const EditStaff = () => {
             <div className="form-row">
             </div>
 
-            <div className="form-row">
+            <div>
               <TextField
                 label="Notes"
                 name="qualification-notes"
                 value={currentQualification.notes || ''}
                 onChange={(e) => setCurrentQualification({ ...currentQualification, notes: e.target.value })}
                 rows={4}
+                textFieldWidth='97.7%'
               />
             </div>
           </form>
@@ -2311,7 +2357,7 @@ const EditStaff = () => {
               <h2>HR Records</h2>
               <button
                 type="button"
-                className="btn-add-contact"
+                className="btn-add"
                 onClick={openAddHRPopup}
               >
                 <FontAwesomeIcon icon={faPlus} /> Add HR Record
@@ -2413,13 +2459,14 @@ const EditStaff = () => {
               </div>
             </div>
 
-            <div className="form-row">
+            <div>
               <TextField
                 label="Reason"
                 name="hr-reason"
                 value={currentHR.reason || ''}
                 onChange={(e) => setCurrentHR({ ...currentHR, reason: e.target.value })}
                 rows={4}
+                textFieldWidth='97.7%'
               />
             </div>
           </form>
@@ -2527,6 +2574,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, medicalDescription: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={4}
             />
             <TextField
@@ -2537,6 +2586,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, conditionsSyndrome: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={4}
             />
               <TextField
@@ -2547,6 +2598,8 @@ const EditStaff = () => {
                   ...staffData,
                   medicalNeeds: { ...medicalNeeds, medication: e.target.value },
                 })}
+                onFocus={saveFocusTextarea}
+                onBlur={handleAutosaveTextarea}
                 rows={4}
               />
           </div>
@@ -2560,6 +2613,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, specialDiet: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={3}
             />
             <TextField
@@ -2570,6 +2625,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, impairments: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={3}
             />
             <TextField
@@ -2580,6 +2637,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, allergies: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={3}
             />
           </div>
@@ -2593,6 +2652,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, assistanceRequired: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={3}
             />
             <TextField
@@ -2603,6 +2664,8 @@ const EditStaff = () => {
                 ...staffData,
                 medicalNeeds: { ...medicalNeeds, medicalNotes: e.target.value },
               })}
+              onFocus={saveFocusTextarea}
+              onBlur={handleAutosaveTextarea}
               rows={4}
             />
           </div>
@@ -2647,14 +2710,14 @@ const EditStaff = () => {
             <div className="section-header">
               <div className="form-heading">
               <h2>Doctor Contact Details</h2>
-              </div>
               <button
                 type="button"
-                className="btn-add-contact"
+                className="btn-add"
                 onClick={openAddDoctorPopup}
               >
                 <FontAwesomeIcon icon={faPlus} /> Add Doctor Contact
               </button>
+              </div>
             </div>
 
             {doctorContacts.length === 0 ? (
@@ -2735,24 +2798,21 @@ const EditStaff = () => {
                   value={currentDoctor.relationship || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, relationship: e.target.value })}
                 />
-              </div>
-
-              <div className="form-row">
                 <Input
                   label="Mobile"
                   name="doctor-mobile"
                   value={currentDoctor.mobile || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, mobile: e.target.value })}
                 />
+              </div>
+
+              <div className="form-row">
                 <Input
                   label="Daytime Phone"
                   name="doctor-daytime-phone"
                   value={currentDoctor.daytimePhone || ''}
                   onChange={(e) => setCurrentDoctor({ ...currentDoctor, daytimePhone: e.target.value })}
                 />
-              </div>
-
-              <div className="form-row">
                 <Input
                   label="Evening Phone"
                   name="doctor-evening-phone"
