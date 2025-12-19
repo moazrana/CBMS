@@ -1925,7 +1925,7 @@ const EditStudent = () => {
                 className="btn-add"
                 onClick={openBehaviourPopup}
               >
-                <FontAwesomeIcon icon={faPlus} /> {hasBehaviourInfo ? 'Edit Behaviour Info' : 'Add Behaviour Info'}
+                <FontAwesomeIcon icon={faPlus} /> Add Behaviour Info
               </button>
             </div>
           </div>
