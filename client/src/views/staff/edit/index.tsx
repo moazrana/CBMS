@@ -210,6 +210,13 @@ const EditStaff = () => {
 
   // Save focus state before render
   const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Don't save focus for date inputs - they don't support selection and can interfere with navigation
+    const input = e.target as HTMLInputElement;
+    if (input.type === 'date') {
+      focusedInputRef.current = null;
+      return;
+    }
+    
     // Clear focus ref if user is moving to a different element (allows Tab navigation)
     if (focusedInputRef.current && focusedInputRef.current.name !== e.target.name) {
       focusedInputRef.current = null;
@@ -239,6 +246,13 @@ const EditStaff = () => {
 
     // If a form element is focused, don't restore (user is navigating with Tab/click)
     if (isFormElementFocused) {
+      // Clear the ref if the focused element is a date input
+      if (activeElement && activeElement.tagName === 'INPUT') {
+        const input = activeElement as HTMLInputElement;
+        if (input.type === 'date') {
+          focusedInputRef.current = null;
+        }
+      }
       return;
     }
 
@@ -247,21 +261,48 @@ const EditStaff = () => {
     const textarea = document.querySelector(`textarea[name="${focusedInputRef.current.name}"]`) as HTMLTextAreaElement;
     const element = input || textarea;
     
-    // Only restore if element exists, is not focused, and is not a date input
-    if (element && 
-        document.activeElement !== element &&
-        (!input || input.type !== 'date')) {
+    // Skip if element is a date input - they don't support selection and shouldn't be restored
+    if (input && input.type === 'date') {
+      focusedInputRef.current = null;
+      return;
+    }
+    
+    // Safety check: if element doesn't exist or is already the active element, don't restore
+    if (!element || document.activeElement === element) {
+      return;
+    }
+    
+    // Input types that support setSelectionRange
+    const selectionSupportedTypes = ['text', 'search', 'url', 'tel', 'password', 'email'];
+    const isTextarea = element && element.tagName === 'TEXTAREA';
+    const supportsSelection = isTextarea || (input && selectionSupportedTypes.includes(input.type));
+    
+    // Restore focus for all supported types (including email, but without setSelectionRange)
+    if (element) {
       element.focus();
-      // Set cursor to end of text instead of saved position
-      if (element.value) {
-        const end = element.value.length;
-        element.setSelectionRange(end, end);
-      } else if (focusedInputRef.current.selectionStart !== null && 'setSelectionRange' in element) {
-        // Fallback to saved position if no value
-        const start = focusedInputRef.current.selectionStart;
-        const end = focusedInputRef.current.selectionEnd !== null ? focusedInputRef.current.selectionEnd : start;
-        element.setSelectionRange(start, end);
+      
+      // Only try to set selection range for types that support it (not email)
+      if (supportsSelection && input && input.type !== 'email') {
+        // Set cursor to end of text instead of saved position
+        if (element.value) {
+          const end = element.value.length;
+          try {
+            element.setSelectionRange(end, end);
+          } catch (e) {
+            // Ignore errors for input types that don't support selection
+          }
+        } else if (focusedInputRef.current.selectionStart !== null && 'setSelectionRange' in element) {
+          // Fallback to saved position if no value
+          const start = focusedInputRef.current.selectionStart;
+          const end = focusedInputRef.current.selectionEnd !== null ? focusedInputRef.current.selectionEnd : start;
+          try {
+            element.setSelectionRange(start, end);
+          } catch (e) {
+            // Ignore errors for input types that don't support selection
+          }
+        }
       }
+      // For email inputs, we just focus them without trying to set selection range
     }
   });
   

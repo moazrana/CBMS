@@ -154,6 +154,11 @@ const EditStudent = () => {
   // Save focus state before render
   const saveFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
     const input = e.target;
+    // Don't save focus for date inputs - they don't support selection and can interfere with navigation
+    if (input.type === 'date') {
+      focusedInputRef.current = null;
+      return;
+    }
     focusedInputRef.current = {
       name: input.name,
       selectionStart: input.selectionStart,
@@ -165,10 +170,25 @@ const EditStudent = () => {
     if (focusedInputRef.current) {
       const input = document.querySelector(`input[name="${focusedInputRef.current.name}"]`) as HTMLInputElement;
       if (input) {
-        input.focus();
-        if (focusedInputRef.current.selectionStart !== null) {
-          input.setSelectionRange(focusedInputRef.current.selectionStart, focusedInputRef.current.selectionStart);
+        // Skip if element is a date input - they don't support selection and shouldn't be restored
+        if (input.type === 'date') {
+          focusedInputRef.current = null;
+          return;
         }
+        input.focus();
+        // Input types that support setSelectionRange (email is included but won't use setSelectionRange)
+        const selectionSupportedTypes = ['text', 'search', 'url', 'tel', 'password', 'email'];
+        // Only try setSelectionRange for types that actually support it (not email)
+        if (focusedInputRef.current.selectionStart !== null && 
+            selectionSupportedTypes.includes(input.type) && 
+            input.type !== 'email') {
+          try {
+            input.setSelectionRange(focusedInputRef.current.selectionStart, focusedInputRef.current.selectionStart);
+          } catch {
+            // Ignore errors for input types that don't support selection
+          }
+        }
+        // For email inputs, we just focus them without trying to set selection range
       }
     }
   });
@@ -225,6 +245,13 @@ const EditStudent = () => {
   useEffect(() => {
     studentDataRef.current = studentData;
   }, [studentData]);
+
+  // Keep studentIdRef in sync with id param
+  useEffect(() => {
+    if (id) {
+      studentIdRef.current = id;
+    }
+  }, [id]);
 
   // Track if data has been fetched
   const [hasFetched, setHasFetched] = useState(false);
@@ -344,7 +371,7 @@ const EditStudent = () => {
   };
 
   // Autosave handler for blur events
-  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement>) => {
+  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     // Don't autosave if user clicked on a button or link (relatedTarget)
     if (e?.relatedTarget) {
       const target = e.relatedTarget as HTMLElement;
@@ -357,23 +384,29 @@ const EditStudent = () => {
     setTimeout(() => {
       // Use refs to get latest state without dependencies
       const currentData = studentDataRef.current;
-      const currentId = id || studentIdRef.current;
-
-      if (!currentId) {
-        return;
-      }
+      const currentId = studentIdRef.current;
 
       // Skip if required fields are missing
       if (!currentData.personalInfo.legalFirstName || !currentData.personalInfo.lastName) {
+        console.log('Autosave skipped: missing required fields');
         return;
       }
 
       // Clean data
       const cleanedData = cleanEmptyDateStrings(currentData);
 
-      // Perform autosave - use API directly to avoid triggering loading state
-      api.patch(`/students/${currentId}`, cleanedData)
+      // Perform autosave - use POST for new students, PATCH for existing ones
+      const method = currentId ? 'patch' : 'post';
+      const url = currentId ? `/students/${currentId}` : '/students';
+      
+      api[method](url, cleanedData)
         .then((response) => {
+          if (!currentId && response.data && response.data._id) {
+            const newId = response.data._id;
+            studentIdRef.current = newId;
+            // Update URL without navigation
+            window.history.replaceState({}, '', `/students/edit/${newId}`);
+          }
           console.log('Autosave successful:', response.data);
         })
         .catch((error) => {
@@ -381,7 +414,7 @@ const EditStudent = () => {
           console.error('Autosave error:', error);
         });
     }, 100); // Small delay to ensure state is updated
-  }, [cleanEmptyDateStrings, id]);
+  }, [cleanEmptyDateStrings]);
 
   const handleCancel = () => {
     navigate('/students');
@@ -554,7 +587,7 @@ const EditStudent = () => {
           <h2>Admission Information</h2>
         </div>
         <div className="form-row">
-          <Input
+          <DateInput
             label="Admission Date"
             name="admissionDate"
             value={studentData.personalInfo.admissionDate || ''}
