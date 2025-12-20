@@ -319,7 +319,7 @@ export class User extends Document {
       updateServiceCheckDate: { type: Date },
       rightToWork: {
         type: {
-          type: { type: String },
+          type: String,
           verifiedDate: { type: Date },
           verifiedBy: {
             type: {
