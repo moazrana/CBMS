@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, Schema as MongooseSchema } from 'mongoose';
 import { Role } from './role.schema';
 import { UserDocument as UserDocumentType } from './document.schema';
 
@@ -41,7 +41,7 @@ export interface DBS {
   updateServiceId?: string;
   updateServiceCheckDate?: Date;
   rightToWork?: {
-    type?: string;
+    type?: 'visa' | 'passport' | 'shareCode';
     verifiedDate?: Date;
     verifiedBy?: {
       _id: Types.ObjectId;
@@ -184,6 +184,33 @@ export interface AdminProfile {
 
 export type UserProfile = StaffProfile | StudentProfile | AdminProfile;
 
+// RightToWork Schema Definition
+const RightToWorkSchema = {
+  type: {
+    type: String,
+    enum: ['visa', 'passport', 'shareCode'],
+    required: true,
+  },
+  verifiedDate: {
+    type: Date,
+  },
+  verifiedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+  expiry: {
+    type: Date,
+  },
+  evidence: {
+    type: String,
+  },
+};
+
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
@@ -317,22 +344,7 @@ export class User extends Document {
       dbsCheckedDate: { type: Date },
       updateServiceId: { type: String },
       updateServiceCheckDate: { type: Date },
-      rightToWork: {
-        type: {
-          type: String,
-          verifiedDate: { type: Date },
-          verifiedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-          expiry: { type: Date },
-          evidence: { type: String },
-        },
-        _id: false,
-      },
+      rightToWork: RightToWorkSchema,
       overseas: {
         type: {
           checkNeeded: { type: Boolean },

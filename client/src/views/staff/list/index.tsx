@@ -40,7 +40,7 @@ interface Staff {
     address?: string;
     notes?: string;
   }>;
-  dbs?: {
+  dbs?: Array<{
     staffMember?: string;
     checkLevel?: string;
     applicationSentDate?: string;
@@ -91,7 +91,7 @@ interface Staff {
       checkedDate?: string;
       checkedByUserId?: string;
     };
-  };
+  }>;
   cpdTraining?: Array<{
     courseName: string;
     dateCompleted?: string;
@@ -236,28 +236,21 @@ const StaffList = () => {
     const preferredName = profile.preferredName || '';
     const displayName = preferredName || `${firstName} ${lastName}`.trim() || member.name || 'N/A';
     
-    // Calculate DBS expiry
+    // Calculate DBS expiry - get the last entered DBS record's rightToWork expiry
     const getDBSExpiry = (): string => {
-      const dbs = member.dbs;
-      if (!dbs) return 'N/A';
-      
-      // Check update service check date (most relevant for ongoing DBS checks)
-      if (dbs.updateServiceCheckDate) {
-        const expiryDate = new Date(dbs.updateServiceCheckDate);
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1); // DBS updates typically valid for 1 year
-        return expiryDate.toISOString().split('T')[0];
+      const dbsArray = member.dbs;
+      if (!dbsArray || !Array.isArray(dbsArray) || dbsArray.length === 0) {
+        return 'N/A';
       }
       
-      // Check right to work expiry
-      if (dbs.rightToWork?.expiry) {
-        return dbs.rightToWork.expiry.split('T')[0];
-      }
+      // Get the last DBS record (most recently added)
+      const lastDBS = dbsArray[dbsArray.length - 1];
       
-      // Check certificate date received (if no update service, certificate is valid for 3 years)
-      if (dbs.certificateDateReceived) {
-        const certDate = new Date(dbs.certificateDateReceived);
-        certDate.setFullYear(certDate.getFullYear() + 3);
-        return certDate.toISOString().split('T')[0];
+      // Check right to work expiry (most relevant - this is what the user wants to see)
+      if (lastDBS.rightToWork?.expiry) {
+        const expiryDate = lastDBS.rightToWork.expiry;
+        // Handle both date string and ISO string formats
+        return expiryDate.split('T')[0];
       }
       
       return 'N/A';

@@ -108,15 +108,10 @@ export class StaffService {
   }
 
   private async mapRightToWorkData(
-    source?: {
-      type?: string;
-      verifiedDate?: string;
-      verifiedByUserId?: string;
-      expiry?: string;
-      evidence?: string;
-    },
+    source?: any,
     existing?: DBS['rightToWork'],
   ): Promise<DBS['rightToWork'] | undefined> {
+    //console.log('source$$$$$$', source);
     if (!source) {
       return existing;
     }
@@ -124,21 +119,27 @@ export class StaffService {
     const result: DBS['rightToWork'] = { ...(existing || {}) };
 
     if (source.type !== undefined) {
+      //console.log('source.type$$$$$$', source.type);
       result.type = source.type;
     }
     if (source.verifiedDate !== undefined) {
+      //console.log('source.verifiedDate$$$$$$', source.verifiedDate);
       result.verifiedDate = source.verifiedDate ? new Date(source.verifiedDate) : undefined;
     }
     if (source.verifiedByUserId !== undefined && source.verifiedByUserId !== 'undefined' && source.verifiedByUserId !== 'null') {
+      //console.log('verifiedByUserId$$$$$$', source.verifiedByUserId);
       result.verifiedBy = await this.resolveCheckedByUser(source.verifiedByUserId);
     }
     if (source.expiry !== undefined) {
+      //console.log('source.expiry$$$$$$', source.expiry);
       result.expiry = source.expiry ? new Date(source.expiry) : undefined;
     }
     if (source.evidence !== undefined) {
+      //console.log('source.evidence$$$$$$', source.evidence);
       result.evidence = source.evidence;
     }
 
+    //console.log('result$$$$$$', result);
     return Object.keys(result).length > 0 ? result : undefined;
   }
 
@@ -329,8 +330,9 @@ export class StaffService {
       updateServiceId: dbsDto.updateServiceId,
       updateServiceCheckDate: dbsDto.updateServiceCheckDate ? new Date(dbsDto.updateServiceCheckDate) : undefined,
     };
-
+    //console.log('here1')
     const rightToWork = await this.mapRightToWorkData(dbsDto.rightToWork);
+    // //console.log('rightToWork', rightToWork);
     if (rightToWork) {
       dbsData.rightToWork = rightToWork;
     }
@@ -640,6 +642,8 @@ export class StaffService {
   }
 
   async update(id: string, updateStaffDto: UpdateStaffDto) {
+    // //console.log('here1');
+    // //console.log('updateStaffDto', updateStaffDto.dbs[0].rightToWork);
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid staff identifier');
     }
@@ -768,15 +772,18 @@ export class StaffService {
       };
 
         if (dbsDto.rightToWork !== undefined) {
-        const mappedRightToWork = await this.mapRightToWorkData(
-            dbsDto.rightToWork,
-            existingDBS?.rightToWork,
-        );
-        if (mappedRightToWork) {
-          dbsData.rightToWork = mappedRightToWork;
-        } else {
-          delete dbsData.rightToWork;
-        }
+          //console.log('here2')
+          const mappedRightToWork = await this.mapRightToWorkData(
+              dbsDto.rightToWork,
+              existingDBS?.rightToWork,
+          );
+          //console.log('mappedRightToWork$$$$$$', mappedRightToWork);
+          if (mappedRightToWork) {
+            dbsData.rightToWork = mappedRightToWork;
+            //console.log('dbsData$$$$$$', dbsData.rightToWork);
+          } else {
+            delete dbsData.rightToWork;
+          }
       }
 
         if (dbsDto.overseas !== undefined) {
@@ -804,7 +811,7 @@ export class StaffService {
       }
 
         if (dbsDto.prohibitionFromTeaching !== undefined) {
-        const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
+          const mappedProhibitionTeaching = await this.mapProhibitionFromTeachingData(
             dbsDto.prohibitionFromTeaching,
             existingDBS?.prohibitionFromTeaching,
         );
@@ -853,9 +860,11 @@ export class StaffService {
       }
 
         mappedDBSArray.push(dbsData);
+        //console.log('mappedDBSArray$$$$$$', mappedDBSArray[0].rightToWork);
       }
-
+      //console.log('mappedDBSArray$$$$$$', mappedDBSArray[0].rightToWork);
       user.dbs = mappedDBSArray;
+      //console.log('user.dbs$$$$$$', user.dbs[0].rightToWork);
       // Mark DBS as modified for Mongoose to detect changes
       user.markModified('dbs');
     }

@@ -38,7 +38,7 @@ export class StaffController {
   
   @Patch(':id')
   async updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
-    console.log('updateStaffDto', updateStaffDto);
+    // console.log('updateStaffDto', updateStaffDto);
     return this.staffService.update(id, updateStaffDto);
   }
 

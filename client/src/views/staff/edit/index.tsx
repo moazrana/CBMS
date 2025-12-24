@@ -609,14 +609,14 @@ const EditStaff = () => {
       if (!currentData.firstName || !currentData.email) {
         return;
       }
-
+      console.log('currentData', currentData);
       // Clean data: convert empty date strings to undefined recursively
       const cleanedData = cleanEmptyDateStrings(currentData);
-
       // Perform autosave - use API directly to avoid triggering loading state
       const method = currentId ? 'patch' : 'post';
       const url = currentId ? `/staff/${currentId}` : '/staff';
       
+      console.log('cleanedData', cleanedData);
       api[method](url, cleanedData)
         .then((response) => {
           if (!currentId && response.data && response.data._id) {
