@@ -211,6 +211,129 @@ const RightToWorkSchema = {
   },
 };
 
+// Overseas Schema Definition
+const OverseasSchema = {
+  checkNeeded: {
+    type: Boolean,
+  },
+  evidenceProduced: {
+    type: Boolean,
+  },
+  checkDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+  uploadEvidence: {
+    type: String,
+  },
+};
+
+// ChildrenBarredListCheck Schema Definition
+const ChildrenBarredListCheckSchema = {
+  completed: {
+    type: Boolean,
+  },
+  checkDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+};
+
+// ProhibitionFromTeaching Schema Definition
+const ProhibitionFromTeachingSchema = {
+  checked: {
+    type: Boolean,
+  },
+  checkDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+};
+
+// ProhibitionFromManagement Schema Definition
+const ProhibitionFromManagementSchema = {
+  completed: {
+    type: Boolean,
+  },
+  checkDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+  notes: {
+    type: String,
+  },
+};
+
+// DisqualificationUnderChildrenAct Schema Definition
+const DisqualificationUnderChildrenActSchema = {
+  completed: {
+    type: Boolean,
+  },
+  checkDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+};
+
+// DisqualifiedByAssociation Schema Definition
+const DisqualifiedByAssociationSchema = {
+  completed: {
+    type: Boolean,
+  },
+  checkedDate: {
+    type: Date,
+  },
+  checkedBy: {
+    _id: {
+      type: MongooseSchema.Types.ObjectId,
+      ref: 'User',
+    },
+    name: {
+      type: String,
+    },
+  },
+};
+
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
@@ -345,93 +468,12 @@ export class User extends Document {
       updateServiceId: { type: String },
       updateServiceCheckDate: { type: Date },
       rightToWork: RightToWorkSchema,
-      overseas: {
-        type: {
-          checkNeeded: { type: Boolean },
-          evidenceProduced: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-          uploadEvidence: { type: String },
-        },
-        _id: false,
-      },
-      childrenBarredListCheck: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      prohibitionFromTeaching: {
-        type: {
-          checked: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      prohibitionFromManagement: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-          notes: { type: String },
-        },
-        _id: false,
-      },
-      disqualificationUnderChildrenAct: {
-        type: {
-          completed: { type: Boolean },
-          checkDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
-      disqualifiedByAssociation: {
-        type: {
-          completed: { type: Boolean },
-          checkedDate: { type: Date },
-          checkedBy: {
-            type: {
-              _id: { type: Types.ObjectId },
-              name: { type: String },
-            },
-            _id: false,
-          },
-        },
-        _id: false,
-      },
+      overseas: OverseasSchema,
+      childrenBarredListCheck: ChildrenBarredListCheckSchema,
+      prohibitionFromTeaching: ProhibitionFromTeachingSchema,
+      prohibitionFromManagement: ProhibitionFromManagementSchema,
+      disqualificationUnderChildrenAct: DisqualificationUnderChildrenActSchema,
+      disqualifiedByAssociation: DisqualifiedByAssociationSchema,
   }])
   dbs?: DBS[];
 

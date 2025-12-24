@@ -288,7 +288,7 @@ const EditStaff = () => {
           const end = element.value.length;
           try {
             element.setSelectionRange(end, end);
-          } catch (e) {
+          } catch {
             // Ignore errors for input types that don't support selection
           }
         } else if (focusedInputRef.current.selectionStart !== null && 'setSelectionRange' in element) {
@@ -297,7 +297,7 @@ const EditStaff = () => {
           const end = focusedInputRef.current.selectionEnd !== null ? focusedInputRef.current.selectionEnd : start;
           try {
             element.setSelectionRange(start, end);
-          } catch (e) {
+          } catch {
             // Ignore errors for input types that don't support selection
           }
         }
@@ -405,42 +405,70 @@ const EditStaff = () => {
         endDate: profile.endDate ? profile.endDate.split('T')[0] : '',
         address: profile.address || {},
         emergencyContacts: response.emergencyContacts || [],
-        dbs: Array.isArray(response.dbs) ? response.dbs.map((dbsItem: DBS) => ({
-          ...dbsItem,
-          applicationSentDate: dbsItem.applicationSentDate ? dbsItem.applicationSentDate.split('T')[0] : undefined,
-          certificateDateReceived: dbsItem.certificateDateReceived ? dbsItem.certificateDateReceived.split('T')[0] : undefined,
-          dbsCheckedDate: dbsItem.dbsCheckedDate ? dbsItem.dbsCheckedDate.split('T')[0] : undefined,
-          updateServiceCheckDate: dbsItem.updateServiceCheckDate ? dbsItem.updateServiceCheckDate.split('T')[0] : undefined,
-          rightToWork: dbsItem.rightToWork ? {
-            ...dbsItem.rightToWork,
-            verifiedDate: dbsItem.rightToWork.verifiedDate ? dbsItem.rightToWork.verifiedDate.split('T')[0] : undefined,
-            expiry: dbsItem.rightToWork.expiry ? dbsItem.rightToWork.expiry.split('T')[0] : undefined,
-          } : {},
-          overseas: dbsItem.overseas ? {
-            ...dbsItem.overseas,
-            checkDate: dbsItem.overseas.checkDate ? dbsItem.overseas.checkDate.split('T')[0] : undefined,
-          } : {},
-          childrenBarredListCheck: dbsItem.childrenBarredListCheck ? {
-            ...dbsItem.childrenBarredListCheck,
-            checkDate: dbsItem.childrenBarredListCheck.checkDate ? dbsItem.childrenBarredListCheck.checkDate.split('T')[0] : undefined,
-          } : {},
-          prohibitionFromTeaching: dbsItem.prohibitionFromTeaching ? {
-            ...dbsItem.prohibitionFromTeaching,
-            checkDate: dbsItem.prohibitionFromTeaching.checkDate ? dbsItem.prohibitionFromTeaching.checkDate.split('T')[0] : undefined,
-          } : {},
-          prohibitionFromManagement: dbsItem.prohibitionFromManagement ? {
-            ...dbsItem.prohibitionFromManagement,
-            checkDate: dbsItem.prohibitionFromManagement.checkDate ? dbsItem.prohibitionFromManagement.checkDate.split('T')[0] : undefined,
-          } : {},
-          disqualificationUnderChildrenAct: dbsItem.disqualificationUnderChildrenAct ? {
-            ...dbsItem.disqualificationUnderChildrenAct,
-            checkDate: dbsItem.disqualificationUnderChildrenAct.checkDate ? dbsItem.disqualificationUnderChildrenAct.checkDate.split('T')[0] : undefined,
-          } : {},
-          disqualifiedByAssociation: dbsItem.disqualifiedByAssociation ? {
-            ...dbsItem.disqualifiedByAssociation,
-            checkedDate: dbsItem.disqualifiedByAssociation.checkedDate ? dbsItem.disqualifiedByAssociation.checkedDate.split('T')[0] : undefined,
-          } : {},
-        })) : [],
+        dbs: Array.isArray(response.dbs) ? response.dbs.map((dbsItem: unknown) => {
+          // Helper function to extract user ID from verifiedBy/checkedBy object
+          const extractUserId = (userObj: unknown): string | undefined => {
+            if (!userObj) return undefined;
+            if (typeof userObj === 'string') return userObj;
+            if (typeof userObj === 'object' && userObj !== null && '_id' in userObj) {
+              const id = (userObj as { _id: unknown })._id;
+              return typeof id === 'object' && id !== null && 'toString' in id 
+                ? (id as { toString(): string }).toString() 
+                : String(id);
+            }
+            return undefined;
+          };
+
+          const item = dbsItem as Record<string, unknown>;
+          const getString = (val: unknown): string | undefined => 
+            typeof val === 'string' ? val : undefined;
+          const getDateString = (val: unknown): string | undefined => 
+            typeof val === 'string' ? val.split('T')[0] : undefined;
+          
+          return {
+            ...item,
+            applicationSentDate: getDateString(item.applicationSentDate),
+            certificateDateReceived: getDateString(item.certificateDateReceived),
+            dbsCheckedDate: getDateString(item.dbsCheckedDate),
+            updateServiceCheckDate: getDateString(item.updateServiceCheckDate),
+            rightToWork: item.rightToWork && typeof item.rightToWork === 'object' ? {
+              ...(item.rightToWork as Record<string, unknown>),
+              verifiedDate: getDateString((item.rightToWork as Record<string, unknown>).verifiedDate),
+              expiry: getDateString((item.rightToWork as Record<string, unknown>).expiry),
+              verifiedByUserId: extractUserId((item.rightToWork as Record<string, unknown>).verifiedBy) || getString((item.rightToWork as Record<string, unknown>).verifiedByUserId),
+            } : {},
+            overseas: item.overseas && typeof item.overseas === 'object' ? {
+              ...(item.overseas as Record<string, unknown>),
+              checkDate: getDateString((item.overseas as Record<string, unknown>).checkDate),
+              checkedByUserId: extractUserId((item.overseas as Record<string, unknown>).checkedBy) || getString((item.overseas as Record<string, unknown>).checkedByUserId),
+            } : {},
+            childrenBarredListCheck: item.childrenBarredListCheck && typeof item.childrenBarredListCheck === 'object' ? {
+              ...(item.childrenBarredListCheck as Record<string, unknown>),
+              checkDate: getDateString((item.childrenBarredListCheck as Record<string, unknown>).checkDate),
+              checkedByUserId: extractUserId((item.childrenBarredListCheck as Record<string, unknown>).checkedBy) || getString((item.childrenBarredListCheck as Record<string, unknown>).checkedByUserId),
+            } : {},
+            prohibitionFromTeaching: item.prohibitionFromTeaching && typeof item.prohibitionFromTeaching === 'object' ? {
+              ...(item.prohibitionFromTeaching as Record<string, unknown>),
+              checkDate: getDateString((item.prohibitionFromTeaching as Record<string, unknown>).checkDate),
+              checkedByUserId: extractUserId((item.prohibitionFromTeaching as Record<string, unknown>).checkedBy) || getString((item.prohibitionFromTeaching as Record<string, unknown>).checkedByUserId),
+            } : {},
+            prohibitionFromManagement: item.prohibitionFromManagement && typeof item.prohibitionFromManagement === 'object' ? {
+              ...(item.prohibitionFromManagement as Record<string, unknown>),
+              checkDate: getDateString((item.prohibitionFromManagement as Record<string, unknown>).checkDate),
+              checkedByUserId: extractUserId((item.prohibitionFromManagement as Record<string, unknown>).checkedBy) || getString((item.prohibitionFromManagement as Record<string, unknown>).checkedByUserId),
+            } : {},
+            disqualificationUnderChildrenAct: item.disqualificationUnderChildrenAct && typeof item.disqualificationUnderChildrenAct === 'object' ? {
+              ...(item.disqualificationUnderChildrenAct as Record<string, unknown>),
+              checkDate: getDateString((item.disqualificationUnderChildrenAct as Record<string, unknown>).checkDate),
+              checkedByUserId: extractUserId((item.disqualificationUnderChildrenAct as Record<string, unknown>).checkedBy) || getString((item.disqualificationUnderChildrenAct as Record<string, unknown>).checkedByUserId),
+            } : {},
+            disqualifiedByAssociation: item.disqualifiedByAssociation && typeof item.disqualifiedByAssociation === 'object' ? {
+              ...(item.disqualifiedByAssociation as Record<string, unknown>),
+              checkedDate: getDateString((item.disqualifiedByAssociation as Record<string, unknown>).checkedDate),
+              checkedByUserId: extractUserId((item.disqualifiedByAssociation as Record<string, unknown>).checkedBy) || getString((item.disqualifiedByAssociation as Record<string, unknown>).checkedByUserId),
+            } : {},
+          };
+        }) : [],
         cpdTraining: response.cpdTraining || [],
         qualifications: response.qualifications || [],
         hr: response.hr || [],
