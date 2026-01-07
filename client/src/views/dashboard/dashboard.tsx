@@ -3,7 +3,7 @@ import Layout from '../../layouts/layout';
 import students from '../../assets/dashboard/students.svg'
 import teachers from '../../assets/dashboard/teachers.svg'
 import staff from '../../assets/dashboard/staff.svg'
-import pic from '../../assets/dashboard/pic.png'
+// import pic from '../../assets/dashboard/pic.png'
 import './dashboard.scss'
 const Dashboard: React.FC = () => {
     return (
