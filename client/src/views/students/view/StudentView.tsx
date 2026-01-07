@@ -19,6 +19,7 @@ export interface StudentViewProps {
       yearGroup?: string;
       ethnicity?: string;
       photo?: string;
+      location?: string;
       notesAndFiles?: Array<{
         fileName: string;
         filePath: string;
@@ -264,6 +265,10 @@ const StudentView: React.FC<StudentViewProps> = ({ studentData }) => {
           </div>
         </div>
         <div className="view-row">
+          <div className="view-field">
+            <label>Location</label>
+            <div className="view-value">{personalInfo.location || 'N/A'}</div>
+          </div>
           <div className="view-field">
             <label>Ethnicity</label>
             <div className="view-value">{personalInfo.ethnicity || 'N/A'}</div>

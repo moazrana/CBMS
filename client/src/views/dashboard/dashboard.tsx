@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className='div-one'>
-                    <img src={pic} alt="graph" style={{ width: '100%', height: '100%' }} />
+                    {/* <img src={pic} alt="graph" style={{ width: '100%', height: '100%' }} /> */}
                 </div>
                 {/* <div className='graphs'>
                     <div className="overview-div attendance">

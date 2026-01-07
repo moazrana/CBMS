@@ -11,6 +11,7 @@ interface SelectProps {
     name: string;
     value: string | number;
     onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    onBlur?: (e: React.FocusEvent<HTMLSelectElement>) => void;
     options: Option[];
     placeholder?: string;
     error?: string;
@@ -25,6 +26,7 @@ const Select: React.FC<SelectProps> = ({
     name,
     value,
     onChange,
+    onBlur,
     options,
     placeholder,
     error,
@@ -48,6 +50,7 @@ const Select: React.FC<SelectProps> = ({
                     name={name}
                     value={value}
                     onChange={onChange}
+                    onBlur={onBlur}
                     disabled={disabled}
                     className={`select-field ${error ? 'error' : ''}`}
                 >

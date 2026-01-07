@@ -61,12 +61,15 @@ export class IncidentsService {
   }
 
   async findAll(): Promise<Incident[]> {
-    return this.incidentModel.find().populate([
+    return this.incidentModel.find()
+      .sort({ createdAt: -1 })
+      .populate([
       {path:'student',select:'name subject'}, 
       {path:'staff',select:'name'}, 
       {path:'location',select:'name'}, 
       {path:'period',select:'name'}
-    ]).exec();
+      ])
+      .exec();
   }
 
   async findOne(id: string): Promise<Incident> {

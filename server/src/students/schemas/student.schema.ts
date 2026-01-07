@@ -123,6 +123,7 @@ export interface PersonalInfo {
   yearGroup?: string;
   ethnicity?: string; // MIS requirement
   photo?: string; // Photo upload path/URL
+  location?: string; // Location (Warrington or Burrow)
   notesAndFiles?: StudentFile[]; // Notes & Files (Add/Edit/Delete)
 }
 
@@ -144,6 +145,7 @@ export class Student {
       yearGroup: { type: String, trim: true },
       ethnicity: { type: String, trim: true },
       photo: { type: String, trim: true },
+      location: { type: String, trim: true },
       notesAndFiles: [{
         fileName: { type: String, required: true },
         filePath: { type: String, required: true },

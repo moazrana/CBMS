@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
@@ -32,8 +33,19 @@ export class StaffController {
   }
 
   @Get()
-  async findAllStaff() {
-    return this.staffService.findAll();
+  async findAllStaff(
+    @Query('sort') sort?: string,
+    @Query('order') order?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ) {
+    const sortField = sort || 'createdAt';
+    const sortOrder = order || 'DESC';
+    const searchTerm = search || '';
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const perPageNum = perPage ? parseInt(perPage, 10) : 10;
+    return this.staffService.findAll(sortField, sortOrder, searchTerm, pageNum, perPageNum);
   }
   
   @Patch(':id')

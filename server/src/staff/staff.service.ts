@@ -557,8 +557,9 @@ export class StaffService {
     return this.findOne(user._id.toString());
   }
 
-  async findAll() {
-    return this.userModel.aggregate([
+  async findAll(sort: string = 'createdAt', order: string = 'DESC', search: string = '', page: number = 1, perPage: number = 10) {
+    const sortOrder = order === 'DESC' ? -1 : 1;
+    const pipeline: any[] = [
       {
         $lookup: {
           from: 'roles',
@@ -575,13 +576,42 @@ export class StaffService {
           'profile.firstName': { $exists: true }
         }
       },
-      {
+    ];
+
+    // Add search if provided
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'profile.firstName': { $regex: search, $options: 'i' } },
+            { 'profile.lastName': { $regex: search, $options: 'i' } },
+            { 'profile.preferredName': { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ],
+        },
+      });
+    }
+
+    // Add sorting
+    pipeline.push({
+      $sort: { [sort]: sortOrder }
+    });
+
+    // Add pagination
+    pipeline.push(
+      { $skip: (page - 1) * perPage },
+      { $limit: perPage }
+    );
+
+    // Add projection
+    pipeline.push({
         $project: {
           password: 0,
           pin: 0
         }
-      }
-    ]);
+    });
+
+    return this.userModel.aggregate(pipeline);
   }
 
   async findOne(id: string) {

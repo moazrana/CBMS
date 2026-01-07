@@ -217,6 +217,10 @@ export class PersonalInfoDto {
   photo?: string; // Photo upload path/URL
 
   @IsOptional()
+  @IsString()
+  location?: string; // Location (Warrington or Burrow)
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => StudentFileDto)

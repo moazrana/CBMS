@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import './DataTable.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPencil, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import Popup from '../Popup/Popup';
 import { PermissionGuard } from '../PermissionGuard';
 interface Column {
@@ -11,6 +12,15 @@ interface Column {
   type?: 'number' | 'string' | 'date' | 'template'|'tenChars';
   template?: (row: Record<string, unknown>, rowIndex: number) => React.ReactNode;
   
+}
+
+interface CustomAction {
+  label?: string;
+  icon?: IconDefinition;
+  onClick: (row: Record<string, any>) => void;
+  title?: string;
+  className?: string;
+  id?: string;
 }
 
 interface DataTableProps {
@@ -28,6 +38,7 @@ interface DataTableProps {
   addButton?: boolean;
   showSearch?:boolean;
   addPermission?:string;
+  customActions?: CustomAction[];
 }
 
 const DataTable: React.FC<DataTableProps> = ({ 
@@ -44,7 +55,8 @@ const DataTable: React.FC<DataTableProps> = ({
   showActions = true,
   addButton = true,
   showSearch=true,
-  addPermission=''
+  addPermission='',
+  customActions = []
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -257,6 +269,21 @@ const DataTable: React.FC<DataTableProps> = ({
                       >
                         <FontAwesomeIcon icon={faPencil} />
                       </button>
+                      {customActions.map((action, idx) => (
+                        <button
+                          key={action.id || `custom-${idx}`}
+                          id={action.id || `custom-${idx}`}
+                          className={`action-button ${action.className || ''}`}
+                          onClick={() => action.onClick(row)}
+                          title={action.title || action.label || 'Action'}
+                        >
+                          {action.icon ? (
+                            <FontAwesomeIcon icon={action.icon} />
+                          ) : (
+                            action.label
+                          )}
+                        </button>
+                      ))}
                       <button 
                         id="delete" 
                         className="action-button"

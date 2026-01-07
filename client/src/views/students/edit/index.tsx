@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faEdit, faArrowRight, faArrowLeft, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
@@ -28,6 +28,7 @@ interface StudentData {
     yearGroup?: string;
     ethnicity?: string;
     photo?: string;
+    location?: string;
     notesAndFiles?: Array<{
       fileName: string;
       filePath: string;
@@ -289,6 +290,7 @@ const EditStudent = () => {
             yearGroup: personalInfo.yearGroup || '',
             ethnicity: personalInfo.ethnicity || '',
             photo: personalInfo.photo || '',
+            location: personalInfo.location || '',
             notesAndFiles: personalInfo.notesAndFiles || [],
           },
           parents: response.parents || [],
@@ -371,7 +373,7 @@ const EditStudent = () => {
   };
 
   // Autosave handler for blur events
-  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleAutosave = useCallback((e?: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     // Don't autosave if user clicked on a button or link (relatedTarget)
     if (e?.relatedTarget) {
       const target = e.relatedTarget as HTMLElement;
@@ -598,7 +600,7 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-          <Input
+          <Select
             label="Year Group"
             name="yearGroup"
             value={studentData.personalInfo.yearGroup || ''}
@@ -606,9 +608,49 @@ const EditStudent = () => {
               ...prev,
               personalInfo: { ...prev.personalInfo, yearGroup: e.target.value }
             }))}
-            onFocus={saveFocus}
             onBlur={handleAutosave}
+            options={[
+              { value: 'Reception', label: 'Reception' },
+              { value: 'Year 1', label: 'Year 1' },
+              { value: 'Year 2', label: 'Year 2' },
+              { value: 'Year 3', label: 'Year 3' },
+              { value: 'Year 4', label: 'Year 4' },
+              { value: 'Year 5', label: 'Year 5' },
+              { value: 'Year 6', label: 'Year 6' },
+              { value: 'Year 7', label: 'Year 7' },
+              { value: 'Year 8', label: 'Year 8' },
+              { value: 'Year 9', label: 'Year 9' },
+              { value: 'Year 10', label: 'Year 10' },
+              { value: 'Year 11', label: 'Year 11' },
+              { value: 'Year 12', label: 'Year 12' },
+              { value: 'Year 13', label: 'Year 13' },
+            ]}
+            placeholder="Select Year Group"
           />
+          <Select
+            label="Location"
+            name="location"
+            value={studentData.personalInfo.location || ''}
+            onChange={(e) => {
+              setStudentData((prev) => ({
+                ...prev,
+                personalInfo: { ...prev.personalInfo, location: e.target.value }
+              }));
+              // Trigger autosave after a delay
+              setTimeout(() => {
+                handleAutosave();
+              }, 100);
+            }}
+            onBlur={handleAutosave}
+            options={[
+              { value: '', label: 'Select...' },
+              { value: 'Warrington', label: 'Warrington' },
+              { value: 'Burrow', label: 'Burrow' },
+            ]}
+          />
+        </div>
+        
+        <div className="form-row">
           <Input
             label="Ethnicity"
             name="ethnicity"
@@ -620,9 +662,6 @@ const EditStudent = () => {
             onFocus={saveFocus}
             onBlur={handleAutosave}
           />
-        </div>
-        
-        <div className="form-row">
           <Input
             label="Photo URL"
             name="photo"
@@ -2041,12 +2080,378 @@ const EditStudent = () => {
     );
   };
 
+  // Classes Tab
+  interface ClassData {
+    _id: string;
+    location: string;
+    fromDate: string;
+    toDate: string;
+    subject: string;
+    yeargroup: string;
+    students?: Array<{
+      _id: string;
+    }>;
+  }
+
+  const [allClasses, setAllClasses] = useState<ClassData[]>([]);
+  const [enrolledClasses, setEnrolledClasses] = useState<ClassData[]>([]);
+  const previousEnrolledClassesRef = useRef<string[]>([]);
+  const isInitialClassesMount = useRef(true);
+
+  // Fetch all classes
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const fetchAllClasses = async () => {
+      try {
+        const response = await executeRequest('get', '/classes?perPage=1000');
+        if (Array.isArray(response)) {
+          setAllClasses(response);
+          
+          // Find classes where this student is enrolled
+          const studentId = id;
+          const enrolled = response.filter((cls: ClassData) => 
+            cls.students?.some((s: { _id: string }) => s._id === studentId)
+          );
+          setEnrolledClasses(enrolled);
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+      }
+    };
+
+    fetchAllClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, id]);
+
+  // Auto-save when enrolled classes change (but not on initial mount)
+  useEffect(() => {
+    if (isInitialClassesMount.current) {
+      isInitialClassesMount.current = false;
+      previousEnrolledClassesRef.current = enrolledClasses.map(c => c._id);
+      return;
+    }
+    if (!isEditMode || !id) return;
+    
+    const currentEnrolledClassIds = enrolledClasses.map(c => c._id);
+    const previousEnrolledClassIds = previousEnrolledClassesRef.current;
+
+    // Find classes to add (in current but not in previous)
+    const classesToAdd = currentEnrolledClassIds.filter(
+      classId => !previousEnrolledClassIds.includes(classId)
+    );
+
+    // Find classes to remove (in previous but not in current)
+    const classesToRemove = previousEnrolledClassIds.filter(
+      classId => !currentEnrolledClassIds.includes(classId)
+    );
+
+    // Add student to new classes
+    classesToAdd.forEach(async (classId) => {
+      try {
+        await api.post(`/classes/${classId}/students/${id}`);
+        console.log(`Added student to class ${classId}`);
+      } catch (error) {
+        console.error(`Error adding student to class ${classId}:`, error);
+      }
+    });
+
+    // Remove student from classes
+    classesToRemove.forEach(async (classId) => {
+      try {
+        await api.delete(`/classes/${classId}/students/${id}`);
+        console.log(`Removed student from class ${classId}`);
+      } catch (error) {
+        console.error(`Error removing student from class ${classId}:`, error);
+      }
+    });
+
+    // Update previous ref
+    previousEnrolledClassesRef.current = currentEnrolledClassIds;
+  }, [enrolledClasses, isEditMode, id]);
+
+  // Add class to enrolled list
+  const addClassToEnrolled = useCallback((classItem: ClassData) => {
+    setEnrolledClasses(prev => [...prev, classItem]);
+  }, []);
+
+  // Remove class from enrolled list
+  const removeClassFromEnrolled = useCallback((classItem: ClassData) => {
+    setEnrolledClasses(prev => prev.filter(c => c._id !== classItem._id));
+  }, []);
+
+
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return '--';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return '--';
+    }
+  };
+
+  const getClassDisplayName = (classItem: ClassData): string => {
+    return `${classItem.location} - ${classItem.subject} (${classItem.yeargroup})`;
+  };
+
+  const ClassesTab = () => {
+    // Filter state
+    const [filterLocation, setFilterLocation] = useState<string>('');
+    const [filterSubject, setFilterSubject] = useState<string>('');
+    const [filterYearGroup, setFilterYearGroup] = useState<string>('');
+    const [filterStartDate, setFilterStartDate] = useState<string>('');
+    const [filterEndDate, setFilterEndDate] = useState<string>('');
+    const [isFilterOpen, setIsFilterOpen] = useState<boolean>(true);
+
+    // Filter options
+    const locationOptions = [
+      { value: '', label: 'All Locations' },
+      { value: 'Warrington', label: 'Warrington' },
+      { value: 'Burrow', label: 'Burrow' },
+    ];
+
+    const subjectOptions = [
+      { value: '', label: 'All Subjects' },
+      { value: 'Construction', label: 'Construction' },
+      { value: 'Motor Vehicle', label: 'Motor Vehicle' },
+      { value: 'Hairdressing', label: 'Hairdressing' },
+      { value: 'Maths/English', label: 'Maths/English' },
+      { value: 'Outreach / Post 16', label: 'Outreach / Post 16' },
+    ];
+
+    const yearGroupOptions = [
+      { value: '', label: 'All Year Groups' },
+      { value: 'Reception', label: 'Reception' },
+      { value: 'Year 1', label: 'Year 1' },
+      { value: 'Year 2', label: 'Year 2' },
+      { value: 'Year 3', label: 'Year 3' },
+      { value: 'Year 4', label: 'Year 4' },
+      { value: 'Year 5', label: 'Year 5' },
+      { value: 'Year 6', label: 'Year 6' },
+      { value: 'Year 7', label: 'Year 7' },
+      { value: 'Year 8', label: 'Year 8' },
+      { value: 'Year 9', label: 'Year 9' },
+      { value: 'Year 10', label: 'Year 10' },
+      { value: 'Year 11', label: 'Year 11' },
+      { value: 'Year 12', label: 'Year 12' },
+      { value: 'Year 13', label: 'Year 13' },
+    ];
+
+    // Filter available classes based on filter criteria
+    const baseAvailable = allClasses.filter(
+      classItem => !enrolledClasses.some(enrolled => enrolled._id === classItem._id)
+    );
+    
+    const availableClasses = baseAvailable.filter(classItem => {
+      // Location filter
+      if (filterLocation && classItem.location !== filterLocation) {
+        return false;
+      }
+
+      // Subject filter
+      if (filterSubject && classItem.subject !== filterSubject) {
+        return false;
+      }
+
+      // Year group filter
+      if (filterYearGroup && classItem.yeargroup !== filterYearGroup) {
+        return false;
+      }
+
+      // Start date filter
+      if (filterStartDate) {
+        const classStartDate = new Date(classItem.fromDate);
+        const filterStart = new Date(filterStartDate);
+        if (classStartDate < filterStart) {
+          return false;
+        }
+      }
+
+      // End date filter
+      if (filterEndDate) {
+        const classEndDate = new Date(classItem.toDate);
+        const filterEnd = new Date(filterEndDate);
+        if (classEndDate > filterEnd) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Clear all filters
+    const clearFilters = () => {
+      setFilterLocation('');
+      setFilterSubject('');
+      setFilterYearGroup('');
+      setFilterStartDate('');
+      setFilterEndDate('');
+    };
+
+    if (!isEditMode) {
+      return (
+        <div className="tab-content">
+          <div className="empty-state">
+            <p>Please save the student first to manage class enrollments.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="tab-content">
+        <div className="form-section">
+          <div className="section-header">
+            <div className="form-heading">
+              <h2>Class Enrollment</h2>
+            </div>
+          </div>
+
+          <div className="classes-lists-container">
+            <div className="classes-list-panel">
+              <div className="panel-header">
+                <div className="form-section" style={{ paddingLeft: '20px', margin: '0', paddingBottom: '0' }}>
+                  <div className="form-heading">
+                    <h2>Available Classes ({availableClasses.length})</h2>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Filter Component */}
+              <div className="classes-filter-section">
+                <div className="filter-header">
+                  <div className="filter-header-left">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                      className="btn-toggle-filter"
+                    >
+                      <FontAwesomeIcon icon={isFilterOpen ? faChevronUp : faChevronDown} />
+                    </button>
+                    <h3>Filter Classes</h3>
+                  </div>
+                  <div className="filter-header-right">
+                    <button type="button" onClick={clearFilters} className="btn-clear-filters">
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+                {isFilterOpen && (
+                  <div className="filter-fields">
+                  <Select
+                    label="Location"
+                    name="filterLocation"
+                    value={filterLocation}
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                    options={locationOptions}
+                    placeholder="All Locations"
+                  />
+                  <Select
+                    label="Subject"
+                    name="filterSubject"
+                    value={filterSubject}
+                    onChange={(e) => setFilterSubject(e.target.value)}
+                    options={subjectOptions}
+                    placeholder="All Subjects"
+                  />
+                  <Select
+                    label="Year Group"
+                    name="filterYearGroup"
+                    value={filterYearGroup}
+                    onChange={(e) => setFilterYearGroup(e.target.value)}
+                    options={yearGroupOptions}
+                    placeholder="All Year Groups"
+                  />
+                  <DateInput
+                    label="Start Date (From)"
+                    name="filterStartDate"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    max={filterEndDate || undefined}
+                  />
+                  <DateInput
+                    label="End Date (To)"
+                    name="filterEndDate"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    min={filterStartDate || undefined}
+                  />
+                  </div>
+                )}
+              </div>
+
+              <div className="classes-list">
+                {availableClasses.length === 0 ? (
+                  <p className="empty-list">No classes match the filter criteria.</p>
+                ) : (
+                  availableClasses.map(classItem => (
+                    <div
+                      key={classItem._id}
+                      className="class-item"
+                      onClick={() => addClassToEnrolled(classItem)}
+                    >
+                      <div className="class-item-info">
+                        <div className="class-item-name">{getClassDisplayName(classItem)}</div>
+                        <div className="class-item-details">
+                          {formatDate(classItem.fromDate)} - {formatDate(classItem.toDate)}
+                        </div>
+                      </div>
+                      <FontAwesomeIcon icon={faArrowRight} className="arrow-icon" />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="classes-list-panel">
+              <div className="panel-header">
+                <div className="form-section" style={{ paddingRight: '20px', margin: '0', paddingBottom: '0' }}>
+                  <div className="form-heading">
+                    <h2>Enrolled Classes ({enrolledClasses.length})</h2>
+                  </div>
+                </div>
+              </div>
+              <div className="classes-list">
+                {enrolledClasses.length === 0 ? (
+                  <p className="empty-list">No classes enrolled.</p>
+                ) : (
+                  enrolledClasses.map(classItem => (
+                    <div
+                      key={classItem._id}
+                      className="class-item"
+                      onClick={() => removeClassFromEnrolled(classItem)}
+                    >
+                      <FontAwesomeIcon icon={faArrowLeft} className="arrow-icon" />
+                      &nbsp;&nbsp;
+                      <div className="class-item-info">
+                        <div className="class-item-name">{getClassDisplayName(classItem)}</div>
+                        <div className="class-item-details">
+                          {formatDate(classItem.fromDate)} - {formatDate(classItem.toDate)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 'basic', label: 'Basic Information', content: <BasicInfoTab /> },
     { id: 'parents', label: 'Parents', content: <ParentsTab /> },
     { id: 'emergency', label: 'Emergency Contacts', content: <EmergencyContactsTab /> },
     { id: 'medical', label: 'Medical', content: <MedicalTab /> },
     { id: 'behaviour', label: 'Behaviour', content: <BehaviourTab /> },
+    { id: 'classes', label: 'Classes', content: <ClassesTab /> },
   ];
 
   return (

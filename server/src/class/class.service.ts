@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Schema } from 'mongoose';
+import { Model, Schema as MongooseSchema } from 'mongoose';
 import { Class, ClassDocument } from './class.schema';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -16,19 +16,32 @@ export class ClassService {
     return createdClass.save();
   }
 
-  async findAll(): Promise<Class[]> {
-    return this.classModel
-      .find()
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
+  async findAll(sort: string = 'createdAt', order: string = 'DESC', search: string = '', page: number = 1, perPage: number = 10): Promise<Class[]> {
+    const sortOrder = order === 'DESC' ? -1 : 1;
+    const query = this.classModel.find();
+    
+    if (search) {
+      query.where({
+        $or: [
+          { location: { $regex: search, $options: 'i' } },
+          { subject: { $regex: search, $options: 'i' } },
+          { yeargroup: { $regex: search, $options: 'i' } },
+        ],
+      });
+    }
+    
+    return query
+      .sort({ [sort]: sortOrder })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .populate('students')
       .exec();
   }
 
   async findOne(id: string): Promise<Class> {
     const classData = await this.classModel
       .findById(id)
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
+      .populate('students')
       .exec();
 
     if (!classData) {
@@ -40,8 +53,7 @@ export class ClassService {
   async update(id: string, updateClassDto: UpdateClassDto): Promise<Class> {
     const updatedClass = await this.classModel
       .findByIdAndUpdate(id, updateClassDto, { new: true })
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
+      .populate('students')
       .exec();
 
     if (!updatedClass) {
@@ -67,11 +79,16 @@ export class ClassService {
       throw new NotFoundException(`Class with ID ${classId} not found`);
     }
 
-    if (classData.students.includes(new Schema.Types.ObjectId(studentId))) {
+    const studentObjectId = new MongooseSchema.Types.ObjectId(studentId);
+    const studentExists = classData.students.some(
+      (id) => id.toString() === studentObjectId.toString()
+    );
+
+    if (studentExists) {
       throw new BadRequestException('Student is already in this class');
     }
 
-    classData.students.push(new Schema.Types.ObjectId(studentId));
+    classData.students.push(studentObjectId);
     return classData.save();
   }
 
@@ -81,85 +98,23 @@ export class ClassService {
       throw new NotFoundException(`Class with ID ${classId} not found`);
     }
 
-    const studentIndex = classData.students.indexOf(new Schema.Types.ObjectId(studentId));
-    if (studentIndex === -1) {
+    const studentObjectId = new MongooseSchema.Types.ObjectId(studentId);
+    const originalLength = classData.students.length;
+    classData.students = classData.students.filter(
+      (id) => id.toString() !== studentObjectId.toString()
+    );
+
+    if (classData.students.length === originalLength) {
       throw new BadRequestException('Student is not in this class');
     }
 
-    classData.students.splice(studentIndex, 1);
-    return classData.save();
-  }
-
-  async addStaff(classId: string, staffId: string): Promise<Class> {
-    const classData = await this.classModel.findById(classId);
-    if (!classData) {
-      throw new NotFoundException(`Class with ID ${classId} not found`);
-    }
-
-    if (classData.staffs.includes(new Schema.Types.ObjectId(staffId))) {
-      throw new BadRequestException('Staff member is already assigned to this class');
-    }
-
-    classData.staffs.push(new Schema.Types.ObjectId(staffId));
-    return classData.save();
-  }
-
-  async removeStaff(classId: string, staffId: string): Promise<Class> {
-    const classData = await this.classModel.findById(classId);
-    if (!classData) {
-      throw new NotFoundException(`Class with ID ${classId} not found`);
-    }
-
-    const staffIndex = classData.staffs.indexOf(new Schema.Types.ObjectId(staffId));
-    if (staffIndex === -1) {
-      throw new BadRequestException('Staff member is not assigned to this class');
-    }
-
-    classData.staffs.splice(staffIndex, 1);
     return classData.save();
   }
 
   async findByStudent(studentId: string): Promise<Class[]> {
     return this.classModel
       .find({ students: studentId })
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
+      .populate('students')
       .exec();
-  }
-
-  async findByStaff(staffId: string): Promise<Class[]> {
-    return this.classModel
-      .find({ staffs: staffId })
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
-      .exec();
-  }
-
-  async findByTeacher(teacherId: string): Promise<Class[]> {
-    return this.classModel
-      .find({ classTeacher: teacherId })
-      .populate('students', 'name email role')
-      .populate('staffs', 'name email role')
-      .exec();
-  }
-
-  async getClassStaff(classId: string): Promise<any[]> {
-    console.log(classId)
-    const classData = await this.classModel
-      .findById(classId)
-      // Use mongoose projection to get _id as value and name as label
-      .populate({
-        path: 'staffs',
-        select: 'name',
-        transform: (doc) => doc ? { value: doc._id, label: doc.name } : null
-      })
-      .populate('staffs', 'name')
-      .exec();
-
-    if (!classData) {
-      throw new NotFoundException(`Class with ID ${classId} not found`);
-    }
-
-    return classData.staffs || [];
   }
 } 

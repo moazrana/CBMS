@@ -29,14 +29,18 @@ export class ClassSeeder {
 
     console.log('Starting to seed classes...');
 
+    const now = new Date();
+    const fromDate = new Date(now.getFullYear(), 0, 1); // Start of current year
+    const toDate = new Date(now.getFullYear(), 11, 31); // End of current year
+
     for (const name of classNames) {
       try {
         const createClassDto: CreateClassDto = { 
-          name,
-          isActive: true,
-          status: 'Active',
+          location: name,
+          fromDate: fromDate.toISOString(),
+          toDate: toDate.toISOString(),
           subject: 'General',
-          academicYear: new Date()
+          yeargroup: 'All'
         };
         
         await this.classService.create(createClassDto);

@@ -1,8 +1,20 @@
-import { IsString, IsOptional, IsArray, IsMongoId, IsEnum, IsNumber, Min, Max, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsMongoId, IsDateString } from 'class-validator';
 
 export class CreateClassDto {
   @IsString()
-  name: string;
+  location: string;
+
+  @IsDateString()
+  fromDate: string;
+
+  @IsDateString()
+  toDate: string;
+
+  @IsString()
+  subject: string;
+
+  @IsString()
+  yeargroup: string;
 
   @IsOptional()
   @IsArray()
@@ -10,28 +22,6 @@ export class CreateClassDto {
   students?: string[];
 
   @IsOptional()
-  @IsArray()
-  @IsMongoId({ each: true })
-  staffs?: string[];
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @IsOptional()
   @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsDateString()
-  academicYear?: Date;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  subject?: string;
-
-  @IsOptional()
-  @IsEnum(['Active', 'Inactive', 'Archived'])
-  status?: string;
+  notes?: string;
 } 

@@ -76,6 +76,7 @@ export class StudentsService {
       yearGroup: dtoPersonalInfo.yearGroup,
       ethnicity: dtoPersonalInfo.ethnicity,
       photo: dtoPersonalInfo.photo,
+      location: dtoPersonalInfo.location,
       notesAndFiles: dtoPersonalInfo.notesAndFiles?.map((file) => ({
         fileName: file.fileName,
         filePath: file.filePath,
@@ -206,10 +207,34 @@ export class StudentsService {
     }
   }
 
-  async findAll(): Promise<StudentDocument[]> {
-    return this.studentModel
-      .find({ deletedAt: null })
-      .sort({ 'personalInfo.lastName': 1, 'personalInfo.legalFirstName': 1 })
+  async findAll(sort: string = 'createdAt', order: string = 'DESC', search: string = '', page: number = 1, perPage: number = 10): Promise<StudentDocument[]> {
+    const sortOrder = order === 'DESC' ? -1 : 1;
+    const query = this.studentModel.find({ deletedAt: null });
+    
+    if (search) {
+      query.where({
+        $or: [
+          { 'personalInfo.legalFirstName': { $regex: search, $options: 'i' } },
+          { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
+          { 'personalInfo.preferredName': { $regex: search, $options: 'i' } },
+          { 'personalInfo.adno': { $regex: search, $options: 'i' } },
+          { 'personalInfo.upn': { $regex: search, $options: 'i' } },
+        ],
+      });
+    }
+    
+    // Handle nested field sorting
+    let sortField: any = { [sort]: sortOrder };
+    if (sort === 'createdAt' || sort === 'updatedAt') {
+      sortField = { [sort]: sortOrder };
+    } else if (sort.startsWith('personalInfo.')) {
+      sortField = { [sort]: sortOrder };
+    }
+    
+    return query
+      .sort(sortField)
+      .skip((page - 1) * perPage)
+      .limit(perPage)
       .lean();
   }
 
@@ -333,6 +358,9 @@ export class StudentsService {
       }
       if (updateData.photo !== undefined) {
         personalInfo.photo = updateData.photo;
+      }
+      if (updateData.location !== undefined) {
+        personalInfo.location = updateData.location;
       }
       if (updateData.notesAndFiles !== undefined) {
         personalInfo.notesAndFiles = updateData.notesAndFiles.map((file) => ({

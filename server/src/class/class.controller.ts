@@ -30,8 +30,19 @@ export class ClassController {
 
   @Get()
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  findAll() {
-    return this.classService.findAll();
+  findAll(
+    @Query('sort') sort?: string,
+    @Query('order') order?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ) {
+    const sortField = sort || 'createdAt';
+    const sortOrder = order || 'DESC';
+    const searchTerm = search || '';
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const perPageNum = perPage ? parseInt(perPage, 10) : 10;
+    return this.classService.findAll(sortField, sortOrder, searchTerm, pageNum, perPageNum);
   }
 
   @Get(':id')
@@ -64,39 +75,9 @@ export class ClassController {
     return this.classService.removeStudent(id, studentId);
   }
 
-  @Post(':id/staffs/:staffId')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  addStaff(@Param('id') id: string, @Param('staffId') staffId: string) {
-    return this.classService.addStaff(id, staffId);
-  }
-
-  @Delete(':id/staffs/:staffId')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  removeStaff(@Param('id') id: string, @Param('staffId') staffId: string) {
-    return this.classService.removeStaff(id, staffId);
-  }
-
   @Get('student/:studentId')
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
   findByStudent(@Param('studentId') studentId: string) {
     return this.classService.findByStudent(studentId);
-  }
-
-  @Get('staff/:staffId')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  findByStaff(@Param('staffId') staffId: string) {
-    return this.classService.findByStaff(staffId);
-  }
-
-  @Get('teacher/:teacherId')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  findByTeacher(@Param('teacherId') teacherId: string) {
-    return this.classService.findByTeacher(teacherId);
-  }
-
-  @Get(':id/staffs')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  getClassStaff(@Param('id') id: string) {
-    return this.classService.getClassStaff(id);
   }
 } 

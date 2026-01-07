@@ -61,12 +61,15 @@ export class SafeguardsService {
   }
 
   async findAll(): Promise<Safeguard[]> {
-    return this.safeguardModel.find().populate([
+    return this.safeguardModel.find()
+      .sort({ createdAt: -1 })
+      .populate([
       {path:'student',select:'name subject'}, 
       {path:'staff',select:'name'}, 
       {path:'location',select:'name'}, 
       {path:'period',select:'name'}
-    ]).exec();
+      ])
+      .exec();
   }
 
   async findOne(id: string): Promise<Safeguard> {

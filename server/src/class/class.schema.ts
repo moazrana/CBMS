@@ -6,37 +6,33 @@ export type ClassDocument = Class & Document;
 @Schema({ timestamps: true })
 export class Class {
   @Prop({ required: true, trim: true })
-  name: string;
+  location: string;
 
-  @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'User', default: [] })
-  students: MongooseSchema.Types.ObjectId[];
+  @Prop({ type: Date, required: true })
+  fromDate: Date;
 
-  @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'User', default: [] })
-  staffs: MongooseSchema.Types.ObjectId[];
+  @Prop({ type: Date, required: true })
+  toDate: Date;
 
-  @Prop({ default: true })
-  isActive: boolean;
-
-  @Prop({ trim: true })
-  description: string;
-
-
-  @Prop({ type: Date })
-  academicYear: Date;
-
-  @Prop({ type: [String], default: [] })
+  @Prop({ required: true, trim: true })
   subject: string;
 
-  @Prop({ type: String, enum: ['Active', 'Inactive', 'Archived'], default: 'Active' })
-  status: string;
+  @Prop({ required: true, trim: true })
+  yeargroup: string;
+
+  @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'Student', default: [] })
+  students: MongooseSchema.Types.ObjectId[];
+
+  @Prop({ type: String, trim: true })
+  notes?: string;
 }
 
 export const ClassSchema = SchemaFactory.createForClass(Class);
 
 // Index for better query performance
-ClassSchema.index({ name: 1 });
+ClassSchema.index({ location: 1 });
+ClassSchema.index({ fromDate: 1 });
+ClassSchema.index({ toDate: 1 });
+ClassSchema.index({ subject: 1 });
+ClassSchema.index({ yeargroup: 1 });
 ClassSchema.index({ students: 1 });
-ClassSchema.index({ staffs: 1 });
-ClassSchema.index({ classTeacher: 1 });
-ClassSchema.index({ status: 1 });
-ClassSchema.index({ academicYear: 1 }); 
