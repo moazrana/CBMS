@@ -88,10 +88,10 @@ export default function Sidebar() {
             </div>
           </Link>
         </PermissionGuard>
-        <Link to="/sbt" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+        <Link to="/engagement" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={studentBehavior} alt="logo" className='sidebar-icon' />
-            Student Behavior
+            Engagement
           </div>
         </Link>
         <hr />

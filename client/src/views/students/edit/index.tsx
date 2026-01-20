@@ -8,6 +8,7 @@ import Select from '../../../components/Select/Select';
 import TextField from '../../../components/textField/TextField';
 import Popup from '../../../components/Popup/Popup';
 import { Tabs } from '../../../components/Tabs/Tabs';
+import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import './index.scss';
@@ -2199,6 +2200,219 @@ const EditStudent = () => {
     return `${classItem.location} - ${classItem.subject} (${classItem.yeargroup})`;
   };
 
+  // Engagement Tab interfaces
+  interface EngagementData {
+    _id: string;
+    class: string | {
+      _id: string;
+      location: string;
+      subject: string;
+      yeargroup: string;
+      fromDate: string;
+      toDate: string;
+    };
+    session: string;
+    attendance: boolean;
+    behaviour: string;
+    comment?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }
+
+  const EngagementTab = () => {
+    const [engagements, setEngagements] = useState<EngagementData[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    // Session options with labels
+    const sessionLabels: Record<string, string> = useMemo(() => ({
+      'breakfast club': 'Breakfast Club',
+      'session1': 'Session 1',
+      'break': 'Break',
+      'session2': 'Session 2',
+      'lunch': 'Lunch',
+      'session3': 'Session 3',
+    }), []);
+
+    // Helper function to get behavior color
+    const getBehaviourColor = useCallback((behaviour: string): string => {
+      switch (behaviour) {
+        case 'Good':
+          return '#22c55e'; // green
+        case 'Fair':
+          return '#eab308'; // yellow
+        case 'Average':
+          return '#f97316'; // orange
+        case 'Poor':
+          return '#ef4444'; // red
+        default:
+          return '#6b7280'; // gray
+      }
+    }, []);
+
+    // Behavior labels with colored dots
+    const behaviourLabels: Record<string, string> = useMemo(() => ({
+      'Good': 'Good',
+      'Fair': 'Fair',
+      'Average': 'Average',
+      'Poor': 'Poor',
+    }), []);
+
+    // Fetch engagements for the student
+    useEffect(() => {
+      if (!isEditMode || !id) return;
+
+      let isMounted = true;
+
+      const fetchEngagements = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get(`/engagements/student/${id}`);
+          if (isMounted && Array.isArray(response.data)) {
+            setEngagements(response.data);
+          }
+        } catch (error) {
+          console.error('Error fetching engagements:', error);
+          if (isMounted) {
+            setEngagements([]);
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }
+      };
+
+      fetchEngagements();
+
+      return () => {
+        isMounted = false;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isEditMode]);
+
+    // Format class name
+    const getClassName = (classData: string | { _id: string; location: string; subject: string; yeargroup: string; fromDate: string; toDate: string }): string => {
+      if (typeof classData === 'string') {
+        return classData;
+      }
+      return `${classData.location} - ${classData.subject} (${classData.yeargroup})`;
+    };
+
+    // Prepare table data
+    const tableData = useMemo(() => {
+      return engagements.map((engagement) => {
+        const classData = engagement.class;
+        const className = typeof classData === 'object' ? getClassName(classData) : 'Unknown Class';
+        const sessionLabel = sessionLabels[engagement.session] || engagement.session;
+        const behaviourValue = engagement.behaviour;
+        const behaviourLabel = behaviourLabels[behaviourValue] || behaviourValue;
+        const behaviorColor = getBehaviourColor(behaviourValue);
+        const date = engagement.createdAt ? new Date(engagement.createdAt).toLocaleDateString() : '';
+
+        return {
+          _id: engagement._id,
+          className,
+          session: sessionLabel,
+          attendance: engagement.attendance ? 'Yes' : 'No',
+          behaviour: behaviourLabel,
+          behaviorColor,
+          comment: engagement.comment || '',
+          date,
+        };
+      });
+    }, [engagements, sessionLabels, behaviourLabels, getBehaviourColor]);
+
+    // Define columns
+    const columns = useMemo(() => [
+      {
+        header: 'Class',
+        accessor: 'className',
+        sortable: true,
+        type: 'string' as const,
+      },
+      {
+        header: 'Session',
+        accessor: 'session',
+        sortable: true,
+        type: 'string' as const,
+      },
+      {
+        header: 'Attendance',
+        accessor: 'attendance',
+        sortable: true,
+        type: 'string' as const,
+      },
+      {
+        header: 'Behavior',
+        accessor: 'behaviour',
+        sortable: true,
+        type: 'template' as const,
+        template: (row: Record<string, unknown>) => {
+          const behaviour = row.behaviour as string;
+          const behaviorColor = row.behaviorColor as string;
+          return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: behaviorColor,
+                  display: 'inline-block',
+                }}
+              />
+              {behaviour}
+            </span>
+          );
+        },
+      },
+      {
+        header: 'Comment',
+        accessor: 'comment',
+        sortable: false,
+        type: 'string' as const,
+      },
+      {
+        header: 'Date',
+        accessor: 'date',
+        sortable: true,
+        type: 'date' as const,
+      },
+    ], []);
+
+    return (
+      <div className="tab-content">
+        <div className="form-section">
+          <div className="form-heading">
+            <h2>Student Engagement</h2>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            Loading engagements...
+          </div>
+        ) : engagements.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No engagement records found for this student.
+          </div>
+        ) : (
+          <div style={{ marginTop: '20px' }}>
+            <DataTable
+              columns={columns}
+              data={tableData}
+              title="Engagement Records"
+              onEdit={() => {}}
+              showActions={false}
+              addButton={false}
+              showSearch={true}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const ClassesTab = () => {
     // Filter state
     const [filterLocation, setFilterLocation] = useState<string>('');
@@ -2452,6 +2666,7 @@ const EditStudent = () => {
     { id: 'medical', label: 'Medical', content: <MedicalTab /> },
     { id: 'behaviour', label: 'Behaviour', content: <BehaviourTab /> },
     { id: 'classes', label: 'Classes', content: <ClassesTab /> },
+    { id: 'engagement', label: 'Engagement', content: <EngagementTab /> },
   ];
 
   return (

@@ -1,0 +1,255 @@
+.engagement {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  
+  h1 {
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+.tt-main-div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tt-filter-div {
+  flex-shrink: 0;
+  margin-bottom: var(--standard-padding, 15px);
+}
+
+.tt-table-div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.input-div-engagement {
+  width: 50%;
+}
+
+.engagement-date-container {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  width:25%;
+  .date-input-container {
+    margin: 0;
+  }
+}
+
+// Styles for components inside DataTable cells
+.engagement {
+  .data-table {
+    .attendance-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+
+    .select-container {
+      margin: 0;
+      
+      .select-field {
+        width: 100%;
+        min-width: 150px;
+      }
+    }
+
+    .input-container {
+      margin: 0;
+      
+      .input-field {
+        width: 100%;
+        min-width: 200px;
+      }
+    }
+
+    // Styles for single-session behavior radio buttons
+    .single-session-behaviour {
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        label {
+          display: inline-flex;
+          align-items: center;
+          cursor: pointer;
+          font-size: 11px;
+
+          input[type="radio"] {
+            margin-right: 4px;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    // Styles for all-sessions row
+    // Override fixed height for cells containing all-sessions content
+    .all-sessions-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 5px 0;
+      min-height: 280px; // Ensure enough space for 5 sessions
+      width: 100%;
+
+      .session-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 45px;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        label {
+          min-width: 100px;
+          font-size: 11px;
+          color: var(--text-secondary);
+        }
+      }
+    }
+    
+    // Animation for expanding rows
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        max-height: 500px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        transform: translateY(0);
+      }
+    }
+    
+    // Animate the expanded row (all-sessions row)
+    tbody tr:has(.all-sessions-cell) {
+      animation: slideDown 0.3s ease-out;
+      overflow: hidden;
+      
+      td {
+        animation: slideDown 0.3s ease-out;
+      }
+    }
+
+    // Override parent td-div height when it contains all-sessions content
+    // Using :has() selector for modern browsers
+    .td-div:has(.all-sessions-cell),
+    .last-td-div:has(.all-sessions-cell) {
+      height: auto !important;
+      min-height: 280px !important;
+      padding: 15px 10px !important;
+      align-items: flex-start !important;
+      justify-content: flex-start !important;
+    }
+    
+    // Animate the expanded row (all-sessions row)
+    tbody tr:has(.all-sessions-cell) {
+      animation: slideDown 0.3s ease-out;
+      overflow: hidden;
+    }
+
+    // Fallback: Target the all-sessions containers directly
+    .all-sessions-attendance,
+    .all-sessions-behaviour,
+    .all-sessions-comment {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 5px 0;
+      min-height: 280px;
+      width: 100%;
+
+      .session-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 45px;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        label {
+          min-width: 100px;
+          font-size: 11px;
+          color: var(--text-secondary);
+        }
+      }
+    }
+
+    .all-sessions-behaviour {
+      .session-row {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .radio-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 4px;
+
+          label {
+            min-width: auto;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 11px;
+
+            input[type="radio"] {
+              margin-right: 4px;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+
+    .all-sessions-comment {
+      .session-row {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .input-container {
+          width: 100%;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+.no-students-message,
+.no-class-selected-message {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  margin-top: 20px;
+}

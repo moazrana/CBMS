@@ -18,6 +18,7 @@ import { ClassModule } from './class/class.module';
 import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { StudentsModule } from './students/students.module';
+import { EngagementModule } from './engagement/engagement.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -58,6 +59,7 @@ import { StudentsModule } from './students/students.module';
     StaffModule,
     AttendanceModule,
     StudentsModule,
+    EngagementModule,
   ],
   providers: [
     // MailService

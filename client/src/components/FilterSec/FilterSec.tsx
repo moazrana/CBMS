@@ -11,7 +11,8 @@ interface SecProps{
 }
 const FilterSec:React.FC<SecProps>=({
     secName,
-    year='2025',
+    year = new Date().getFullYear().toString(),
+    // year='2025',
     content,
     retractable=false
 })=>{

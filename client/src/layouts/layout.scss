@@ -95,6 +95,10 @@
   margin-top: 5px;
   padding-top:15px;
   padding-left:15px;
+  height: calc(100vh - 150px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 #filter-div{
   border: 3px solid var(--border-color);
