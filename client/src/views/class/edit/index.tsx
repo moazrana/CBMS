@@ -32,6 +32,7 @@ const EditClass = () => {
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ClassData, string>>>({});
+  const [hasFetched, setHasFetched] = useState(false);
 
   // Refs for autosave
   const classDataRef = useRef<ClassData>(classData);
@@ -83,29 +84,31 @@ const EditClass = () => {
 
   // Fetch class data if in edit mode
   useEffect(() => {
-    if (isEditMode && id) {
-      const fetchClass = async () => {
-        try {
-          const response = await executeRequest('get', `/classes/${id}`);
-          if (response) {
-            setClassData({
-              location: response.location || '',
-              fromDate: response.fromDate ? new Date(response.fromDate).toISOString().split('T')[0] : '',
-              toDate: response.toDate ? new Date(response.toDate).toISOString().split('T')[0] : '',
-              subject: response.subject || '',
-              yeargroup: response.yeargroup || '',
-              notes: response.notes || '',
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching class:', error);
-          alert('Failed to load class data');
+    if (!id || hasFetched || !isEditMode) return;
+    
+    const fetchClass = async () => {
+      try {
+        const response = await executeRequest('get', `/classes/${id}`);
+        if (response) {
+          setClassData({
+            location: response.location || '',
+            fromDate: response.fromDate ? new Date(response.fromDate).toISOString().split('T')[0] : '',
+            toDate: response.toDate ? new Date(response.toDate).toISOString().split('T')[0] : '',
+            subject: response.subject || '',
+            yeargroup: response.yeargroup || '',
+            notes: response.notes || '',
+          });
+          setHasFetched(true);
         }
-      };
+      } catch (error) {
+        console.error('Error fetching class:', error);
+        alert('Failed to load class data');
+      }
+    };
 
-      fetchClass();
-    }
-  }, [id, isEditMode, executeRequest]);
+    fetchClass();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isEditMode]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ClassData, string>> = {};
