@@ -3,9 +3,9 @@ import Layout from '../../layouts/layout';
 import './index.scss';
 import FilterSec from '../../components/FilterSec/FilterSec';
 import DataTable from '../../components/DataTable/DataTable';
+import { Tabs } from '../../components/Tabs/Tabs';
 import Select from '../../components/Select/Select';
 import BehaviorSelect from '../../components/BehaviorSelect/BehaviorSelect';
-import Input from '../../components/input/Input';
 import DateInput from '../../components/dateInput/DateInput';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
@@ -68,10 +68,23 @@ interface ClassData {
   students?: StudentData[];
 }
 
+// Marked engagement record from API (with populated class and student)
+interface MarkedEngagementRecord {
+  _id: string;
+  class: { _id: string; location?: string; subject?: string; yeargroup?: string } | string;
+  student: { _id: string; personalInfo?: { legalFirstName?: string; lastName?: string; preferredName?: string } } | string;
+  session: string;
+  attendance: boolean;
+  behaviour: string;
+  comment?: string;
+  engagementDate: string;
+  createdAt?: string;
+}
+
 const Engagement: React.FC = () => {
   const { executeRequest } = useApiRequest();
-  // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
+  const [activeTab, setActiveTab] = useState<'mark' | 'marked'>('mark');
   const [engagementDate, setEngagementDate] = useState<string>(today);
   const [location, setLocation] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
@@ -89,7 +102,19 @@ const Engagement: React.FC = () => {
   const [engagementData, setEngagementData] = useState<Record<string, EngagementRow>>({});
   const [allSessionsEngagementData, setAllSessionsEngagementData] = useState<Record<string, StudentEngagementData>>({});
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  
+  const [markedEngagements, setMarkedEngagements] = useState<MarkedEngagementRecord[]>([]);
+  const [markedEngagementsLoading, setMarkedEngagementsLoading] = useState(false);
+  const [markedFilterDate, setMarkedFilterDate] = useState<string>('');
+  const [markedFilterLocation, setMarkedFilterLocation] = useState<string>('');
+  const [markedFilterSubject, setMarkedFilterSubject] = useState<string>('');
+  const [markedFilterClassId, setMarkedFilterClassId] = useState<string>('');
+  const [markedClassOptions, setMarkedClassOptions] = useState<DropdownOption[]>([]);
+  // Universal list: students in selected class with engagement status (green/red dot)
+  const [universalListStudents, setUniversalListStudents] = useState<StudentData[]>([]);
+  const [universalListData, setUniversalListData] = useState<Record<string, { sessions: Record<string, SessionEngagement>; isComplete: boolean }>>({});
+  const [universalListExpanded, setUniversalListExpanded] = useState<Set<string>>(new Set());
+  const [universalListLoading, setUniversalListLoading] = useState(false);
+
   // Refs to track if we should skip autosave (e.g., on initial load)
   const engagementDataRef = useRef<Record<string, EngagementRow>>({});
   const allSessionsEngagementDataRef = useRef<Record<string, StudentEngagementData>>({});
@@ -124,6 +149,8 @@ const Engagement: React.FC = () => {
   // Helper function to get behavior color
   const getBehaviourColor = (behaviour: string): string => {
     switch (behaviour) {
+      case 'Unmarked':
+        return '#6b7280'; // gray
       case 'Good':
         return '#22c55e'; // green
       case 'Fair':
@@ -139,6 +166,7 @@ const Engagement: React.FC = () => {
 
 
   const behaviourOptions: DropdownOption[] = useMemo(() => [
+    { value: 'Unmarked', label: 'Unmarked' },
     { value: 'Good', label: 'Good' },
     { value: 'Fair', label: 'Fair' },
     { value: 'Average', label: 'Average' },
@@ -146,6 +174,7 @@ const Engagement: React.FC = () => {
   ], []);
 
   const behaviorSelectOptions = useMemo(() => [
+    { value: 'Unmarked', label: 'Unmarked', color: '#6b7280' },
     { value: 'Good', label: 'Good', color: '#22c55e' },
     { value: 'Fair', label: 'Fair', color: '#eab308' },
     { value: 'Average', label: 'Average', color: '#f97316' },
@@ -233,6 +262,37 @@ const Engagement: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, subject]);
 
+  // Fetch class options for Marked Engagements tab filter (same logic as Mark tab)
+  useEffect(() => {
+    if (!markedFilterLocation && !markedFilterSubject) {
+      setMarkedClassOptions([]);
+      setMarkedFilterClassId('');
+      return;
+    }
+    const fetchMarkedClasses = async () => {
+      try {
+        const response = await executeRequest('get', '/classes?perPage=1000');
+        if (Array.isArray(response)) {
+          const filtered = response.filter((cls: ClassData) => {
+            const matchesLocation = !markedFilterLocation || cls.location === markedFilterLocation;
+            const matchesSubject = !markedFilterSubject || cls.subject === markedFilterSubject;
+            return matchesLocation && matchesSubject;
+          });
+          setMarkedClassOptions(filtered.map((cls: ClassData) => ({
+            label: `${cls.subject} - ${cls.yeargroup}`,
+            value: cls._id,
+          })));
+          setMarkedFilterClassId('');
+        }
+      } catch {
+        setMarkedClassOptions([]);
+        setMarkedFilterClassId('');
+      }
+    };
+    fetchMarkedClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markedFilterLocation, markedFilterSubject]);
+
   // Update refs when state changes
   useEffect(() => {
     engagementDataRef.current = engagementData;
@@ -278,7 +338,7 @@ const Engagement: React.FC = () => {
               name,
               session: sessionOptions[0]?.value || '',
               attendance: false,
-              behaviour: 'Good',
+              behaviour: 'Unmarked',
               comment: '',
             };
             
@@ -287,7 +347,7 @@ const Engagement: React.FC = () => {
             displaySessions.forEach(sessionOpt => {
               sessionsData[sessionOpt.value] = {
                 attendance: false,
-                behaviour: 'Good',
+                behaviour: 'Unmarked',
                 comment: '',
               };
             });
@@ -803,10 +863,199 @@ const Engagement: React.FC = () => {
     }
   }, [filterClass, students.length]);
 
-  // Prepare data for DataTable - each student has two rows
+  // Fetch recent marked engagements when "Marked Engagements" tab is active (no class filter)
+  useEffect(() => {
+    if (activeTab !== 'marked') return;
+    let cancelled = false;
+    setMarkedEngagementsLoading(true);
+    api.get<MarkedEngagementRecord[]>('/engagements?perPage=500&sort=createdAt&order=DESC')
+      .then((res) => {
+        const data = res.data;
+        if (!cancelled && Array.isArray(data)) setMarkedEngagements(data);
+      })
+      .catch(() => {
+        if (!cancelled) setMarkedEngagements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMarkedEngagementsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  // Fetch universal list when class is selected in Marked Engagements tab (students + their engagements)
+  useEffect(() => {
+    if (activeTab !== 'marked' || !markedFilterClassId) {
+      setUniversalListStudents([]);
+      setUniversalListData({});
+      setUniversalListExpanded(new Set());
+      return;
+    }
+    let cancelled = false;
+    setUniversalListLoading(true);
+    const classId = markedFilterClassId;
+    const dateQ = markedFilterDate ? `?date=${markedFilterDate}` : '';
+    Promise.all([
+      api.get<ClassData>(`/classes/${classId}`),
+      api.get<MarkedEngagementRecord[]>(`/engagements/class/${classId}${dateQ}`),
+    ])
+      .then(([classRes, engRes]) => {
+        if (cancelled) return;
+        const classData = classRes.data as ClassData | undefined;
+        const engagements = Array.isArray(engRes.data) ? engRes.data : [];
+        const studentsList: StudentData[] = classData && Array.isArray(classData.students) ? classData.students : [];
+        const studentIdsWithEngagement = new Set<string>();
+        const byStudentBySession: Record<string, Record<string, { attendance: boolean; behaviour: string; comment: string }>> = {};
+        const dateStr = markedFilterDate || null;
+        engagements.forEach((eng: MarkedEngagementRecord) => {
+          const sid = typeof eng.student === 'object' && eng.student !== null ? (eng.student as { _id: string })._id : String(eng.student);
+          const sess = eng.session;
+          if (!byStudentBySession[sid]) byStudentBySession[sid] = {};
+          if (dateStr) {
+            const engDate = eng.engagementDate ? new Date(eng.engagementDate).toISOString().split('T')[0] : '';
+            if (engDate !== dateStr) return;
+          }
+          studentIdsWithEngagement.add(sid);
+          byStudentBySession[sid][sess] = {
+            attendance: eng.attendance,
+            behaviour: eng.behaviour || 'Unmarked',
+            comment: eng.comment || '',
+          };
+        });
+        const displaySessionValues = displaySessions.map((s) => s.value);
+        const listStudents = studentsList.filter((s) => studentIdsWithEngagement.has(s._id));
+        const data: Record<string, { sessions: Record<string, SessionEngagement>; isComplete: boolean }> = {};
+        listStudents.forEach((student) => {
+          const sid = student._id;
+          const sessMap = byStudentBySession[sid] || {};
+          const sessions: Record<string, SessionEngagement> = {};
+          displaySessionValues.forEach((sval) => {
+            sessions[sval] = sessMap[sval]
+              ? { attendance: sessMap[sval].attendance, behaviour: sessMap[sval].behaviour, comment: sessMap[sval].comment }
+              : { attendance: false, behaviour: 'Unmarked', comment: '' };
+          });
+          const isComplete = displaySessionValues.every((sval) => sessMap[sval] != null);
+          data[sid] = { sessions, isComplete };
+        });
+        setUniversalListStudents(listStudents);
+        setUniversalListData(data);
+        setUniversalListExpanded(new Set());
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUniversalListStudents([]);
+          setUniversalListData({});
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setUniversalListLoading(false);
+      });
+    return () => { cancelled = true; };
+  // displaySessions is stable (useMemo with fixed sessionOptions)
+  }, [activeTab, markedFilterClassId, markedFilterDate, displaySessions]);
+
+  const toggleUniversalListExpansion = useCallback((studentId: string) => {
+    setUniversalListExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  }, []);
+
+  // Read-only expanded view for universal list (marked engagements tab when class selected)
+  const renderUniversalListExpandedContent = useCallback((studentId: string) => {
+    const data = universalListData[studentId];
+    if (!data) return null;
+    return (
+      <div className="engagement-expanded-div">
+        <div className="engagement-expanded-header">
+          <span className="engagement-expanded-col session-col">Session</span>
+          <span className="engagement-expanded-col attendance-col">Attendance</span>
+          <span className="engagement-expanded-col behaviour-col">Behaviour</span>
+          <span className="engagement-expanded-col comment-col">Comment</span>
+        </div>
+        {displaySessions.map((sessionOpt) => {
+          const sessionData = data.sessions[sessionOpt.value];
+          return (
+            <div key={sessionOpt.value} className="engagement-expanded-session-row">
+              <div className="engagement-expanded-col session-col">{sessionOpt.label}</div>
+              <div className="engagement-expanded-col attendance-col">{sessionData?.attendance ? 'Present' : 'Absent'}</div>
+              <div className="engagement-expanded-col behaviour-col">{sessionData?.behaviour || '—'}</div>
+              <div className="engagement-expanded-col comment-col">{sessionData?.comment || '—'}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [universalListData, displaySessions]);
+
+  // Build expanded content (div) for a student - one row per session: session name | attendance | behaviour | comment
+  const renderExpandedContent = useCallback((studentId: string) => {
+    const studentData = allSessionsEngagementData[studentId];
+    if (!studentData) return null;
+    return (
+      <div className="engagement-expanded-div">
+        <div className="engagement-expanded-header">
+          <span className="engagement-expanded-col session-col">Session</span>
+          <span className="engagement-expanded-col attendance-col">Attendance</span>
+          <span className="engagement-expanded-col behaviour-col">Behaviour</span>
+          <span className="engagement-expanded-col comment-col">Comment</span>
+        </div>
+        {displaySessions.map(sessionOpt => {
+          const sessionData = studentData.sessions[sessionOpt.value];
+          const currentBehaviour = sessionData?.behaviour || 'Unmarked';
+          const comment = sessionData?.comment || '';
+          return (
+            <div key={sessionOpt.value} className="engagement-expanded-session-row">
+              <div className="engagement-expanded-col session-col">{sessionOpt.label}</div>
+              <div className="engagement-expanded-col attendance-col">
+                <input
+                  type="checkbox"
+                  checked={sessionData?.attendance || false}
+                  onChange={(e) => handleAllSessionsAttendanceChange(studentId, sessionOpt.value, e.target.checked)}
+                  className="attendance-checkbox"
+                />
+              </div>
+              <div className="engagement-expanded-col behaviour-col">
+                <div className="radio-group radio-group-inline">
+                  {behaviourOptions.map(behaviourOpt => {
+                    const color = getBehaviourColor(behaviourOpt.value);
+                    return (
+                      <label key={behaviourOpt.value} className="radio-label-inline">
+                        <input
+                          type="radio"
+                          name={`behaviour-${studentId}-${sessionOpt.value}`}
+                          value={behaviourOpt.value}
+                          checked={currentBehaviour === behaviourOpt.value}
+                          onChange={(e) => handleAllSessionsBehaviourChange(studentId, sessionOpt.value, e.target.value)}
+                        />
+                        <span className="radio-dot" style={{ backgroundColor: color }} />
+                        {behaviourOpt.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="engagement-expanded-col comment-col">
+                <textarea
+                  name={`comment-${studentId}-${sessionOpt.value}`}
+                  value={comment}
+                  onChange={(e) => handleAllSessionsCommentChange(studentId, sessionOpt.value, e.target.value)}
+                  placeholder="Enter comment..."
+                  className="engagement-comment-textarea"
+                  rows={2}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [allSessionsEngagementData, displaySessions, behaviourOptions, handleAllSessionsAttendanceChange, handleAllSessionsBehaviourChange, handleAllSessionsCommentChange]);
+
+  // Prepare data for DataTable - one row per student; expanded content in a div
   const tableData = useMemo(() => {
-    const rows: Array<Record<string, unknown>> = [];
-    students.forEach((student) => {
+    return students.map((student) => {
       const engagement = engagementData[student._id] || {
         studentId: student._id,
         name: getStudentName(student),
@@ -814,32 +1063,20 @@ const Engagement: React.FC = () => {
         behaviour: 'good',
         comment: '',
       };
-      
-      // First row - single session view
-      rows.push({
-        _id: `${student._id}-row1`,
+      const isExpanded = expandedRows.has(student._id);
+      return {
+        _id: student._id,
         studentId: student._id,
         name: engagement.name,
         session: engagement.session || '',
         attendance: engagement.attendance,
         behaviour: engagement.behaviour,
         comment: engagement.comment,
-        rowType: 'single',
-        isExpanded: expandedRows.has(student._id),
-      });
-      
-      // Second row - all sessions view (only if expanded)
-      if (expandedRows.has(student._id)) {
-        rows.push({
-          _id: `${student._id}-row2`,
-          studentId: student._id,
-          name: engagement.name,
-          rowType: 'all-sessions',
-        });
-      }
+        isExpanded,
+        expandedContent: isExpanded ? renderExpandedContent(student._id) : undefined,
+      };
     });
-    return rows;
-  }, [students, engagementData, expandedRows]);
+  }, [students, engagementData, expandedRows, renderExpandedContent]);
 
   // Handler for session change in first row
   const handleSessionChange = useCallback((studentId: string, sessionValue: string) => {
@@ -892,28 +1129,16 @@ const Engagement: React.FC = () => {
       sortable: true,
       type: 'template' as const,
       template: (row: Record<string, unknown>) => {
-        const rowType = row.rowType as string;
         const studentId = row.studentId as string;
         const name = row.name as string;
         const isExpanded = row.isExpanded as boolean;
-        
-        if (rowType === 'all-sessions') {
-          return <div style={{ fontWeight: 'bold' }}>{name}</div>;
-        }
-        
         return (
-          <div 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
             onClick={() => toggleRowExpansion(studentId)}
           >
-            <FontAwesomeIcon 
-              icon={isExpanded ? faChevronUp : faChevronDown} 
+            <FontAwesomeIcon
+              icon={isExpanded ? faChevronUp : faChevronDown}
               style={{ fontSize: '12px', color: 'var(--text-secondary)' }}
             />
             <span>{name}</span>
@@ -927,13 +1152,7 @@ const Engagement: React.FC = () => {
       sortable: false,
       type: 'template' as const,
       template: (row: Record<string, unknown>) => {
-        const rowType = row.rowType as string;
         const studentId = row.studentId as string;
-        
-        if (rowType === 'all-sessions') {
-          return <div style={{ fontWeight: 'bold', fontSize: '11px' }}>All Sessions</div>;
-        }
-        
         const currentSession = row.session as string;
         return (
           <Select
@@ -952,30 +1171,7 @@ const Engagement: React.FC = () => {
       sortable: false,
       type: 'template' as const,
       template: (row: Record<string, unknown>) => {
-        const rowType = row.rowType as string;
         const studentId = row.studentId as string;
-        
-        if (rowType === 'all-sessions') {
-          const studentData = allSessionsEngagementData[studentId];
-          if (!studentData) return null;
-          
-          return (
-            <div className="all-sessions-attendance all-sessions-cell">
-              {displaySessions.map(sessionOpt => (
-                <div key={sessionOpt.value} className="session-row">
-                  <label style={{ fontSize: '11px', marginRight: '5px' }}>{sessionOpt.label}</label>
-                  <input
-                    type="checkbox"
-                    checked={studentData.sessions[sessionOpt.value]?.attendance || false}
-                    onChange={(e) => handleAllSessionsAttendanceChange(studentId, sessionOpt.value, e.target.checked)}
-                    className="attendance-checkbox"
-                  />
-                </div>
-              ))}
-            </div>
-          );
-        }
-        
         const attendance = row.attendance as boolean;
         return (
           <input
@@ -993,55 +1189,7 @@ const Engagement: React.FC = () => {
       sortable: false,
       type: 'template' as const,
       template: (row: Record<string, unknown>) => {
-        const rowType = row.rowType as string;
         const studentId = row.studentId as string;
-        
-        if (rowType === 'all-sessions') {
-          const studentData = allSessionsEngagementData[studentId];
-          if (!studentData) return null;
-          
-          return (
-            <div className="all-sessions-behaviour all-sessions-cell">
-              {displaySessions.map(sessionOpt => {
-                const sessionData = studentData.sessions[sessionOpt.value];
-                const currentBehaviour = sessionData?.behaviour || 'Good';
-                return (
-                  <div key={sessionOpt.value} className="session-row">
-                    <label style={{ fontSize: '11px', marginBottom: '5px', display: 'block' }}>{sessionOpt.label}</label>
-                    <div className="radio-group">
-                      {behaviourOptions.map(behaviourOpt => {
-                        const color = getBehaviourColor(behaviourOpt.value);
-                        return (
-                          <label key={behaviourOpt.value} style={{ fontSize: '11px', marginRight: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <input
-                              type="radio"
-                              name={`behaviour-${studentId}-${sessionOpt.value}`}
-                              value={behaviourOpt.value}
-                              checked={currentBehaviour === behaviourOpt.value}
-                              onChange={(e) => handleAllSessionsBehaviourChange(studentId, sessionOpt.value, e.target.value)}
-                              style={{ marginRight: '3px' }}
-                            />
-                            <span
-                              style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                backgroundColor: color,
-                                display: 'inline-block',
-                              }}
-                            />
-                            {behaviourOpt.label}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        }
-        
         const behaviour = row.behaviour as string;
         return (
           <BehaviorSelect
@@ -1060,91 +1208,297 @@ const Engagement: React.FC = () => {
       sortable: false,
       type: 'template' as const,
       template: (row: Record<string, unknown>) => {
-        const rowType = row.rowType as string;
         const studentId = row.studentId as string;
-        
-        if (rowType === 'all-sessions') {
-          const studentData = allSessionsEngagementData[studentId];
-          if (!studentData) return null;
-          
-          return (
-            <div className="all-sessions-comment all-sessions-cell">
-              {displaySessions.map(sessionOpt => {
-                const sessionData = studentData.sessions[sessionOpt.value];
-                const comment = sessionData?.comment || '';
-                return (
-                  <div key={sessionOpt.value} className="session-row">
-                    <label style={{ fontSize: '11px', marginBottom: '3px', display: 'block' }}>{sessionOpt.label}</label>
-                    <Input
-                      type="text"
-                      name={`comment-${studentId}-${sessionOpt.value}`}
-                      value={comment}
-                      onChange={(e) => handleAllSessionsCommentChange(studentId, sessionOpt.value, e.target.value)}
-                      placeholder="Enter comment..."
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          );
-        }
-        
         const comment = row.comment as string;
         return (
-          <Input
-            type="text"
+          <textarea
             name={`comment-${studentId}`}
             value={comment}
             onChange={(e) => handleCommentChange(studentId, e.target.value)}
             placeholder="Enter comment..."
+            className="engagement-comment-textarea"
+            rows={3}
           />
         );
       },
     },
-  ], [behaviourOptions, behaviorSelectOptions, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleAllSessionsAttendanceChange, handleAllSessionsBehaviourChange, handleAllSessionsCommentChange, allSessionsEngagementData, displaySessions, handleSessionChange, sessionOptions, toggleRowExpansion]);
+  ], [behaviorSelectOptions, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, sessionOptions, toggleRowExpansion]);
+
+  // Marked engagements table: columns and data
+  const markedEngagementsColumns = useMemo(() => [
+    { header: 'Date', accessor: 'engagementDateFormatted', sortable: true, type: 'string' as const },
+    { header: 'Class', accessor: 'classDisplay', sortable: true, type: 'string' as const },
+    { header: 'Student', accessor: 'studentDisplay', sortable: true, type: 'string' as const },
+    { header: 'Session', accessor: 'session', sortable: true, type: 'string' as const },
+    { header: 'Attendance', accessor: 'attendanceDisplay', sortable: false, type: 'string' as const },
+    { header: 'Behaviour', accessor: 'behaviour', sortable: true, type: 'string' as const },
+    { header: 'Comment', accessor: 'comment', sortable: false, type: 'string' as const },
+  ], []);
+
+  const markedEngagementsTableData = useMemo(() => {
+    const classIdFromEng = (eng: MarkedEngagementRecord) =>
+      typeof eng.class === 'object' && eng.class !== null && eng.class && typeof (eng.class as { _id?: string })._id === 'string'
+        ? (eng.class as { _id: string })._id
+        : typeof eng.class === 'string' ? eng.class : '';
+    const toDateStr = (d: string | undefined) => (d ? new Date(d).toISOString().split('T')[0] : '');
+
+    const filtered = markedEngagements.filter((eng) => {
+      if (markedFilterDate) {
+        const engDateStr = toDateStr(eng.engagementDate || eng.createdAt);
+        if (engDateStr !== markedFilterDate) return false;
+      }
+      const cId = classIdFromEng(eng);
+      if (markedFilterClassId && cId !== markedFilterClassId) return false;
+      const classObj = typeof eng.class === 'object' && eng.class !== null
+        ? eng.class as { location?: string; subject?: string }
+        : null;
+      if (markedFilterLocation && classObj?.location !== markedFilterLocation) return false;
+      if (markedFilterSubject && classObj?.subject !== markedFilterSubject) return false;
+      return true;
+    });
+
+    return filtered.map((eng) => {
+      const classObj = typeof eng.class === 'object' && eng.class !== null
+        ? eng.class as { location?: string; subject?: string; yeargroup?: string }
+        : null;
+      const studentObj = typeof eng.student === 'object' && eng.student !== null
+        ? eng.student as { personalInfo?: { legalFirstName?: string; lastName?: string; preferredName?: string } }
+        : null;
+      const classDisplay = classObj
+        ? [classObj.location, classObj.subject, classObj.yeargroup].filter(Boolean).join(' · ') || '—'
+        : '—';
+      const studentDisplay = studentObj?.personalInfo
+        ? [studentObj.personalInfo.legalFirstName, studentObj.personalInfo.lastName].filter(Boolean).join(' ') ||
+          studentObj.personalInfo.preferredName || '—'
+        : '—';
+      const date = eng.engagementDate || eng.createdAt;
+      const engagementDateFormatted = date
+        ? new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '—';
+      return {
+        _id: eng._id,
+        engagementDateFormatted,
+        classDisplay,
+        studentDisplay,
+        session: eng.session || '—',
+        attendanceDisplay: eng.attendance ? 'Present' : 'Absent',
+        behaviour: eng.behaviour || '—',
+        comment: eng.comment || '—',
+      };
+    });
+  }, [markedEngagements, markedFilterDate, markedFilterLocation, markedFilterSubject, markedFilterClassId]);
+
+  // Universal list table (students with engagements when class filter is set) – same style as Mark Engagement tab
+  const universalListColumns = useMemo(() => [
+    {
+      header: 'Name',
+      accessor: 'name',
+      sortable: true,
+      type: 'template' as const,
+      template: (row: Record<string, unknown>) => {
+        const studentId = row.studentId as string;
+        const name = row.name as string;
+        const isExpanded = row.isExpanded as boolean;
+        const isComplete = row.isComplete as boolean;
+        return (
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => toggleUniversalListExpansion(studentId)}
+          >
+            <FontAwesomeIcon
+              icon={isExpanded ? faChevronUp : faChevronDown}
+              style={{ fontSize: '12px', color: 'var(--text-secondary)' }}
+            />
+            <span
+              className="engagement-status-dot"
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                flexShrink: 0,
+                backgroundColor: isComplete ? '#22c55e' : '#ef4444',
+              }}
+              title={isComplete ? 'All sessions marked' : 'Partially marked'}
+            />
+            <span>{name}</span>
+          </div>
+        );
+      },
+    },
+    { header: 'Session', accessor: 'session', sortable: false, type: 'string' as const },
+    { header: 'Attendance', accessor: 'attendance', sortable: false, type: 'string' as const },
+    { header: 'Behaviour', accessor: 'behaviour', sortable: false, type: 'string' as const },
+    { header: 'Comment', accessor: 'comment', sortable: false, type: 'string' as const },
+  ], [toggleUniversalListExpansion]);
+
+  const universalListTableData = useMemo(() => {
+    const firstSession = displaySessions[0];
+    return universalListStudents.map((student) => {
+      const studentId = student._id;
+      const data = universalListData[studentId];
+      const isComplete = data?.isComplete ?? false;
+      const isExpanded = universalListExpanded.has(studentId);
+      const firstSessionData = firstSession && data?.sessions?.[firstSession.value];
+      return {
+        _id: studentId,
+        studentId,
+        name: getStudentName(student),
+        session: firstSession ? firstSession.label : '—',
+        attendance: firstSessionData ? (firstSessionData.attendance ? 'Present' : 'Absent') : '—',
+        behaviour: firstSessionData?.behaviour ?? '—',
+        comment: firstSessionData?.comment ?? '—',
+        isExpanded,
+        isComplete,
+        expandedContent: isExpanded ? renderUniversalListExpandedContent(studentId) : undefined,
+      };
+    });
+  }, [universalListStudents, universalListData, universalListExpanded, renderUniversalListExpandedContent, displaySessions]);
+
+  const markEngagementContent = (
+    <div className="tt-main-div">
+      <div className="tt-filter-div">
+        <div className="engagement-date-container">
+          <DateInput
+            label="Engagement Date"
+            name="engagementDate"
+            value={engagementDate}
+            onChange={(e) => setEngagementDate(e.target.value)}
+            max={today}
+          />
+        </div>
+        <FilterSec
+          secName="Students Filter"
+          content={filterContent}
+          retractable={true}
+        />
+      </div>
+      <div className="tt-table-div">
+        {filterClass && students.length > 0 ? (
+          <DataTable
+            columns={columns}
+            data={tableData}
+            title="Students Engagement"
+            onEdit={() => {}}
+            showActions={false}
+            addButton={false}
+            showSearch={false}
+          />
+        ) : filterClass ? (
+          <div className="no-students-message">
+            No students found in this class.
+          </div>
+        ) : (
+          <div className="no-class-selected-message">
+            Please select a class to view students.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const markedFilterContent = (
+    <div className="inputs-div-tt">
+      <div className="input-div-engagement">
+        <DateInput
+          label="Date"
+          name="markedFilterDate"
+          value={markedFilterDate}
+          onChange={(e) => setMarkedFilterDate(e.target.value)}
+        />
+      </div>
+      <div className="input-div-engagement">
+        <Select
+          label="Location"
+          name="markedFilterLocation"
+          value={markedFilterLocation}
+          onChange={(e) => setMarkedFilterLocation(e.target.value)}
+          options={locationOptions}
+          placeholder="All Locations"
+          icon={locationIcon}
+        />
+      </div>
+      <div className="input-div-engagement">
+        <Select
+          label="Subject"
+          name="markedFilterSubject"
+          value={markedFilterSubject}
+          onChange={(e) => setMarkedFilterSubject(e.target.value)}
+          options={subjectOptions}
+          placeholder="All Subjects"
+          icon={Subject}
+        />
+      </div>
+      <div className="input-div-engagement">
+        <Select
+          label="Class/Provision"
+          name="markedFilterClass"
+          value={markedFilterClassId}
+          onChange={(e) => setMarkedFilterClassId(e.target.value)}
+          options={markedClassOptions}
+          placeholder="All Classes"
+          icon={Class}
+          disabled={markedClassOptions.length === 0}
+        />
+      </div>
+    </div>
+  );
+
+  const showUniversalList = Boolean(markedFilterClassId);
+
+  const markedEngagementsContent = (
+    <div className="tt-main-div marked-engagements-tab">
+      <div className="tt-filter-div">
+        <FilterSec
+          secName="Filter engagements"
+          content={markedFilterContent}
+          retractable={true}
+        />
+      </div>
+      <div className="tt-table-div">
+        {showUniversalList ? (
+          universalListLoading ? (
+            <div className="marked-engagements-loading">Loading class engagements...</div>
+          ) : universalListTableData.length === 0 ? (
+            <div className="no-students-message">
+              No marked engagements for this class{markedFilterDate ? ` on ${markedFilterDate}` : ''}. Select a class and date to see students with at least one session marked.
+            </div>
+          ) : (
+            <DataTable
+              columns={universalListColumns}
+              data={universalListTableData}
+              title="Class engagement list"
+              onEdit={() => {}}
+              showActions={false}
+              addButton={false}
+              showSearch={false}
+            />
+          )
+        ) : markedEngagementsLoading ? (
+          <div className="marked-engagements-loading">Loading marked engagements...</div>
+        ) : (
+          <DataTable
+            columns={markedEngagementsColumns}
+            data={markedEngagementsTableData}
+            title="Marked Engagements"
+            onEdit={() => {}}
+            showActions={false}
+            addButton={false}
+            showSearch={true}
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const tabs = [
+    { id: 'mark', label: 'Mark Engagement', content: markEngagementContent },
+    { id: 'marked', label: 'Marked Engagements', content: markedEngagementsContent },
+  ];
 
   return (
     <Layout>
       <div className="engagement">
-        <div className="tt-main-div">
-          <div className="tt-filter-div">
-            <div className="engagement-date-container">
-              <DateInput
-                label="Engagement Date"
-                name="engagementDate"
-                value={engagementDate}
-                onChange={(e) => setEngagementDate(e.target.value)}
-                max={today}
-              />
-            </div>
-            <FilterSec 
-              secName="Students Filter"
-              content={filterContent}
-              retractable={true}
-            />
-          </div>
-          <div className="tt-table-div">
-            {filterClass && students.length > 0 ? (
-              <DataTable
-                columns={columns}
-                data={tableData}
-                title="Students Engagement"
-                onEdit={() => {}} // No-op since we don't need edit functionality
-                showActions={false}
-                addButton={false}
-                showSearch={false}
-              />
-            ) : filterClass ? (
-              <div className="no-students-message">
-                No students found in this class.
-              </div>
-            ) : (
-              <div className="no-class-selected-message">
-                Please select a class to view students.
-              </div>
-            )}
-          </div>
-        </div>
+        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={(id) => setActiveTab(id as 'mark' | 'marked')} />
       </div>
     </Layout>
   );

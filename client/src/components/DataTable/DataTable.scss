@@ -5,11 +5,13 @@
   border-radius: 8px;
   box-shadow: $box-shadow;
   padding: 10px;
-  width: 98%;
+  max-width: 100%;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 
   .data-table-header {
     display: flex;
@@ -43,6 +45,7 @@
   }
 
   .table-container {
+    width: 99%;
     overflow-x: auto;
     overflow-y: auto;
     flex: 1;
@@ -101,9 +104,24 @@
             padding-top:10px;
             padding-bottom:10px;
           }
+
+          &.expanded-row {
+            background-color: var(--tr-bg);
+
+            td.expanded-row-cell {
+              vertical-align: top;
+              border-bottom: 1px solid var(--border-color);
+              padding: 0;
+            }
+          }
         }
       }
     }
+  }
+
+  .expanded-row-content {
+    padding: 16px;
+    min-height: 0;
   }
   .first-td-class{
     border-left: 1px solid var(--border-color);

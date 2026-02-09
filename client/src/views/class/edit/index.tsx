@@ -198,13 +198,14 @@ const EditClass = () => {
       const currentData = classDataRef.current;
       const currentId = classIdRef.current;
 
+      // Only autosave when editing an existing class; never POST on blur (prevents duplicate classes)
+      if (!currentId) return;
+
       // Skip if required fields are missing
       if (!currentData.location || !currentData.fromDate || !currentData.toDate || !currentData.subject || !currentData.yeargroup) {
-        console.log('Autosave skipped: missing required fields');
         return;
       }
 
-      // Prepare submit data
       const submitData = {
         location: currentData.location,
         fromDate: currentData.fromDate,
@@ -214,25 +215,14 @@ const EditClass = () => {
         notes: currentData.notes || '',
       };
 
-      // Perform autosave - use POST for new classes, PATCH for existing ones
-      const method = currentId ? 'patch' : 'post';
-      const url = currentId ? `/classes/${currentId}` : '/classes';
-      
-      api[method](url, submitData)
+      api.patch(`/classes/${currentId}`, submitData)
         .then((response) => {
-          if (!currentId && response.data && response.data._id) {
-            const newId = response.data._id;
-            classIdRef.current = newId;
-            // Update URL without navigation
-            window.history.replaceState({}, '', `/classes/edit/${newId}`);
-          }
           console.log('Autosave successful:', response.data);
         })
         .catch((error) => {
-          // Silently log autosave errors
           console.error('Autosave error:', error);
         });
-    }, 100); // Small delay to ensure state is updated
+    }, 100);
   }, []);
 
   return (

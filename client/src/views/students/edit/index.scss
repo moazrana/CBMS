@@ -1,7 +1,8 @@
 .new-staff {
-  // padding: 2rem;
-  // max-width: 1200px;
   margin: 0 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 
   .new-staff-header {
     margin-bottom: 2rem;
@@ -17,11 +18,15 @@
   .new-staff-form {
     background: var(--card-bg);
     border-radius: 8px;
-    // padding: 2rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    overflow: hidden;
 
     .tab-content {
       padding: 1rem 0;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: auto;
 
       .section-header {
         
@@ -162,6 +167,20 @@
 
         .form-row {
           margin-bottom: 1rem;
+        }
+      }
+
+      /* Time table tab: keep calendar inside layout */
+      .timetable-tab-wrapper {
+        max-width: 100%;
+        overflow: auto;
+        min-height: 400px;
+        max-height: 70vh;
+
+        #time-table-div {
+          max-width: 100%;
+          min-height: 400px;
+          height: 60vh;
         }
       }
     }

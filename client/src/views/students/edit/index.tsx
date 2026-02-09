@@ -13,6 +13,7 @@ import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import './index.scss';
 import DateInput from '../../../components/dateInput/DateInput';
+import TimeTableComponent from '../../../components/timeTable/timeTable';
 interface StudentData {
   personalInfo: {
     legalFirstName: string;
@@ -2659,6 +2660,18 @@ const EditStudent = () => {
     );
   };
 
+  // Time Table Tab
+  const TimeTableTab = () => (
+    <div className="tab-content">
+      <div className="timetable-tab-wrapper">
+        <TimeTableComponent
+          onTimeSlotButtonPress={() => {}}
+          propEvents={[]}
+        />
+      </div>
+    </div>
+  );
+
   const tabs = [
     { id: 'basic', label: 'Basic Information', content: <BasicInfoTab /> },
     { id: 'parents', label: 'Parents', content: <ParentsTab /> },
@@ -2667,6 +2680,7 @@ const EditStudent = () => {
     { id: 'behaviour', label: 'Behaviour', content: <BehaviourTab /> },
     { id: 'classes', label: 'Classes', content: <ClassesTab /> },
     { id: 'engagement', label: 'Engagement', content: <EngagementTab /> },
+    { id: 'timetable', label: 'Time Table', content: <TimeTableTab /> },
   ];
 
   return (

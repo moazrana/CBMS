@@ -13,6 +13,7 @@ export enum Session {
 }
 
 export enum Behaviour {
+  UNMARKED = 'Unmarked',
   GOOD = 'Good',
   FAIR = 'Fair',
   AVERAGE = 'Average',

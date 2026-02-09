@@ -13,16 +13,15 @@
 
 .app-content {
   flex: 1;
-  // padding: 32px 24px;
   background-color: var(--main-bg);
-  // padding: 20px;
-  // box-shadow: 0 0 10px 0 rgba(214, 208, 208, 0.1);
   margin-top: 12px;
   margin-left: 12px;
   border-radius: 10px;
-  // border: 2px solid var(--border-color);
-  overflow-y: auto;
+  overflow: auto;
   height: calc(100vh - 80px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .navs {
@@ -89,16 +88,20 @@
     }
   }
 }
-#child-div{
+#child-div {
   border: 3px solid var(--border-color);
   border-radius: 8px;
   margin-top: 5px;
-  padding-top:15px;
-  padding-left:15px;
-  height: calc(100vh - 50px);
-  // display: flex;
-  // flex-direction: column;
-  // overflow: hidden;
+  padding-top: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  max-width: 100%;
+}
+.content-wrapper{
+  width:99%;
 }
 #filter-div{
   border: 3px solid var(--border-color);

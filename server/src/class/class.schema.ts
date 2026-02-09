@@ -29,6 +29,9 @@ export class Class {
 
 export const ClassSchema = SchemaFactory.createForClass(Class);
 
+// Unique constraint: one class per location + subject + yeargroup
+ClassSchema.index({ location: 1, subject: 1, yeargroup: 1 }, { unique: true });
+
 // Index for better query performance
 ClassSchema.index({ location: 1 });
 ClassSchema.index({ fromDate: 1 });

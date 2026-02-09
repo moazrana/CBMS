@@ -38,16 +38,16 @@ export class EngagementService {
       .sort({ [sort]: sortOrder })
       .skip((page - 1) * perPage)
       .limit(perPage)
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .exec();
   }
 
   async findOne(id: string): Promise<Engagement> {
     const engagement = await this.engagementModel
       .findById(id)
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .exec();
 
     if (!engagement) {
@@ -59,8 +59,8 @@ export class EngagementService {
   async update(id: string, updateEngagementDto: UpdateEngagementDto): Promise<Engagement> {
     const updatedEngagement = await this.engagementModel
       .findByIdAndUpdate(id, updateEngagementDto, { new: true })
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .exec();
 
     if (!updatedEngagement) {
@@ -94,8 +94,8 @@ export class EngagementService {
     
     return this.engagementModel
       .find(query)
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -103,8 +103,8 @@ export class EngagementService {
   async findByStudent(studentId: string): Promise<Engagement[]> {
     return this.engagementModel
       .find({ student: studentId })
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -112,8 +112,8 @@ export class EngagementService {
   async findByClassAndStudent(classId: string, studentId: string): Promise<Engagement[]> {
     return this.engagementModel
       .find({ class: classId, student: studentId })
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -141,8 +141,8 @@ export class EngagementService {
     
     return this.engagementModel
       .findOne(query)
-      .populate('class')
-      .populate('student')
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .exec();
   }
 }

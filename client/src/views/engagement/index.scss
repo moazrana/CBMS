@@ -1,5 +1,5 @@
 .engagement {
-  padding: 20px;
+  // padding: 20px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -16,11 +16,15 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  margin-left:0px
 }
 
 .tt-filter-div {
   flex-shrink: 0;
-  margin-bottom: var(--standard-padding, 15px);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  // margin-bottom: var(--standard-padding, 15px);
 }
 
 .tt-table-div {
@@ -50,6 +54,19 @@
 // Styles for components inside DataTable cells
 .engagement {
   .data-table {
+    // Let table row height wrap content (e.g. comment textarea)
+    tbody tr:not(.expanded-row) td {
+      vertical-align: top;
+    }
+    .td-div,
+    .last-td-div {
+      height: auto;
+      min-height: 50px;
+      justify-content: flex-start;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
     .attendance-checkbox {
       width: 18px;
       height: 18px;
@@ -72,6 +89,25 @@
       .input-field {
         width: 100%;
         min-width: 200px;
+      }
+    }
+
+    .engagement-comment-textarea {
+      width: 98%;
+      min-width: 90%;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--main-text);
+      background-color: var(--main-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      resize: vertical;
+      min-height: 60px;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color, #6786FB);
       }
     }
 
@@ -144,18 +180,98 @@
       }
     }
     
-    // Animate the expanded row (all-sessions row)
-    tbody tr:has(.all-sessions-cell) {
-      animation: slideDown 0.3s ease-out;
-      overflow: hidden;
-      
-      td {
-        animation: slideDown 0.3s ease-out;
+    // Expanded view: one row per session (Session | Attendance | Behaviour | Comment)
+    .engagement-expanded-div {
+      width: 100%;
+      padding: 12px 0;
+      font-size: 15px;
+
+      .engagement-expanded-header {
+        display: grid;
+        grid-template-columns: 180px 140px 1.5fr 2fr;
+        gap: 12px 16px;
+        align-items: center;
+        padding: 8px 12px;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--main-text);
+        border-bottom: 2px solid var(--border-color);
+        margin-bottom: 8px;
+      }
+
+      .engagement-expanded-session-row {
+        display: grid;
+        grid-template-columns: 180px 140px 1.5fr 2fr;
+        gap: 12px 16px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-color);
+        min-height: 44px;
+        font-size: 15px;
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      .engagement-expanded-col {
+        min-width: 0;
+      }
+
+      .session-col {
+        font-size: 15px;
+        color: var(--main-text);
+      }
+
+      .attendance-col {
+        display: flex;
+        align-items: center;
+      }
+
+      .behaviour-col .radio-group-inline {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .radio-label-inline {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          font-size: 15px;
+          color: var(--main-text);
+
+          input[type="radio"] {
+            margin: 0;
+            cursor: pointer;
+          }
+          .radio-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      .comment-col .engagement-comment-textarea {
+        min-height: 44px;
+      }
+
+      @media (max-width: 768px) {
+        .engagement-expanded-header,
+        .engagement-expanded-session-row {
+          grid-template-columns: 1fr 100px 1.2fr 1fr;
+        }
       }
     }
 
+    // Animate expanded row (tr that contains the div)
+    tbody tr.expanded-row {
+      animation: slideDown 0.3s ease-out;
+    }
+
     // Override parent td-div height when it contains all-sessions content
-    // Using :has() selector for modern browsers
     .td-div:has(.all-sessions-cell),
     .last-td-div:has(.all-sessions-cell) {
       height: auto !important;
@@ -163,12 +279,6 @@
       padding: 15px 10px !important;
       align-items: flex-start !important;
       justify-content: flex-start !important;
-    }
-    
-    // Animate the expanded row (all-sessions row)
-    tbody tr:has(.all-sessions-cell) {
-      animation: slideDown 0.3s ease-out;
-      overflow: hidden;
     }
 
     // Fallback: Target the all-sessions containers directly
@@ -209,8 +319,8 @@
 
         .radio-group {
           display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
+          flex-direction: column;
+          gap: 6px;
           margin-top: 4px;
 
           label {
@@ -252,4 +362,15 @@
   background: var(--bg-primary);
   border-radius: 8px;
   margin-top: 20px;
+}
+
+.marked-engagements-loading {
+  padding: 24px;
+  text-align: center;
+  color: var(--main-text);
+  font-size: 14px;
+}
+
+.engagement .marked-engagements-tab {
+  padding-top: 0;
 }

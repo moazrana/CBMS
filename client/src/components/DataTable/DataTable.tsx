@@ -190,8 +190,13 @@ const DataTable: React.FC<DataTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedData.map((row, index) => (
-                <tr key={index}>
+              {paginatedData.map((row, index) => {
+                const expandedContent = row.expandedContent as React.ReactNode | undefined;
+                const isExpanded = row.isExpanded === true;
+                const colSpan = columns.length + (showActions ? 1 : 0);
+                return (
+                  <React.Fragment key={row._id ?? index}>
+                    <tr>
                   {columns.map((column,cindex) => (
                     (() => {
                       let tdClass=''
@@ -296,7 +301,16 @@ const DataTable: React.FC<DataTableProps> = ({
                     </td>
                   )}
                 </tr>
-              ))}
+                {isExpanded && expandedContent != null && (
+                  <tr className="expanded-row">
+                    <td colSpan={colSpan} className="expanded-row-cell">
+                      <div className="expanded-row-content">{expandedContent}</div>
+                    </td>
+                  </tr>
+                )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

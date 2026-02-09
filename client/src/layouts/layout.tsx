@@ -116,7 +116,9 @@ export default function Layout({
                   )}
                   
                   <div id='child-div' >
+                    <div className='content-wrapper'>
                     {children}
+                    </div>
                   </div>
                 </main>
             </div>
