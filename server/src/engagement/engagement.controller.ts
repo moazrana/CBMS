@@ -11,6 +11,7 @@ import {
 import { EngagementService } from './engagement.service';
 import { CreateEngagementDto } from './dto/create-engagement.dto';
 import { UpdateEngagementDto } from './dto/update-engagement.dto';
+import { SubmitEngagementDto } from './dto/submit-engagement.dto';
 
 @Controller('engagements')
 export class EngagementController {
@@ -21,19 +22,32 @@ export class EngagementController {
     return this.engagementService.create(createEngagementDto);
   }
 
+  @Post('submit')
+  submit(@Body() dto: SubmitEngagementDto) {
+    return this.engagementService.submitEngagementsForStudent(
+      dto.classId,
+      dto.studentId,
+      dto.engagementDate,
+    );
+  }
+
   @Get()
-  findAll(
+  async findAll(
     @Query('sort') sort?: string,
     @Query('order') order?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('perPage') perPage?: string,
+    @Query('marked') marked?: string,
   ) {
     const sortField = sort || 'createdAt';
     const sortOrder = order || 'DESC';
     const searchTerm = search || '';
     const pageNum = page ? parseInt(page, 10) : 1;
     const perPageNum = perPage ? parseInt(perPage, 10) : 10;
+    if (marked === 'true') {
+      return this.engagementService.findMarkedEngagements(sortField, sortOrder, pageNum, perPageNum);
+    }
     return this.engagementService.findAll(sortField, sortOrder, searchTerm, pageNum, perPageNum);
   }
 
@@ -56,7 +70,11 @@ export class EngagementController {
   findByClass(
     @Param('classId') classId: string,
     @Query('date') engagementDate?: string,
+    @Query('marked') marked?: string,
   ) {
+    if (marked === 'true') {
+      return this.engagementService.findByClassMarked(classId, engagementDate);
+    }
     return this.engagementService.findByClass(classId, engagementDate);
   }
 

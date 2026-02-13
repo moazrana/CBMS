@@ -53,6 +53,40 @@
 
 // Styles for components inside DataTable cells
 .engagement {
+  // Mark Engagement table only: narrower second column (Session)
+  .tt-main-div:not(.marked-engagements-tab) .data-table table {
+    th:nth-child(1),
+    td:nth-child(1) {
+      max-width: 100%;
+      width: 20%;
+    }
+    th:nth-child(2),
+    td:nth-child(2) {
+      max-width: 100%;
+      width: 13%;
+    }
+    th:nth-child(3),
+    td:nth-child(3) {
+      max-width: 100%;
+      width: 8%;
+    }
+    th:nth-child(4),
+    td:nth-child(4) {
+      max-width: 100%;
+      width: 13%;
+    }
+    th:nth-child(5),
+    td:nth-child(5) {
+      max-width: 100%;
+      width: 20%;
+    }
+    th:nth-child(6),
+    td:nth-child(6) {
+      max-width: 1%;
+      width:0.9%;
+    }
+  }
+
   .data-table {
     // Let table row height wrap content (e.g. comment textarea)
     tbody tr:not(.expanded-row) td {
@@ -74,12 +108,29 @@
       accent-color: var(--primary-color);
     }
 
+    .engagement-submit-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--main-bg, #fff);
+      background-color: var(--primary-color, #6786FB);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        background-color: var(--text-secondary, #6b7280);
+      }
+    }
+
     .select-container {
       margin: 0;
       
       .select-field {
-        width: 100%;
-        min-width: 150px;
+        width: 95%;
       }
     }
 
@@ -93,7 +144,7 @@
     }
 
     .engagement-comment-textarea {
-      width: 98%;
+      width: 93%;
       min-width: 90%;
       padding: 8px 12px;
       font-size: 13px;
@@ -201,7 +252,7 @@
 
       .engagement-expanded-session-row {
         display: grid;
-        grid-template-columns: 180px 140px 1.5fr 2fr;
+        grid-template-columns: 180px 140px 0.5fr 2fr;
         gap: 12px 16px;
         align-items: center;
         padding: 10px 12px;
@@ -261,7 +312,7 @@
       @media (max-width: 768px) {
         .engagement-expanded-header,
         .engagement-expanded-session-row {
-          grid-template-columns: 1fr 100px 1.2fr 1fr;
+          grid-template-columns: 1fr 100px 0.5fr 1fr;
         }
       }
     }

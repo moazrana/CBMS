@@ -123,7 +123,7 @@ export interface PersonalInfo {
   yearGroup?: string;
   ethnicity?: string; // MIS requirement
   photo?: string; // Photo upload path/URL
-  location?: string; // Location (Warrington or Burrow)
+  location?: string; // Location (Warrington or Bury)
   notesAndFiles?: StudentFile[]; // Notes & Files (Add/Edit/Delete)
 }
 

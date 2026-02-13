@@ -11,6 +11,7 @@ import { Tabs } from '../../../components/Tabs/Tabs';
 import DateInput from '../../../components/dateInput/DateInput';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
+import { formatDateDisplay } from '../../../functions/formatDate';
 import './index.scss';
 
 interface Address {
@@ -1362,8 +1363,8 @@ const EditStaff = () => {
                       <td>{dbs.staffMember || 'N/A'}</td>
                       <td>{dbs.checkLevel || 'N/A'}</td>
                       <td>{dbs.certificateNumber || 'N/A'}</td>
-                      <td>{dbs.certificateDateReceived ? (typeof dbs.certificateDateReceived === 'string' ? dbs.certificateDateReceived.split('T')[0] : dbs.certificateDateReceived) : 'N/A'}</td>
-                      <td>{dbs.dbsCheckedDate ? (typeof dbs.dbsCheckedDate === 'string' ? dbs.dbsCheckedDate.split('T')[0] : dbs.dbsCheckedDate) : 'N/A'}</td>
+                      <td>{formatDateDisplay(dbs.certificateDateReceived) || 'N/A'}</td>
+                      <td>{formatDateDisplay(dbs.dbsCheckedDate) || 'N/A'}</td>
                       <td>
                         <div className="table-actions">
                           <button
@@ -1910,8 +1911,8 @@ const EditStaff = () => {
                   {trainingRecords.map((training, index) => (
                     <tr key={index}>
                       <td>{training.courseName || 'N/A'}</td>
-                      <td>{training.dateCompleted ? training.dateCompleted.split('T')[0] : 'N/A'}</td>
-                      <td>{training.expiryDate ? training.expiryDate.split('T')[0] : 'N/A'}</td>
+                      <td>{formatDateDisplay(training.dateCompleted) || 'N/A'}</td>
+                      <td>{formatDateDisplay(training.expiryDate) || 'N/A'}</td>
                       <td>{training.status || 'N/A'}</td>
                       <td>{training.notes || 'N/A'}</td>
                       <td>
@@ -2174,8 +2175,8 @@ const EditStaff = () => {
                       <td>{qualification.qualificationName || 'N/A'}</td>
                       <td>{qualification.qualificationType || 'N/A'}</td>
                       <td>{qualification.classOfDegree || 'N/A'}</td>
-                      <td>{qualification.achievedDate ? qualification.achievedDate.split('T')[0] : 'N/A'}</td>
-                      <td>{qualification.expiryDate ? qualification.expiryDate.split('T')[0] : 'N/A'}</td>
+                      <td>{formatDateDisplay(qualification.achievedDate) || 'N/A'}</td>
+                      <td>{formatDateDisplay(qualification.expiryDate) || 'N/A'}</td>
                       <td>{qualification.qtStatus || 'N/A'}</td>
                       <td>{qualification.nqtEctStatus || 'N/A'}</td>
                       <td>
@@ -2454,7 +2455,7 @@ const EditStaff = () => {
                   {hrRecords.map((hr, index) => (
                     <tr key={index}>
                       <td>{hr.absenceType || 'N/A'}</td>
-                      <td>{hr.absenceDate ? hr.absenceDate.split('T')[0] : 'N/A'}</td>
+                      <td>{formatDateDisplay(hr.absenceDate) || 'N/A'}</td>
                       <td>{hr.reason || 'N/A'}</td>
                       <td>{hr.evidenceUpload || 'N/A'}</td>
                       <td>

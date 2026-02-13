@@ -5,6 +5,7 @@ import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import StaffView from '../view/StaffView';
+import { formatDateDisplay } from '../../../functions/formatDate';
 
 interface Staff {
   _id: string;
@@ -249,8 +250,7 @@ const StaffList = () => {
       // Check right to work expiry (most relevant - this is what the user wants to see)
       if (lastDBS.rightToWork?.expiry) {
         const expiryDate = lastDBS.rightToWork.expiry;
-        // Handle both date string and ISO string formats
-        return expiryDate.split('T')[0];
+        return formatDateDisplay(expiryDate) || 'N/A';
       }
       
       return 'N/A';

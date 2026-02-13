@@ -145,5 +145,86 @@ export class EngagementService {
       .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
       .exec();
   }
+
+  /** Set submitted=true for all engagements of this student in this class on this date */
+  async submitEngagementsForStudent(
+    classId: string,
+    studentId: string,
+    engagementDate: string,
+  ): Promise<{ count: number }> {
+    const startOfDay = new Date(engagementDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(engagementDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const result = await this.engagementModel
+      .updateMany(
+        {
+          class: classId,
+          student: studentId,
+          engagementDate: { $gte: startOfDay, $lte: endOfDay },
+        },
+        { $set: { submitted: true } },
+      )
+      .exec();
+
+    return { count: result.matchedCount };
+  }
+
+  /** Filter engagements to those visible in "marked engagements": submitted or all 6 sessions present for that student/class/date */
+  private filterToMarkedVisible(engagements: EngagementDocument[]): EngagementDocument[] {
+    const SESSION_COUNT = 6;
+    const dateStr = (d: Date | string) => (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10);
+    const key = (e: EngagementDocument) =>
+      `${e.class}|${e.student}|${dateStr(e.engagementDate as Date)}`;
+    const byKey = new Map<string, EngagementDocument[]>();
+    engagements.forEach((e) => {
+      const k = key(e);
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k)!.push(e);
+    });
+    const includeKeys = new Set<string>();
+    byKey.forEach((list, k) => {
+      const anySubmitted = list.some((e) => e.submitted === true);
+      if (anySubmitted || list.length >= SESSION_COUNT) includeKeys.add(k);
+    });
+    return engagements.filter((e) => includeKeys.has(key(e)));
+  }
+
+  async findMarkedEngagements(
+    sort: string = 'createdAt',
+    order: string = 'DESC',
+    page: number = 1,
+    perPage: number = 500,
+  ): Promise<Engagement[]> {
+    const sortOrder = order === 'DESC' ? -1 : 1;
+    const all = await this.engagementModel
+      .find()
+      .sort({ [sort]: sortOrder })
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
+      .exec();
+    const filtered = this.filterToMarkedVisible(all);
+    const start = (page - 1) * perPage;
+    return filtered.slice(start, start + perPage);
+  }
+
+  async findByClassMarked(classId: string, engagementDate?: string): Promise<Engagement[]> {
+    const query: any = { class: classId };
+    if (engagementDate) {
+      const startOfDay = new Date(engagementDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(engagementDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.engagementDate = { $gte: startOfDay, $lte: endOfDay };
+    }
+    const all = await this.engagementModel
+      .find(query)
+      .populate({ path: 'class', model: 'Class', select: 'location subject yeargroup' })
+      .populate({ path: 'student', model: 'Student', select: 'personalInfo' })
+      .sort({ createdAt: -1 })
+      .exec();
+    return this.filterToMarkedVisible(all);
+  }
 }
 

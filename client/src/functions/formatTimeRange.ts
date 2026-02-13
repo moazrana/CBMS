@@ -1,7 +1,7 @@
 export default function extractDateAndTime(utc: string, timeZone = "Asia/Karachi") {
     const date = new Date(utc);
   
-    const dateStr = date.toLocaleDateString("en-US", {
+    const dateStr = date.toLocaleDateString("en-GB", {
       weekday: "short",
       day: "2-digit",
       month: "short",
@@ -9,7 +9,7 @@ export default function extractDateAndTime(utc: string, timeZone = "Asia/Karachi
       timeZone
     });
   
-    const timeStr = date.toLocaleTimeString("en-US", {
+    const timeStr = date.toLocaleTimeString("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,

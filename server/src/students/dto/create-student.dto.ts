@@ -218,7 +218,7 @@ export class PersonalInfoDto {
 
   @IsOptional()
   @IsString()
-  location?: string; // Location (Warrington or Burrow)
+  location?: string; // Location (Warrington or Bury)
 
   @IsOptional()
   @IsArray()

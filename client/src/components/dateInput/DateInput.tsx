@@ -1,28 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './DateInput.scss';
+import { formatDateDisplay, parseDDMMYYYYToYYYYMMDD } from '../../functions/formatDate';
 
-// Helper function to format date to YYYY-MM-DD
-const formatDateToYYYYMMDD = (date: string | Date | undefined | null): string => {
+// Helper: normalize value to YYYY-MM-DD for storage/API
+const toYYYYMMDD = (date: string | Date | undefined | null): string => {
   if (!date) return '';
   if (typeof date === 'string') {
-    // If it's already in YYYY-MM-DD format, return as is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return date;
-    }
-    // If it's an ISO string, extract the date part
-    if (date.includes('T')) {
-      return date.split('T')[0];
-    }
-    // Try to parse and format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    if (date.includes('T')) return date.split('T')[0];
     const parsed = new Date(date);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split('T')[0];
-    }
+    if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0];
     return '';
   }
-  if (date instanceof Date) {
-    return date.toISOString().split('T')[0];
-  }
+  if (date instanceof Date) return date.toISOString().split('T')[0];
   return '';
 };
 
@@ -51,7 +41,7 @@ const DateInput: React.FC<DateInputProps> = React.memo(({
   onChange,
   onFocus,
   onBlur,
-  placeholder,
+  placeholder = 'dd/mm/yyyy',
   error,
   required = false,
   disabled = false,
@@ -61,30 +51,51 @@ const DateInput: React.FC<DateInputProps> = React.memo(({
   min,
   max,
 }) => {
-  // Internal state for two-way binding (updates on change, syncs to parent on blur)
-  const [internalValue, setInternalValue] = useState<string>(formatDateToYYYYMMDD(value));
+  // Store value as YYYY-MM-DD for parent/API; display as dd/mm/yyyy
+  const [internalValue, setInternalValue] = useState<string>(toYYYYMMDD(value));
+  const [displayValue, setDisplayValue] = useState<string>(() => formatDateDisplay(internalValue || undefined));
+  const pickerRef = useRef<HTMLInputElement>(null);
 
-  // Sync internal value when external value prop changes (e.g., from fetch)
+  // Sync when external value changes (e.g. from fetch)
   useEffect(() => {
-    const formatted = formatDateToYYYYMMDD(value);
-    setInternalValue(formatted);
+    const next = toYYYYMMDD(value);
+    setInternalValue(next);
+    setDisplayValue(formatDateDisplay(next || undefined));
   }, [value]);
 
-  // Handle blur - sync to parent
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setDisplayValue(raw);
+    const parsed = parseDDMMYYYYToYYYYMMDD(raw);
+    if (parsed) setInternalValue(parsed);
+  };
+
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Create synthetic event with current internal value
-    const syntheticEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        value: internalValue,
-      },
-    } as React.ChangeEvent<HTMLInputElement>;
-    onChange(syntheticEvent);
-    
-    // Call parent's onBlur if provided
-    if (onBlur) {
-      onBlur(e);
+    const parsed = parseDDMMYYYYToYYYYMMDD(displayValue);
+    if (parsed) {
+      setInternalValue(parsed);
+      setDisplayValue(formatDateDisplay(parsed));
+      const syntheticEvent = {
+        ...e,
+        target: { ...e.target, name, value: parsed },
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(syntheticEvent);
+    } else {
+      setDisplayValue(formatDateDisplay(internalValue || undefined));
+    }
+    if (onBlur) onBlur(e);
+  };
+
+  const openPicker = () => {
+    pickerRef.current?.showPicker?.();
+  };
+
+  const handlePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (v) {
+      setInternalValue(v);
+      setDisplayValue(formatDateDisplay(v));
+      onChange(e);
     }
   };
 
@@ -109,20 +120,42 @@ const DateInput: React.FC<DateInputProps> = React.memo(({
           {required && <span className="required">*</span>}
         </label>
       )}
-      <input
-        type="date"
-        id={name}
-        name={name}
-        value={internalValue}
-        onChange={(e) => setInternalValue(e.target.value)}
-        onFocus={onFocus}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        disabled={disabled}
-        min={min}
-        max={max}
-        className={`date-input-field ${error ? 'error' : ''}`}
-      />
+      <div className="date-input-wrapper">
+        <input
+          type="text"
+          id={name}
+          name={name}
+          value={displayValue}
+          onChange={handleTextChange}
+          onFocus={onFocus}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`date-input-field ${error ? 'error' : ''}`}
+          inputMode="numeric"
+          autoComplete="off"
+        />
+        <input
+          ref={pickerRef}
+          type="date"
+          aria-hidden="true"
+          tabIndex={-1}
+          value={internalValue}
+          onChange={handlePickerChange}
+          min={min}
+          max={max}
+          disabled={disabled}
+          className="date-input-picker-native"
+        />
+        <button
+          type="button"
+          className="date-input-picker-btn"
+          onClick={openPicker}
+          disabled={disabled}
+          title="Choose date"
+          tabIndex={-1}
+        />
+      </div>
       {error && <span className="error-message">{error}</span>}
     </div>
   );

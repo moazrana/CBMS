@@ -14,6 +14,7 @@ import api from '../../../services/api';
 import './index.scss';
 import DateInput from '../../../components/dateInput/DateInput';
 import TimeTableComponent from '../../../components/timeTable/timeTable';
+import { formatDateDisplay } from '../../../functions/formatDate';
 interface StudentData {
   personalInfo: {
     legalFirstName: string;
@@ -647,7 +648,7 @@ const EditStudent = () => {
             options={[
               { value: '', label: 'Select...' },
               { value: 'Warrington', label: 'Warrington' },
-              { value: 'Burrow', label: 'Burrow' },
+              { value: 'Bury', label: 'Bury' },
             ]}
           />
         </div>
@@ -1620,7 +1621,7 @@ const EditStudent = () => {
                     <td>{medical.assistanceRequired !== undefined ? (medical.assistanceRequired ? 'Yes' : 'No') : 'N/A'}</td>
                     <td>{medical.nhsNumber || 'N/A'}</td>
                     <td>{medical.bloodGroup || 'N/A'}</td>
-                    <td>{medical.lastMedicalCheckDate ? (typeof medical.lastMedicalCheckDate === 'string' ? medical.lastMedicalCheckDate.split('T')[0] : medical.lastMedicalCheckDate) : 'N/A'}</td>
+                    <td>{formatDateDisplay(medical.lastMedicalCheckDate) || 'N/A'}</td>
                     <td>{medical.doctorDetails?.name || 'N/A'}</td>
                     <td>{medical.doctorDetails?.mobile || 'N/A'}</td>
                     <td>{medical.ehcp?.hasEHCP ? 'Yes' : 'No'}</td>
@@ -2216,6 +2217,7 @@ const EditStudent = () => {
     attendance: boolean;
     behaviour: string;
     comment?: string;
+    engagementDate?: string;
     createdAt?: string;
     updatedAt?: string;
   }
@@ -2223,6 +2225,7 @@ const EditStudent = () => {
   const EngagementTab = () => {
     const [engagements, setEngagements] = useState<EngagementData[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [expandedDateRows, setExpandedDateRows] = useState<Set<string>>(new Set());
 
     // Session options with labels
     const sessionLabels: Record<string, string> = useMemo(() => ({
@@ -2237,6 +2240,8 @@ const EditStudent = () => {
     // Helper function to get behavior color
     const getBehaviourColor = useCallback((behaviour: string): string => {
       switch (behaviour) {
+        case 'Unmarked':
+          return '#6b7280'; // gray
         case 'Good':
           return '#22c55e'; // green
         case 'Fair':
@@ -2252,11 +2257,21 @@ const EditStudent = () => {
 
     // Behavior labels with colored dots
     const behaviourLabels: Record<string, string> = useMemo(() => ({
+      'Unmarked': 'Unmarked',
       'Good': 'Good',
       'Fair': 'Fair',
       'Average': 'Average',
       'Poor': 'Poor',
     }), []);
+
+    const toggleExpandedDate = useCallback((dateKey: string) => {
+      setExpandedDateRows((prev) => {
+        const next = new Set(prev);
+        if (next.has(dateKey)) next.delete(dateKey);
+        else next.add(dateKey);
+        return next;
+      });
+    }, []);
 
     // Fetch engagements for the student
     useEffect(() => {
@@ -2292,94 +2307,114 @@ const EditStudent = () => {
     }, [id, isEditMode]);
 
     // Format class name
-    const getClassName = (classData: string | { _id: string; location: string; subject: string; yeargroup: string; fromDate: string; toDate: string }): string => {
+    const getClassName = useCallback((classData: string | { _id: string; location: string; subject: string; yeargroup: string; fromDate: string; toDate: string }): string => {
       if (typeof classData === 'string') {
         return classData;
       }
       return `${classData.location} - ${classData.subject} (${classData.yeargroup})`;
-    };
+    }, []);
 
-    // Prepare table data
+    // Group engagements by date (engagementDate or createdAt date part)
+    const getDateKey = useCallback((engagement: EngagementData): string => {
+      const d = engagement.engagementDate || engagement.createdAt;
+      if (!d) return 'unknown';
+      return new Date(d).toISOString().split('T')[0];
+    }, []);
+
+    const formatDateDisplay = useCallback((dateKey: string): string => {
+      if (dateKey === 'unknown') return '—';
+      const d = new Date(dateKey);
+      if (isNaN(d.getTime())) return dateKey;
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }, []);
+
+    // Build grouped table: one row per date, expanded content = engagements for that date
     const tableData = useMemo(() => {
-      return engagements.map((engagement) => {
-        const classData = engagement.class;
-        const className = typeof classData === 'object' ? getClassName(classData) : 'Unknown Class';
-        const sessionLabel = sessionLabels[engagement.session] || engagement.session;
-        const behaviourValue = engagement.behaviour;
-        const behaviourLabel = behaviourLabels[behaviourValue] || behaviourValue;
-        const behaviorColor = getBehaviourColor(behaviourValue);
-        const date = engagement.createdAt ? new Date(engagement.createdAt).toLocaleDateString() : '';
-
-        return {
-          _id: engagement._id,
-          className,
-          session: sessionLabel,
-          attendance: engagement.attendance ? 'Yes' : 'No',
-          behaviour: behaviourLabel,
-          behaviorColor,
-          comment: engagement.comment || '',
-          date,
-        };
+      const groups = new Map<string, EngagementData[]>();
+      engagements.forEach((eng) => {
+        const key = getDateKey(eng);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(eng);
       });
-    }, [engagements, sessionLabels, behaviourLabels, getBehaviourColor]);
+      return Array.from(groups.entries())
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([dateKey, engs]) => {
+          const isExpanded = expandedDateRows.has(dateKey);
+          const expandedContent = isExpanded ? (
+            <div className="student-engagement-expanded">
+              <div className="student-engagement-expanded-header">
+                <span className="student-engagement-expanded-col">Class</span>
+                <span className="student-engagement-expanded-col">Session</span>
+                <span className="student-engagement-expanded-col">Attendance</span>
+                <span className="student-engagement-expanded-col">Behavior</span>
+                <span className="student-engagement-expanded-col">Comment</span>
+              </div>
+              {engs.map((engagement) => {
+                const classData = engagement.class;
+                const className = typeof classData === 'object' ? getClassName(classData) : 'Unknown Class';
+                const sessionLabel = sessionLabels[engagement.session] || engagement.session;
+                const behaviourValue = engagement.behaviour;
+                const behaviourLabel = behaviourLabels[behaviourValue] ?? behaviourValue;
+                const behaviorColor = getBehaviourColor(behaviourValue);
+                return (
+                  <div key={engagement._id} className="student-engagement-expanded-row">
+                    <span className="student-engagement-expanded-col">{className}</span>
+                    <span className="student-engagement-expanded-col">{sessionLabel}</span>
+                    <span className="student-engagement-expanded-col">{engagement.attendance ? 'Yes' : 'No'}</span>
+                    <span className="student-engagement-expanded-col" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: behaviorColor, display: 'inline-block' }} />
+                      {behaviourLabel}
+                    </span>
+                    <span className="student-engagement-expanded-col">{engagement.comment || '—'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : undefined;
+          return {
+            _id: dateKey,
+            dateKey,
+            dateFormatted: formatDateDisplay(dateKey),
+            dateSort: dateKey,
+            count: engs.length,
+            isExpanded,
+            expandedContent,
+          };
+        });
+    }, [engagements, expandedDateRows, getDateKey, formatDateDisplay, getClassName, sessionLabels, behaviourLabels, getBehaviourColor]);
 
-    // Define columns
+    // Define columns: Date (with chevron) and Sessions count
     const columns = useMemo(() => [
       {
-        header: 'Class',
-        accessor: 'className',
-        sortable: true,
-        type: 'string' as const,
-      },
-      {
-        header: 'Session',
-        accessor: 'session',
-        sortable: true,
-        type: 'string' as const,
-      },
-      {
-        header: 'Attendance',
-        accessor: 'attendance',
-        sortable: true,
-        type: 'string' as const,
-      },
-      {
-        header: 'Behavior',
-        accessor: 'behaviour',
+        header: 'Date',
+        accessor: 'dateSort',
         sortable: true,
         type: 'template' as const,
         template: (row: Record<string, unknown>) => {
-          const behaviour = row.behaviour as string;
-          const behaviorColor = row.behaviorColor as string;
+          const dateKey = row.dateKey as string;
+          const dateFormatted = row.dateFormatted as string;
+          const isExpanded = row.isExpanded as boolean;
           return (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <span
-                style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: behaviorColor,
-                  display: 'inline-block',
-                }}
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => toggleExpandedDate(dateKey)}
+            >
+              <FontAwesomeIcon
+                icon={isExpanded ? faChevronUp : faChevronDown}
+                style={{ fontSize: '12px', color: 'var(--text-secondary)' }}
               />
-              {behaviour}
-            </span>
+              <span>{dateFormatted}</span>
+            </div>
           );
         },
       },
       {
-        header: 'Comment',
-        accessor: 'comment',
-        sortable: false,
-        type: 'string' as const,
-      },
-      {
-        header: 'Date',
-        accessor: 'date',
+        header: 'Sessions',
+        accessor: 'count',
         sortable: true,
-        type: 'date' as const,
+        type: 'number' as const,
       },
-    ], []);
+    ], [toggleExpandedDate]);
 
     return (
       <div className="tab-content">
@@ -2427,7 +2462,7 @@ const EditStudent = () => {
     const locationOptions = [
       { value: '', label: 'All Locations' },
       { value: 'Warrington', label: 'Warrington' },
-      { value: 'Burrow', label: 'Burrow' },
+      { value: 'Bury', label: 'Bury' },
     ];
 
     const subjectOptions = [

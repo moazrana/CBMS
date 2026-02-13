@@ -23,5 +23,9 @@ export class CreateEngagementDto {
 
   @IsDateString()
   engagementDate: string;
+
+  @IsOptional()
+  @IsBoolean()
+  submitted?: boolean;
 }
 

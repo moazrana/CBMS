@@ -69,7 +69,7 @@ const EditClass = () => {
   // Location options
   const locationOptions = [
     { value: 'Warrington', label: 'Warrington' },
-    { value: 'Burrow', label: 'Burrow' },
+    { value: 'Bury', label: 'Bury' },
   ];
 
   // Subject options

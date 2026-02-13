@@ -50,6 +50,9 @@ export class Engagement {
 
   @Prop({ type: Date, required: true })
   engagementDate: Date;
+
+  @Prop({ type: Boolean, default: false })
+  submitted?: boolean;
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);

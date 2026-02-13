@@ -114,7 +114,7 @@ const AllocateStudents = () => {
   const locationOptions = [
     { value: '', label: 'All Locations' },
     { value: 'Warrington', label: 'Warrington' },
-    { value: 'Burrow', label: 'Burrow' },
+    { value: 'Bury', label: 'Bury' },
   ];
 
   const yearGroupOptions = [
