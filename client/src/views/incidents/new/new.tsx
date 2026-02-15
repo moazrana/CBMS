@@ -10,18 +10,18 @@ import Location from '../../../assets/safeguarding/location.svg';
 import Calender from '../../../assets/safeguarding/calendar.svg';
 import Clock from '../../../assets/safeguarding/clock.svg';
 import Description from '../../../assets/safeguarding/description.svg'
-import Commentary from '../../../assets/safeguarding/commentary.svg'
-import Clip from '../../../assets/safeguarding/clip.svg'
+// import Commentary from '../../../assets/safeguarding/commentary.svg'
+// import Clip from '../../../assets/safeguarding/clip.svg'
 import './new.scss'
 import Input from '../../../components/input/Input';
 import TextField from '../../../components/textField/TextField';
-import ContentBox from '../../../components/contentBox/ContentBox';
+// import ContentBox from '../../../components/contentBox/ContentBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAdd, faChevronDown, faDownload, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import { useLocation,useParams, useNavigate } from 'react-router-dom';
-import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
+// import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
 import BodyMapWithSeverity, { SeverityLevel } from '../../../components/safeguarding/bodyMap/bodyMapWithSeverity';
 import DateInput from '../../../components/dateInput/DateInput';
 import { Tabs } from '../../../components/Tabs/Tabs';

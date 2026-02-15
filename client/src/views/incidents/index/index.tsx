@@ -3,55 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
-import home from '../../../assets/safeguarding/home.svg';
 import extractDateAndTime  from '../../../functions/formatTimeRange';
-import beat from '../../../assets/safeguarding/beat.svg'
 import './index.scss'
 import ListComponent from '../../../components/safeguarding/listComponent/listComponent';
 import ComponentHeader from '../../../components/safeguarding/componrnt-header/componentHeader';
-import FilterSec from '../../../components/FilterSec/FilterSec';
+// import FilterSec from '../../../components/FilterSec/FilterSec';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
 import Student from '../../../assets/safeguarding/student.svg';
-import Victim from '../../../assets/safeguarding/victim.svg';
 import Staff from '../../../assets/safeguarding/staff.svg';
-import KeyStage from '../../../assets/safeguarding/keyStage.svg';
-import YearGroup from '../../../assets/safeguarding/yearGroup.svg';
-import Form from '../../../assets/safeguarding/form.svg';
-import Subject from '../../../assets/safeguarding/subject.svg';
-import Class from '../../../assets/safeguarding/class.svg';
-import SortBy from '../../../assets/safeguarding/sortBy.svg';
-import SortType from '../../../assets/safeguarding/sortType.svg';
-import ShowTop from '../../../assets/safeguarding/showTop.svg';
-import Gender from '../../../assets/safeguarding/gender.svg';
-import FirstLanguage from '../../../assets/safeguarding/firstLanguage.svg'
-import Religion from '../../../assets/safeguarding/religion.svg'
-import Ethnicity from '../../../assets/safeguarding/enthnicity.svg'
-import Postcode from '../../../assets/safeguarding/postcode.svg'
-import FreeMeals from '../../../assets/safeguarding/freeMeals.svg'
-import EAL from '../../../assets/safeguarding/eal.svg'
-import InCare from '../../../assets/safeguarding/inCare.svg'
-import PupilPremium from '../../../assets/safeguarding/pupilPremium.svg'
-import Slip from '../../../assets/safeguarding/slip.svg'
-import Positivity from '../../../assets/safeguarding/positivity.svg'
-import Field from '../../../assets/safeguarding/fields.svg'
-import Category from '../../../assets/safeguarding/category.svg'
-import Printed from '../../../assets/safeguarding/printed.svg'
-import Origin from '../../../assets/safeguarding/origin.svg'
-import Detention from '../../../assets/safeguarding/detention.svg'
-import Show from '../../../assets/safeguarding/show.svg'
-import Admission from '../../../assets/safeguarding/admission.svg'
-import Status from '../../../assets/safeguarding/status.svg'
-import Location from '../../../assets/safeguarding/location.svg'
-import Period from '../../../assets/safeguarding/period.svg'
-import SENStatus from '../../../assets/safeguarding/senStatus.svg'
-import SENType from '../../../assets/safeguarding/senType.svg'
-import For from '../../../assets/safeguarding/for.svg'
-import BroaderStatus from '../../../assets/safeguarding/broaderStatus.svg'
-import ReportName from '../../../assets/safeguarding/reportName.svg'
-import Description from '../../../assets/safeguarding/description.svg'
-import Commentary from '../../../assets/safeguarding/commentary.svg'
-import Clip from '../../../assets/safeguarding/clip.svg'
+import Description from '../../../assets/safeguarding/description.svg';
+import Commentary from '../../../assets/safeguarding/commentary.svg';
+import Clip from '../../../assets/safeguarding/clip.svg';
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import TextField from '../../../components/textField/TextField';
 import ContentBox from '../../../components/contentBox/ContentBox';
@@ -204,11 +167,9 @@ const Index=()=>{
             const res= await executeRequest('get',`/users/role/${role}`)
             switch(role){
                 case 'Student':
-                    setStudents(res)
                     setRsStudents(res)
                     break
                 case 'Staff':
-                    setStaffs(res)
                     setRsStaffs(res)
                     break
                 default:
@@ -220,648 +181,10 @@ const Index=()=>{
         setNegativeIncidents([])
         setPoitiveIncidents([])
         setSafeguardingIncidents([])
-        setVictims([])
-        setHouses([])
-        setKeyStages([])
-        setYearGroups([])
-        setForms([])
-        setSubjects([])
-        setClasses([])
-        setSortByes([])
-        setSortTypes([])
-        setShowTops([])
-        setGenders([])
-        setFirstLanguages([])
-        setReligions([])
-        setEnthnicities([])
-        setPostcodes([])
-        setFreeMeals([])
-        setEals([])
-        setInCares([])
-        setPupilPremiums([])
-        setSlips([])
-        setPositivites([])
-        setFields([])
-        setCategories([])
-        setPrinteds([])
-        setOrigins([])
-        setDetentions([])
-        setShows([])
-        setAdmissions([])
-        setStatuses([])
-        setLocations([])
-        setPeriods([])
-        setSenStatuses([])
-        setSenTypes([])
-        setFors([])
-        setbroaderStatuses([])
-        setReportNames([])
-        
     },[])
     // -------------------------END OF USE EFFECT-----------------------------------------
 
-    // -------------------------START OF FILTERS------------------------------------------
-    const [students,setStudents]=useState<any[]>([])
-    const [student,setStudent]=useState<any>()
-
-    const [victims,setVictims]=useState<any[]>([])
-    const [victim,setVictim]=useState<any>()
-
-    const [staffs,setStaffs]=useState<any[]>([])
-    const [staff,setStaff]=useState<any>()
     
-    const thoseInvolved=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='students'
-                    options={students}
-                    value={student}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStudent(e.target.value)}}
-                    label='Student'
-                    icon={Student}
-                />
-
-                <Select
-                    name='victims'
-                    options={victims}
-                    value={victim}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setVictim(e.target.value)}}
-                    label='Victim'
-                    icon={Victim}
-                />
-
-                <Select
-                    name='staffs'
-                    options={staffs}
-                    value={staff}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setVictim(e.target.value)}}
-                    label='Staff'
-                    icon={Staff}
-                />
-            </div>
-        </>
-    )
-
-    const [houses,setHouses]=useState<any[]>([])
-    const [house,setHouse]=useState<any>()
-
-    const [keyStages,setKeyStages]=useState<any[]>([])
-    const [keyStage,setKeyStage]=useState<any>()
-
-    const [yearGroups,setYearGroups]=useState<any[]>([])
-    const [yearGroup,setYearGroup]=useState<any>()
-
-    const [forms,setForms]=useState<any[]>([])
-    const [form,setForm]=useState<any>()
-
-    const [subjects,setSubjects]=useState<any[]>([])
-    const [subject,setSubject]=useState<any>()
-
-    const [classes,setClasses]=useState<any[]>([])
-    const [varClass,setVarClass]=useState<any>()
-
-
-    const grouping=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='house'
-                    options={houses}
-                    value={house}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setHouse(e.target.value)}}
-                    label='House'
-                    icon={home}
-                />
-
-                <Select
-                    name='keyStage'
-                    options={keyStages}
-                    value={keyStage}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setKeyStage(e.target.value)}}
-                    label='Key Stage'
-                    icon={KeyStage}
-                />
-
-                <Select
-                    name='yearGroup'
-                    options={yearGroups}
-                    value={yearGroup}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setYearGroup(e.target.value)}}
-                    label='Year Group'
-                    icon={YearGroup}
-                />
-            </div>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='form'
-                    options={forms}
-                    value={form}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setForm(e.target.value)}}
-                    label='Form'
-                    icon={Form}
-                />
-                <Select
-                    name='subject'
-                    options={subjects}
-                    value={subject}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSubject(e.target.value)}}
-                    label='Subject'
-                    icon={Subject}
-                />
-                <Select
-                    name='Class'
-                    options={classes}
-                    value={varClass}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setVarClass(e.target.value)}}
-                    label='Class'
-                    icon={Class}
-                />
-            </div>
-        </>
-    )
-
-    const [sortByes,setSortByes]=useState<any[]>([]);
-    const [sortBy,setSortBy]=useState<any>();
-
-    const [sortTypes,setSortTypes]=useState<any[]>([]);
-    const [sortType,setSortType]=useState<any>();
-
-    const [showTops,setShowTops]=useState<any[]>([]);
-    const [showTop,setShowTop]=useState<any>([])
-
-    const show=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='sortBy'
-                    options={sortByes}
-                    value={sortBy}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSortBy(e.target.value)}}
-                    label='Sort By'
-                    icon={SortBy}
-                />
-
-                <Select
-                    name='sortType'
-                    options={sortTypes}
-                    value={sortType}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSortType(e.target.value)}}
-                    label='Sort Type'
-                    icon={SortType}
-                />
-
-                <Select
-                    name='showTop'
-                    options={showTops}
-                    value={showTop}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setShowTop(e.target.value)}}
-                    label='Show Top'
-                    icon={ShowTop}
-                />
-            </div>
-        </>
-    )
-
-    const [genders,setGenders]=useState<any[]>([]);
-    const [gender,setGender]=useState<any>();
-
-    const [firstLanguages,setFirstLanguages]=useState<any[]>([]);
-    const [firstLanguage,setFirstLanguage]=useState<any>();
-
-    const [religions,setReligions]=useState<any[]>([]);
-    const [religion,setReligion]=useState<any>();
-
-    const [enthnicities,setEnthnicities]=useState<any[]>([]);
-    const [enthnicity,setEnthnicity]=useState<any>();
-
-    const [postcodes,setPostcodes]=useState<any[]>([]);
-    const [postcode,setpostcode]=useState<any>();
-
-    const [freeMeals,setFreeMeals]=useState<any[]>([]);
-    const [freeMeal,setFreeMeal]=useState<any>();
-
-    const [eals,setEals]=useState<any[]>([]);
-    const [eal,setEal]=useState<any>();
-
-    const [inCares,setInCares]=useState<any[]>([]);
-    const [inCare,setInCare]=useState<any>();
-
-    const [pupilPremiums,setPupilPremiums]=useState<any[]>([]);
-    const [pupilPremium,setPupilPremium]=useState<any>();
-
-    const context=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='genders'
-                    options={genders}
-                    value={gender}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setGender(e.target.value)}}
-                    label='Gender'
-                    icon={Gender}
-                />
-
-                <Select
-                    name='firstLanguage'
-                    options={firstLanguages}
-                    value={firstLanguage}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setFirstLanguage(e.target.value)}}
-                    label='First Language'
-                    icon={FirstLanguage}
-                />
-
-                <Select
-                    name='religion'
-                    options={religions}
-                    value={religion}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setReligion(e.target.value)}}
-                    label='Religion'
-                    icon={Religion}
-                />
-            </div>
-
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='ethnicity'
-                    options={enthnicities}
-                    value={enthnicity}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setEnthnicity(e.target.value)}}
-                    label='Ethnicity'
-                    icon={Ethnicity}
-                />
-
-                <Select
-                    name='postcode'
-                    options={postcodes}
-                    value={postcode}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setpostcode(e.target.value)}}
-                    label='Postcode'
-                    icon={Postcode}
-                />
-
-                <Select
-                    name='freeMeal'
-                    options={freeMeals}
-                    value={freeMeal}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setFreeMeal(e.target.value)}}
-                    label='Free Meal'
-                    icon={FreeMeals}
-                />
-            </div>
-
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='eal'
-                    options={eals}
-                    value={eal}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setEal(e.target.value)}}
-                    label='EAL'
-                    icon={EAL}
-                />
-
-                <Select
-                    name='inCare'
-                    options={inCares}
-                    value={inCare}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setInCare(e.target.value)}}
-                    label='In Care'
-                    icon={InCare}
-                />
-
-                <Select
-                    name='pupilPremium'
-                    options={pupilPremiums}
-                    value={pupilPremium}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setPupilPremium(e.target.value)}}
-                    label='Pupil Premium'
-                    icon={PupilPremium}
-                />
-            </div>
-        </>
-    )
-
-    const [slips,setSlips]=useState<any[]>([]);
-    const [slip,setSlip]=useState<any>();
-
-    const [positivites,setPositivites]=useState<any[]>([]);
-    const [positivity,setPositivity]=useState<any>();
-
-    const [fields,setFields]=useState<any[]>([]);
-    const [field,setField]=useState<any>();
-
-    const [categories,setCategories]=useState<any[]>([]);
-    const [category,setCategory]=useState<any>();
-
-    
-    const elements=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='slip'
-                    options={slips}
-                    value={slip}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSlip(e.target.value)}}
-                    label='Slip'
-                    icon={Slip}
-                />
-
-                <Select
-                    name='positivity'
-                    options={positivites}
-                    value={positivity}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setPositivity(e.target.value)}}
-                    label='Positivity'
-                    icon={Positivity}
-                />
-
-                <Select
-                    name='field'
-                    options={fields}
-                    value={field}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setField(e.target.value)}}
-                    label='Field'
-                    icon={Field}
-                />
-            </div>
-
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='category'
-                    options={categories}
-                    value={category}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setCategory(e.target.value)}}
-                    label='Category'
-                    icon={Category}
-                />
-                <div className='empty-input-div'></div>
-                <div className='empty-input-div'></div>
-            </div>
-
-        </>
-    )
-
-    const [printeds,setPrinteds]=useState<any[]>([])
-    const [printed,setPrinted]=useState<any>()
-
-    const [origins,setOrigins]=useState<any[]>([])
-    const [origin,setOrigin]=useState<any>()
-
-    const [detentions,setDetentions]=useState<any[]>([])
-    const [detention,setDetention]=useState<any>()
-
-    const [shows,setShows]=useState<any[]>([])
-    const [showValue,setShowValue]=useState<any>()
-
-    const [admissions,setAdmissions]=useState<any[]>([])
-    const [admission,setAdmission]=useState<any>()
-
-    const [statuses,setStatuses]=useState<any[]>([])
-    const [status,setStatus]=useState<any>()
-
-
-    const tracking=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='printed'
-                    options={printeds}
-                    value={printed}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setPrinted(e.target.value)}}
-                    label='Printed'
-                    icon={Printed}
-                />
-
-                <Select
-                    name='origin'
-                    options={origins}
-                    value={origin}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setOrigin(e.target.value)}}
-                    label='Origin'
-                    icon={Origin}
-                />
-
-                <Select
-                    name='detention'
-                    options={detentions}
-                    value={detention}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setDetention(e.target.value)}}
-                    label='Detention'
-                    icon={Detention}
-                />
-            </div>
-            <div className="inputs-div" style={{height:100}}>
-                <Select
-                    name='show'
-                    options={shows}
-                    value={showValue}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setShowValue(e.target.value)}}
-                    label='Show'
-                    icon={Show}
-                />
-                <Select
-                    name='admission'
-                    options={admissions}
-                    value={admission}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setAdmission(e.target.value)}}
-                    label='Admission'
-                    icon={Admission}
-                />
-                <Select
-                    name='status'
-                    options={statuses}
-                    value={status}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStatus(e.target.value)}}
-                    label='Status'
-                    icon={Status}
-                />
-            </div>
-        </>
-    )
-
-    const [locations,setLocations]=useState<any[]>([])
-    const [location,setLocation]=useState<any>()
-
-    const [periods,setPeriods]=useState<any[]>([])
-    const [period,setPeriod]=useState<any>()
-
-
-    const timeTable=(
-        <>
-            <Select
-                name='location'
-                options={locations}
-                value={location}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setLocation(e.target.value)}}
-                label='Location'
-                icon={Location}
-            />
-
-            <Select
-                name='period'
-                options={periods}
-                value={period}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setPeriod(e.target.value)}}
-                label='Period'
-                icon={Period}
-            />  
-        </>
-    )
-
-    const [senStatuses,setSenStatuses]=useState<any[]>([])
-    const [senStatus,setSenStatus]=useState<any>()
-
-    const [senTypes,setSenTypes]=useState<any[]>([])
-    const [senType,setSenType]=useState<any>()
-
-
-    const sen=(
-        <>
-            <Select
-                name='senStatus'
-                options={senStatuses}
-                value={senStatus}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSenStatus(e.target.value)}}
-                label='SEN Status'
-                icon={SENStatus}
-            />
-
-            <Select
-                name='senType'
-                options={senTypes}
-                value={senType}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setSenType(e.target.value)}}
-                label='SEN Type'
-                icon={SENType}
-            />  
-        </>
-    )
-
-    const [fors,setFors]=useState<any[]>([])
-    const [forVar,setForVar]=useState<any>()
-
-
-    const when=(
-        <>
-            <Select
-                name='for'
-                options={fors}
-                value={forVar}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setForVar(e.target.value)}}
-                label='For'
-                icon={For}
-            />
-        </>
-    )
-
-    const [broaderStatuses,setbroaderStatuses]=useState<any[]>([])
-    const [broaderStatus,setBroaderStatus]=useState<any>()
-
-
-    const broader=(
-        <>
-            <Select
-                name='broader'
-                options={broaderStatuses}
-                value={broaderStatus}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setBroaderStatus(e.target.value)}}
-                label='Broder Status'
-                icon={BroaderStatus}
-            />
-        </>
-    )
-
-    const [reportNames,setReportNames]=useState<any[]>([])
-    const [reportName,setreportName]=useState<any>()
-    
-
-    const save=(
-        <>
-            <div className="inputs-div" style={{height:100}}>
-                <div className="single-input-div">
-                    <Select
-                        name='reportName'
-                        options={reportNames}
-                        value={reportName}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setreportName(e.target.value)}}
-                        label='Report Name'
-                        icon={ReportName}
-                    />
-                </div>
-                <div className="filter-save-btns">
-                    <div className='btns' style={{ marginTop: 50,marginLeft:50 }}>
-                        <div className="btns-container" style={{width:'100%'}}>
-                            <button type="button" className='cancel-btn'>Savev As</button>
-                            <button  className='save-btn'>Save</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    )
-
-
-    const safeguardFilters=(
-        <>
-            <FilterSec
-                secName='Those Involved'
-                content={thoseInvolved}
-            />
-            <FilterSec
-                secName='Grouping'
-                content={grouping}
-            />
-            <FilterSec
-                secName='Show'
-                content={show}
-            />
-            <FilterSec
-                secName='Context'
-                content={context}
-            />
-            <FilterSec
-                secName='Elements'
-                content={elements}
-            />
-            <FilterSec
-                secName='Tracking'
-                content={tracking}
-            />
-            <div className="two-fsecs">
-                <div className="small-fsec">
-                    <FilterSec
-                        secName='TimeTable'
-                        content={timeTable}
-                    />
-                </div>
-                <div className="small-fsec">
-                <FilterSec
-                    secName='SEN'
-                    content={sen}
-                />
-                </div>
-            </div>
-            <div className="two-fsecs">
-                <div className="small-fsec">
-                    <FilterSec
-                        secName='When'
-                        content={when}
-                    />
-                </div>
-                <div className="small-fsec">
-                <FilterSec
-                    secName='Broader'
-                    content={broader}
-                />
-                </div>
-            </div>
-            <FilterSec
-                secName='Save & Load'
-                content={save}
-            />
-        </>
-    )
-    // -------------------------END OF FILTERS-----------------------------------------
 
     // -------------------------START OF RS-----------------------------------------
     const [rsStudents,setRsStudents]=useState<any[]>([])
@@ -890,6 +213,9 @@ const Index=()=>{
     }
     const [meetings, setMeetings] = useState<meeting[]>([{haveDate:false, havePersons:false, haveNotes:false}]);
     const [conclusion, setConclusion] = useState<string[]>([]);
+    const [locationStr, setLocationStr] = useState<string>('');
+    const [periodStr, setPeriodStr] = useState<string>('');
+    const [status, setStatus] = useState<boolean>(true);
 
     const handleCheckbox = (value: string, state: string[], setState: any) => {
         if (state.includes(value)) {
@@ -911,7 +237,7 @@ const Index=()=>{
                     key={'student'}
                     name="student"
                     value={rsStudent}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStudent(e.target.value)}}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setRsStudent(e.target.value)}}
                     options={rsStudents}
                     label="Student"
                     placeholder="Select..."
@@ -922,7 +248,7 @@ const Index=()=>{
                 <Select
                     name="staff"
                     value={rsStaff}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStaff(e.target.value)}}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setRsStaff(e.target.value)}}
                     options={rsStaffs}
                     label="Staff"
                     placeholder="Select..."
@@ -1476,12 +802,11 @@ const Index=()=>{
     const handleSave = async () => {
         try {
             const formData = new FormData();
-            formData.append('student', student);
-            formData.append('staff', staff);
-            formData.append('status', status);
-            formData.append('location', location);
-            // formData.append('dateAndTime', `${doi}T${toi}`);
-            formData.append('period', period);
+            formData.append('student', String(rsStudent ?? ''));
+            formData.append('staff', String(rsStaff ?? ''));
+            formData.append('status', String(status));
+            formData.append('location', locationStr);
+            formData.append('period', periodStr);
             formData.append('description', description);
             formData.append('commentary[severity]', String(severity));
             formData.append('commentary[direction]', idt);
@@ -1540,6 +865,9 @@ const Index=()=>{
         
         setRsStudent(incident.data.student._id)
         setRsStaff(incident.data.staff._id)
+        setLocationStr(typeof incident.data.location === 'string' ? incident.data.location : '')
+        setPeriodStr(incident.data.period?._id ?? '')
+        setStatus(incident.data.status ?? true)
         setDescription(incident.data.description)
         setSeverity(incident.data.commentary.severity)
         setIdt(incident.data.commentary.direction)
@@ -1556,7 +884,7 @@ const Index=()=>{
         setOpenRS(true)
     }
     
-    const [openFilter,setOpenFilter]=useState<boolean>(false)
+    // const [openFilter,setOpenFilter]=useState<boolean>(false)
     // const [selectedSafeguard,setSelectedSafeguard]=useState<safeguard|null>(null)
     const [openRS,setOpenRS]=useState<boolean>(false)
 
@@ -1572,8 +900,8 @@ const Index=()=>{
                 view={view}
                 changeView={()=>{ setView((prev) => (prev === 'table' ? 'component' : 'table'))}}
                 // openFilters={openFilter}
-                filters={safeguardFilters}
-                filtersBtnClicked={()=>setOpenFilter((prev)=>(!prev))}
+                // filters={safeguardFilters}
+                // filtersBtnClicked={()=>setOpenFilter((prev)=>(!prev))}
             >
                 <div className="incidents-page">
                     <div className="incidents-tabs">
