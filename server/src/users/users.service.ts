@@ -90,7 +90,31 @@ export class UsersService {
         }
       }
     ]);
-     
+  }
+
+  /** Staff list for searchable dropdown: search, paginate, return docs with profile (firstName, lastName, workLocation). */
+  async findStaffForSelect(search: string = '', page: number = 1, perPage: number = 20): Promise<Partial<User>[]> {
+    const role = await this.roleModel.findOne({ name: 'Staff' });
+    if (!role) return [];
+    const query: Record<string, unknown> = { deletedAt: null, role: role._id };
+    if (search && search.trim()) {
+      const term = search.trim();
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { email: { $regex: term, $options: 'i' } },
+        { 'profile.firstName': { $regex: term, $options: 'i' } },
+        { 'profile.lastName': { $regex: term, $options: 'i' } },
+        { 'profile.workLocation': { $regex: term, $options: 'i' } },
+      ];
+    }
+    return this.userModel
+      .find(query)
+      .select('name email profile.firstName profile.lastName profile.workLocation')
+      .sort({ name: 1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .lean()
+      .exec();
   }
 
   // Class management methods

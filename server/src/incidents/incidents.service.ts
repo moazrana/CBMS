@@ -22,6 +22,8 @@ export class IncidentsService {
       type,
       your_account,
       body_mapping,
+      bodyMapFrontMarkers,
+      bodyMapBackMarkers,
       early_help,
       referral_type,
       meeting_notes,
@@ -30,8 +32,16 @@ export class IncidentsService {
       filePath,
       fileType,
       fileSize,
+      descriptionFiles,
+      restrainFiles,
       meetings,
-      conclusion
+      conclusion,
+      directedToward,
+      physicalInterventionUsed,
+      restrainDescription,
+      action,
+      actionDescription,
+      exclusion,
     } = data;
 
     const created = new this.incidentModel({
@@ -46,6 +56,8 @@ export class IncidentsService {
       type,
       your_account,
       body_mapping,
+      bodyMapFrontMarkers: bodyMapFrontMarkers ?? {},
+      bodyMapBackMarkers: bodyMapBackMarkers ?? {},
       early_help,
       referral_type,
       meeting_notes,
@@ -54,8 +66,16 @@ export class IncidentsService {
       filePath,
       fileType,
       fileSize,
+      descriptionFiles: descriptionFiles ?? [],
+      restrainFiles: restrainFiles ?? [],
       meetings,
-      conclusion
+      conclusion,
+      directedToward: directedToward ?? [],
+      physicalInterventionUsed: physicalInterventionUsed ?? false,
+      restrainDescription,
+      action: action ?? [],
+      actionDescription,
+      exclusion: exclusion ?? [],
     });
     return created.save();
   }
@@ -64,16 +84,20 @@ export class IncidentsService {
     return this.incidentModel.find()
       .sort({ createdAt: -1 })
       .populate([
-      {path:'student',select:'name subject'}, 
-      {path:'staff',select:'name'}, 
-      {path:'location',select:'name'}, 
-      {path:'period',select:'name'}
-      ])
+      { path: 'student', select: 'personalInfo' },
+      { path: 'staff', select: 'name profile' },
+      { path: 'period', select: 'name' },
+    ])
       .exec();
   }
 
   async findOne(id: string): Promise<Incident> {
-    const found = await this.incidentModel.findById(id).populate('student staff location period').exec();
+    const found = await this.incidentModel
+      .findById(id)
+      .populate({ path: 'student', select: 'personalInfo' })
+      .populate({ path: 'staff', select: 'name profile' })
+      .populate('period')
+      .exec();
     if (!found) throw new NotFoundException('Incident not found');
     return found;
   }

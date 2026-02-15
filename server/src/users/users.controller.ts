@@ -62,6 +62,18 @@ export class UsersController {
     return this.usersService.findByRole(role);
   }
 
+  @Get('staff/search')
+  @UseGuards(JwtAuthGuard)
+  async findStaffForSelect(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ): Promise<Partial<User>[]> {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const perPageNum = perPage ? parseInt(perPage, 10) : 20;
+    return this.usersService.findStaffForSelect(search || '', pageNum, perPageNum);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string): Promise<User> {

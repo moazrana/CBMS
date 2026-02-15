@@ -1,3 +1,35 @@
+.incidents-page {
+  width: 100%;
+}
+
+.incidents-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.incidents-tab {
+  padding: 0.6rem 1.25rem;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--secondary-text);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+
+  &:hover {
+    color: var(--main-text);
+  }
+
+  &.active {
+    color: var(--main-text);
+    border-bottom-color: var(--primary-color, #6366f1);
+  }
+}
+
 .bracket-text{
   color:var(--sidebar-heading);
 }
@@ -270,4 +302,22 @@
   background-color: #7173eb;
   color:#ffffff;
   width: 15%;
+}
+
+.incidents-table-time {
+  font-size: 0.875rem;
+  color: var(--secondary-text);
+  margin: 0;
+}
+
+.incidents-table-status {
+  font-weight: 500;
+}
+
+.incidents-table-severity-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }

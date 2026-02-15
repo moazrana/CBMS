@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from '../../users/schemas/user.schema';
-import { Location } from '../../location/location.schema';
+import { Student } from '../../students/schemas/student.schema';
 import { Period } from '../../period/period.schema';
 
 export class Commentary {
@@ -50,8 +50,8 @@ export class Meeting {
 
 @Schema({ timestamps: true })
 export class Incident extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  student: User | Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Student', required: true })
+  student: Student | Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   staff: User | Types.ObjectId;
@@ -59,17 +59,41 @@ export class Incident extends Document {
   @Prop({ default: false })
   status: boolean;
 
-  @Prop({ type: Types.ObjectId, ref: 'Location', required: true })
-  location: Location | Types.ObjectId;
+  @Prop({ type: String, required: true })
+  location: string;
 
   @Prop({ type: Date, required: true })
   dateAndTime: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'Period', required: true })
-  period: Period | Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Period', required: false })
+  period?: Period | Types.ObjectId;
 
   @Prop()
   description?: string;
+
+  @Prop({ type: [String], default: [] })
+  directedToward?: string[];
+
+  @Prop({ default: false })
+  physicalInterventionUsed?: boolean;
+
+  @Prop()
+  restrainDescription?: string;
+
+  @Prop({ type: Object, default: {} })
+  bodyMapFrontMarkers?: Record<string, number>;
+
+  @Prop({ type: Object, default: {} })
+  bodyMapBackMarkers?: Record<string, number>;
+
+  @Prop({ type: [String], default: [] })
+  action?: string[];
+
+  @Prop()
+  actionDescription?: string;
+
+  @Prop({ type: [String], default: [] })
+  exclusion?: string[];
 
   @Prop({ type: Commentary, required: false })
   commentary?: Commentary;
@@ -112,6 +136,12 @@ export class Incident extends Document {
 
   @Prop({ required: false })
   fileSize: number;
+
+  @Prop({ type: [{ fileName: String, filePath: String, fileType: String, fileSize: Number }], default: [] })
+  descriptionFiles?: { fileName: string; filePath: string; fileType: string; fileSize: number }[];
+
+  @Prop({ type: [{ fileName: String, filePath: String, fileType: String, fileSize: Number }], default: [] })
+  restrainFiles?: { fileName: string; filePath: string; fileType: string; fileSize: number }[];
 }
 
 export type IncidentDocument = Incident & Document;

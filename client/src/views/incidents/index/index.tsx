@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
@@ -60,6 +61,7 @@ import Print from '../../../assets/safeguarding/printed.svg'
 import Email from '../../../assets/safeguarding/email.svg'
 import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
 import DateInput from '../../../components/dateInput/DateInput';
+import NewIncident from '../new/new';
 interface incident{
     student:string
     location:string
@@ -70,10 +72,16 @@ interface incident{
     staff:string
     id:string
     status:boolean
+    severity?:number
+    name?:string
     data?:any
 }
+type IncidentsTab = 'listing' | 'create';
+
 const Index=()=>{
-    const [view,setView]=useState<string>('component')
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<IncidentsTab>('listing');
+    const [view,setView]=useState<string>('table')
     const { executeRequest} = useApiRequest();
     const [incidents,setIncidents]=useState<incident[]>([]);
     const [negativeIncidents,setNegativeIncidents]=useState<incident[]>([]);
@@ -81,109 +89,113 @@ const Index=()=>{
     const [safeguardingIncidents,setSafeguardingIncidents]=useState<incident[]>([]);
     
 
+    const SEVERITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' };
+    const SEVERITY_COLORS: Record<number, string> = { 1: '#22c55e', 2: '#f97316', 3: '#ef4444' };
+
     const Columns=[
-        { 
-            header: 'Student', 
-            accessor: 'student', 
-            sortable: false, 
-            type: 'template' as const,
-            template:(row: Record<string, any>) => {
-                return( 
-                <>
-                    <p>{row.student}</p>
-                    <p className='bracket-text'>({row.location} - {row.subject})</p>
-                    <div className='boxed-location'><img src={home} alt="icon" style={{ width: 15, height: 15, marginRight: 8 }} />{row.location}</div>
-                </>
-                )
-            } 
-        },
         {
-            header:'Event Time',
-            accessor:'eventTime',
-            sortable:false,
-            type:'template'as const,
-            template:(row:Record<string,any>) => {
+            header: 'Date',
+            accessor: 'eventTime',
+            sortable: false,
+            type: 'template' as const,
+            template: (row: Record<string, any>) => {
+                const { date, time } = extractDateAndTime(row.eventTime);
                 return (
                     <>
-                        <p>{extractDateAndTime(row.eventTime).date}</p>
-                        <p>{extractDateAndTime(row.eventTime).time}</p>
+                        <p>{date}</p>
+                        {time && <p className="incidents-table-time">{time}</p>}
                     </>
-                    )
-            }
+                );
+            },
         },
         {
-            header:'Period',
-            accessor:'period',
-            sortable:false,
-            type:'string' as const
+            header: 'Location',
+            accessor: 'location',
+            sortable: false,
+            type: 'string' as const,
         },
         {
-            header:'Subject',
-            accessor:'subject',
-            sortable:false,
-            type:'string' as const
+            header: 'Student',
+            accessor: 'student',
+            sortable: false,
+            type: 'string' as const,
         },
         {
-            header:'Brief Description',
-            accessor:'description',
-            sortable:false,
-            type:'tenChars' as const
+            header: 'Staff',
+            accessor: 'staff',
+            sortable: false,
+            type: 'string' as const,
         },
         {
-            header:'Staff Name',
-            accessor:'staff',
-            sortable:false,
-            type:'string' as const
+            header: 'Severity',
+            accessor: 'severity',
+            sortable: false,
+            type: 'template' as const,
+            template: (row: Record<string, any>) => {
+                const s = row.severity ?? 1;
+                return <span>{SEVERITY_LABELS[s] ?? 'Low'}</span>;
+            },
         },
         {
-            header:'Location',
-            accessor:'location',
-            sortable:false,
-            type:'string' as const
+            header: 'Status',
+            accessor: 'status',
+            sortable: false,
+            type: 'template' as const,
+            template: (row: Record<string, any>) => (
+                <span className="incidents-table-status">
+                    {row.status ? 'Open' : 'Closed'}
+                </span>
+            ),
         },
         {
-            header:'Book Day ID',
-            accessor:'bookDay',
-            sortable:false,
-            type:'template'as const,
-            template:(row:Record<string,any>)=>{
+            header: 'Severity color',
+            accessor: 'severityColor',
+            sortable: false,
+            type: 'template' as const,
+            template: (row: Record<string, any>) => {
+                const s = row.severity ?? 1;
+                const color = SEVERITY_COLORS[s] ?? SEVERITY_COLORS[1];
                 return (
-                    <div className='b-day'>
-                        <p>{row.student}</p>
-                        <div className="status-div">
-                            <img src={beat} alt="icon" style={{ width: 15, height: 15, marginRight: 8,filter: 'var(--status-color)' }} />Open
-                        </div>
-                    </div>
-                )
-            }
-        }
+                    <span
+                        className="incidents-table-severity-dot"
+                        style={{ backgroundColor: color }}
+                        title={SEVERITY_LABELS[s]}
+                    />
+                );
+            },
+        },
     ]
     const fetchSafeguards=async()=>{
         console.log('fetching!!!!')
-        const res= await executeRequest('get','/incidents');
-        setIncidents([])
-        res.forEach((element:any) => {
-            const incident:incident={
-                student:'',
-                location:'',
-                eventTime:new Date(),
-                period:'',
-                subject:'Construction',
-                description:'',
-                staff:'',
-                id:'',
-                status:false
+        const res = await executeRequest('get', '/incidents');
+        setIncidents([]);
+        const list: incident[] = (Array.isArray(res) ? res : []).map((element: any) => {
+            const studentName = (() => {
+                const s = element.student;
+                if (!s) return '';
+                const p = s.personalInfo || {};
+                const first = (p.legalFirstName || '').trim();
+                const last = (p.lastName || '').trim();
+                if (first || last) return [first, last].filter(Boolean).join(' . ');
+                return s.name ?? '';
+            })();
+            const dateStr = element.dateAndTime ? extractDateAndTime(String(element.dateAndTime)).date : '';
+            return {
+                student: studentName,
+                location: typeof element.location === 'string' ? element.location : (element.location?.name ?? ''),
+                eventTime: element.dateAndTime ? new Date(element.dateAndTime) : new Date(),
+                period: element.period?.name ?? '',
+                subject: 'Construction',
+                description: element.description ?? '',
+                staff: element.staff?.name ?? '',
+                id: element._id ?? '',
+                status: element.status ?? false,
+                severity: element.commentary?.severity ?? 1,
+                data: element,
+                name: `${studentName || 'Incident'}${dateStr ? ` (${dateStr})` : ''}`,
             };
-            incident.student=element.student.name
-            incident.location=element.location.name
-            incident.eventTime=element.dateAndTime
-            incident.period=element.period.name
-            incident.description=element.description
-            incident.staff=element.staff.name
-            incident.status=element.status
-            incident.data=element
-            setIncidents(perv=>[...perv,incident])
         });
+        setIncidents(list);
         
     }
     useEffect(()=>{
@@ -1553,26 +1565,56 @@ const Index=()=>{
     return (
         <>
             <Layout
-                showNew={true}
-                showPagination={true}
-                showFilter={true}
-                showViewType={true}
-                createLink='/incidents/add'
+                showNew={false}
+                // showPagination={activeTab === 'listing'}
+                // showFilter={activeTab === 'listing'}
+                // showViewType={activeTab === 'listing'}
                 view={view}
                 changeView={()=>{ setView((prev) => (prev === 'table' ? 'component' : 'table'))}}
-                openFilters={openFilter}
+                // openFilters={openFilter}
                 filters={safeguardFilters}
                 filtersBtnClicked={()=>setOpenFilter((prev)=>(!prev))}
             >
+                <div className="incidents-page">
+                    <div className="incidents-tabs">
+                        <button
+                            type="button"
+                            className={`incidents-tab ${activeTab === 'listing' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('listing')}
+                        >
+                            Incidents
+                        </button>
+                        <button
+                            type="button"
+                            className={`incidents-tab ${activeTab === 'create' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('create')}
+                        >
+                            New incident
+                        </button>
+                    </div>
+                    {activeTab === 'listing' && (
                 <div>
                     {view=='table'&&(
                         <DataTable
                             columns={Columns}
                             data={incidents}
                             title=''
-                            onEdit={()=>{}}
-                            onDelete={()=>{}}
-                            showActions={false}
+                            onEdit={(row) => {
+                                const id = row.data?._id ?? row.id;
+                                if (id) navigate(`/incidents/incident/${id}`);
+                            }}
+                            onView={(row) => openIncident(row as incident)}
+                            onDelete={async (row) => {
+                                const id = row.data?._id ?? row.id;
+                                if (!id) return;
+                                try {
+                                    await executeRequest('delete', `/incidents/${id}`);
+                                    fetchSafeguards();
+                                } catch {
+                                    alert('Error deleting incident');
+                                }
+                            }}
+                            showActions={true}
                             addButton={false}
                             showSearch={false}
                         />
@@ -1664,6 +1706,17 @@ const Index=()=>{
                             </div>
                         </div>
                         </>
+                    )}
+                </div>
+                    )}
+                    {activeTab === 'create' && (
+                        <NewIncident
+                            embedded
+                            onSaved={() => {
+                                setActiveTab('listing');
+                                fetchSafeguards();
+                            }}
+                        />
                     )}
                 </div>
             </Layout>

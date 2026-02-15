@@ -1,9 +1,14 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UploadedFile, UploadedFiles, UseInterceptors, Res, NotFoundException } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
+import { Response } from 'express';
 import { IncidentsService } from './incidents.service';
 import { Incident } from './schemas/incident.schema';
+import { parseIncidentBody } from './parse-incident-body';
+import * as fs from 'fs';
+
+const incidentsUploadDir = join(__dirname, '../../uploads/incidents');
 
 function editFileName(req, file, callback) {
   const name = file.originalname.split('.')[0];
@@ -12,34 +17,65 @@ function editFileName(req, file, callback) {
   callback(null, `${name}-${uniqueSuffix}.${fileExtName}`);
 }
 
+const multerOpts = {
+  storage: diskStorage({
+    destination: incidentsUploadDir,
+    filename: editFileName,
+  }),
+};
+
 @Controller('incidents')
 export class IncidentsController {
   constructor(private readonly incidentsService: IncidentsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: join(__dirname, '../../uploads/incidents'),
-      filename: editFileName,
-    })
-  }))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'file', maxCount: 1 },
+        { name: 'descriptionFiles', maxCount: 20 },
+        { name: 'restrainFiles', maxCount: 20 },
+      ],
+      multerOpts,
+    ),
+  )
   async create(
-    @Body() data: any,
-    @UploadedFile() file?: Express.Multer.File
+    @Body() body: Record<string, any>,
+    @UploadedFiles()
+    files?: {
+      file?: Express.Multer.File[];
+      descriptionFiles?: Express.Multer.File[];
+      restrainFiles?: Express.Multer.File[];
+    },
   ) {
-    // If a file is uploaded, add its info to the data object
-    if (file) {
+    const data = parseIncidentBody(body);
+
+    if (files?.file?.[0]) {
+      const file = files.file[0];
       data.fileName = file.originalname;
       data.filePath = file.path;
       data.fileType = file.mimetype;
       data.fileSize = file.size;
     }
-    if (typeof data.meetings === 'string') {
-      data.meetings = JSON.parse(data.meetings);
+
+    if (files?.descriptionFiles?.length) {
+      data.descriptionFiles = files.descriptionFiles.map((f) => ({
+        fileName: f.originalname,
+        filePath: f.path,
+        fileType: f.mimetype,
+        fileSize: f.size,
+      }));
     }
-    if (typeof data.conclusion === 'string') {
-      data.conclusion = JSON.parse(data.conclusion);
+
+    if (files?.restrainFiles?.length) {
+      data.restrainFiles = files.restrainFiles.map((f) => ({
+        fileName: f.originalname,
+        filePath: f.path,
+        fileType: f.mimetype,
+        fileSize: f.size,
+      }));
     }
+
     return this.incidentsService.create(data);
   }
 
@@ -48,35 +84,95 @@ export class IncidentsController {
     return this.incidentsService.findAll();
   }
 
+  @Get(':id/description-files/:index')
+  async getDescriptionFile(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Res() res: Response,
+  ) {
+    const incident = await this.incidentsService.findOne(id);
+    const idx = parseInt(index, 10);
+    const files = incident.descriptionFiles ?? [];
+    if (isNaN(idx) || idx < 0 || idx >= files.length) throw new NotFoundException('File not found');
+    const file = files[idx];
+    if (!file?.filePath || !fs.existsSync(file.filePath)) throw new NotFoundException('File not found');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.sendFile(file.filePath);
+  }
+
+  @Get(':id/restrain-files/:index')
+  async getRestrainFile(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Res() res: Response,
+  ) {
+    const incident = await this.incidentsService.findOne(id);
+    const idx = parseInt(index, 10);
+    const files = incident.restrainFiles ?? [];
+    if (isNaN(idx) || idx < 0 || idx >= files.length) throw new NotFoundException('File not found');
+    const file = files[idx];
+    if (!file?.filePath || !fs.existsSync(file.filePath)) throw new NotFoundException('File not found');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.sendFile(file.filePath);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.incidentsService.findOne(id);
   }
 
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: join(__dirname, '../../uploads/incidents'),
-      filename: editFileName,
-    })
-  }))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'file', maxCount: 1 },
+        { name: 'descriptionFiles', maxCount: 20 },
+        { name: 'restrainFiles', maxCount: 20 },
+      ],
+      multerOpts,
+    ),
+  )
   async update(
     @Param('id') id: string,
-    @Body() data: Partial<Incident>,
-    @UploadedFile() file?: Express.Multer.File
+    @Body() body: Record<string, any>,
+    @UploadedFiles()
+    files?: {
+      file?: Express.Multer.File[];
+      descriptionFiles?: Express.Multer.File[];
+      restrainFiles?: Express.Multer.File[];
+    },
   ) {
-    if (file) {
+    const data = parseIncidentBody(body) as Partial<Incident>;
+    const existing = await this.incidentsService.findOne(id);
+
+    if (files?.file?.[0]) {
+      const file = files.file[0];
       data.fileName = file.originalname;
       data.filePath = file.path;
       data.fileType = file.mimetype;
       data.fileSize = file.size;
     }
-    if (typeof data.meetings === 'string') {
-      data.meetings = JSON.parse(data.meetings);
+
+    if (files?.descriptionFiles?.length) {
+      const newFiles = files.descriptionFiles.map((f) => ({
+        fileName: f.originalname,
+        filePath: f.path,
+        fileType: f.mimetype,
+        fileSize: f.size,
+      }));
+      data.descriptionFiles = [...(existing.descriptionFiles ?? []), ...newFiles];
     }
-    if (typeof data.conclusion === 'string') {
-      data.conclusion = JSON.parse(data.conclusion);
+
+    if (files?.restrainFiles?.length) {
+      const newFiles = files.restrainFiles.map((f) => ({
+        fileName: f.originalname,
+        filePath: f.path,
+        fileType: f.mimetype,
+        fileSize: f.size,
+      }));
+      data.restrainFiles = [...(existing.restrainFiles ?? []), ...newFiles];
     }
+
     return this.incidentsService.update(id, data);
   }
 

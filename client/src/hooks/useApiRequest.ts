@@ -25,20 +25,19 @@ export function useApiRequest<T = any>() {
     data?: any,
     options?: any
   ) => {
+    const skipLoader = options?.silent === true;
+    const axiosOptions = options && typeof options === 'object' && !Array.isArray(options)
+      ? { ...options, silent: undefined }
+      : options;
     try {
-      // alert('a')
       setResponse(prev => ({ ...prev, loading: true, error: null }));
-      // alert('b')
-      setIsLoading(true);
-      // alert('c')
-      const apiResponse = await api[method](url, data, options);
-      // alert('d')
+      if (!skipLoader) setIsLoading(true);
+      const apiResponse = await api[method](url, data, axiosOptions);
       setResponse({
         data: apiResponse.data,
         error: null,
         loading: false,
       });
-      // alert('e')
       return apiResponse.data;
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred';
@@ -65,7 +64,7 @@ export function useApiRequest<T = any>() {
       
       throw error;
     } finally {
-      setIsLoading(false);
+      if (!skipLoader) setIsLoading(false);
     }
   };
 
