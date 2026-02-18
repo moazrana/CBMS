@@ -35,6 +35,7 @@ export class IncidentsController {
         { name: 'file', maxCount: 1 },
         { name: 'descriptionFiles', maxCount: 20 },
         { name: 'restrainFiles', maxCount: 20 },
+        { name: 'noteFiles', maxCount: 20 },
       ],
       multerOpts,
     ),
@@ -46,6 +47,7 @@ export class IncidentsController {
       file?: Express.Multer.File[];
       descriptionFiles?: Express.Multer.File[];
       restrainFiles?: Express.Multer.File[];
+      noteFiles?: Express.Multer.File[];
     },
   ) {
     const data = parseIncidentBody(body);
@@ -76,12 +78,36 @@ export class IncidentsController {
       }));
     }
 
+    if (files?.noteFiles?.length && Array.isArray(data.meetings)) {
+      files.noteFiles.forEach((f, i) => {
+        if (data.meetings[i]) {
+          data.meetings[i] = {
+            ...data.meetings[i],
+            fileName: f.originalname,
+            filePath: f.path,
+            fileType: f.mimetype,
+            fileSize: f.size,
+          };
+        }
+      });
+    }
+
     return this.incidentsService.create(data);
   }
 
   @Get()
   findAll() {
     return this.incidentsService.findAll();
+  }
+
+  @Get('by-student/:studentId')
+  findByStudentId(@Param('studentId') studentId: string) {
+    return this.incidentsService.findByStudentId(studentId);
+  }
+
+  @Get('by-staff/:staffId')
+  findByStaffId(@Param('staffId') staffId: string) {
+    return this.incidentsService.findByStaffId(staffId);
   }
 
   @Get(':id/description-files/:index')
@@ -116,6 +142,22 @@ export class IncidentsController {
     res.sendFile(file.filePath);
   }
 
+  @Get(':id/note-files/:index')
+  async getNoteFile(
+    @Param('id') id: string,
+    @Param('index') index: string,
+    @Res() res: Response,
+  ) {
+    const incident = await this.incidentsService.findOne(id);
+    const idx = parseInt(index, 10);
+    const meetings = incident.meetings ?? [];
+    if (isNaN(idx) || idx < 0 || idx >= meetings.length) throw new NotFoundException('File not found');
+    const meeting = meetings[idx];
+    if (!meeting?.filePath || !fs.existsSync(meeting.filePath)) throw new NotFoundException('File not found');
+    res.setHeader('Content-Disposition', `attachment; filename="${meeting.fileName}"`);
+    res.sendFile(meeting.filePath);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.incidentsService.findOne(id);
@@ -128,6 +170,7 @@ export class IncidentsController {
         { name: 'file', maxCount: 1 },
         { name: 'descriptionFiles', maxCount: 20 },
         { name: 'restrainFiles', maxCount: 20 },
+        { name: 'noteFiles', maxCount: 20 },
       ],
       multerOpts,
     ),
@@ -140,6 +183,7 @@ export class IncidentsController {
       file?: Express.Multer.File[];
       descriptionFiles?: Express.Multer.File[];
       restrainFiles?: Express.Multer.File[];
+      noteFiles?: Express.Multer.File[];
     },
   ) {
     const data = parseIncidentBody(body) as Partial<Incident>;
@@ -171,6 +215,20 @@ export class IncidentsController {
         fileSize: f.size,
       }));
       data.restrainFiles = [...(existing.restrainFiles ?? []), ...newFiles];
+    }
+
+    if (files?.noteFiles?.length && Array.isArray(data.meetings)) {
+      files.noteFiles.forEach((f, i) => {
+        if (data.meetings[i]) {
+          data.meetings[i] = {
+            ...data.meetings[i],
+            fileName: f.originalname,
+            filePath: f.path,
+            fileType: f.mimetype,
+            fileSize: f.size,
+          };
+        }
+      });
     }
 
     return this.incidentsService.update(id, data);

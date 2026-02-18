@@ -98,3 +98,40 @@ h4{
   filter: var(--icon-filter);
 }
 
+@media (max-width: 1400px) {
+  .sidebar {
+    width: 16%;
+    padding-top: 20px;
+  }
+  .sidebar-logo {
+    font-size: 1.15rem;
+    margin-bottom: 20px;
+  }
+  .sidebar-text {
+    margin: 0 12px;
+    padding: 5px 5px;
+  }
+  .sidebar-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 14%;
+    padding-top: 16px;
+  }
+  .sidebar-logo {
+    font-size: 1rem;
+    margin-bottom: 16px;
+  }
+  .sidebar-text {
+    margin: 0 8px;
+    padding: 4px 4px;
+  }
+  .sidebar-nav h4 {
+    font-size: 12px;
+  }
+}
+

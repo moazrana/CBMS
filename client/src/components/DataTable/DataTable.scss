@@ -288,4 +288,36 @@
 
     }
   }
+}
+
+@media (max-width: 1400px) {
+  .data-table {
+    padding: 8px;
+    .data-table-header {
+      margin-bottom: 12px;
+      h2 { font-size: 1.25rem; }
+    }
+    .table-container table th,
+    .table-container table td {
+      font-size: 12px;
+      padding-left: 2px;
+      padding-right: 8px;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .data-table {
+    padding: 6px;
+    .data-table-header {
+      margin-bottom: 8px;
+      h2 { font-size: 1.1rem; }
+      .search-box input { width: 200px; }
+    }
+    .table-container table th,
+    .table-container table td {
+      font-size: 11px;
+      padding-right: 6px;
+    }
+  }
 } 

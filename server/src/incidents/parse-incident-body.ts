@@ -6,14 +6,17 @@ export function parseIncidentBody(body: Record<string, any>): Record<string, any
   const data: Record<string, any> = {};
 
   const singleKeys = [
-    'student',
-    'staff',
     'status',
     'location',
     'dateAndTime',
     'description',
     'body_mapping',
     'actionDescription',
+    'actionOthersDescription',
+    'exclusionOthersDescription',
+    'earlyHelpOthersDescription',
+    'referralOthersDescription',
+    'outcomeAttachmentNote',
     'physicalInterventionUsed',
     'restrainDescription',
     'fileName',
@@ -94,12 +97,39 @@ export function parseIncidentBody(body: Record<string, any>): Record<string, any
     }
   }
 
+  // students and staff: JSON arrays of IDs
+  if (typeof body.students === 'string') {
+    try {
+      const parsed = JSON.parse(body.students);
+      if (Array.isArray(parsed)) data.students = parsed;
+    } catch {
+      data.students = [];
+    }
+  }
+  if (typeof body.staff === 'string') {
+    try {
+      const parsed = JSON.parse(body.staff);
+      if (Array.isArray(parsed)) data.staffList = parsed;
+    } catch {
+      data.staffList = [];
+    }
+  }
+
   // JSON string fields
   if (typeof body.directedToward === 'string' && body.directedToward) {
     try {
       data.directedToward = JSON.parse(body.directedToward);
     } catch {
       data.directedToward = [];
+    }
+  }
+  if (typeof body.involved === 'string') {
+    try {
+      const parsed = JSON.parse(body.involved);
+      if (Array.isArray(parsed)) data.involved = parsed;
+      else data.involved = [];
+    } catch {
+      data.involved = [];
     }
   }
   if (typeof body.meetings === 'string' && body.meetings) {
@@ -128,6 +158,13 @@ export function parseIncidentBody(body: Record<string, any>): Record<string, any
       data.bodyMapBackMarkers = JSON.parse(body.bodyMapBackMarkers);
     } catch {
       data.bodyMapBackMarkers = {};
+    }
+  }
+  if (typeof body.bodyMapDescriptions === 'string' && body.bodyMapDescriptions) {
+    try {
+      data.bodyMapDescriptions = JSON.parse(body.bodyMapDescriptions);
+    } catch {
+      data.bodyMapDescriptions = {};
     }
   }
 

@@ -1,8 +1,8 @@
 .body-map-with-severity {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
   gap: 1rem;
-  flex-wrap: wrap;
 }
 
 .body-map-with-severity__map {
@@ -14,10 +14,43 @@
 }
 
 .body-map-with-severity__dropdown-wrap {
+  flex-shrink: 0;
   padding: 0.75rem;
   background: #f5f5f5;
   border-radius: 8px;
   border: 1px solid #eee;
+  width: 100%;
+  max-width: 320px;
+}
+
+.body-map-with-severity__description-wrap {
+  margin-top: 0.75rem;
+}
+
+.body-map-with-severity__description-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.body-map-with-severity__description-input {
+  width: 95%;
+  min-height: 72px;
+  padding: 0.5rem 0.75rem;
+  font-size: 14px;
+  line-height: 1.5;
+  // color: var(--main-text, #333);
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
 }
 
 .body-map-with-severity__dropdown-label {

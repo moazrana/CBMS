@@ -69,6 +69,77 @@
         }
       }
 
+      .section-description {
+        margin: 0.25rem 0 0 0;
+        font-size: 0.9rem;
+        color: var(--main-text);
+        opacity: 0.85;
+      }
+
+      .staff-incidents-table {
+        .incident-status-badge {
+          display: inline-block;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          font-weight: 500;
+        }
+        .incident-status-open {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .incident-status-closed {
+          background: #f1f5f9;
+          color: #475569;
+        }
+        .incident-severity-cell {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .incident-severity-dot {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .incident-body-map-cell {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .incident-body-map-tick {
+          color: var(--success, #22c55e);
+          font-size: 1rem;
+        }
+        .incident-body-map-none {
+          color: var(--secondary-text);
+          font-size: 0.875rem;
+        }
+        .incident-description-cell {
+          white-space: normal;
+          max-width: 240px;
+        }
+        .btn-edit-incident {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.4rem 0.75rem;
+          font-size: 0.875rem;
+          color: var(--primary-color, #4f46e5);
+          background: transparent;
+          border: 1px solid var(--primary-color, #4f46e5);
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+          &:hover {
+            background: var(--primary-color, #4f46e5);
+            color: white;
+          }
+        }
+      }
+
       .contacts-table-container {
         overflow-x: auto;
         margin-top: 1rem;
@@ -189,7 +260,7 @@
         background-color: #FF7C95;
         padding: 0.75rem 1rem;
         border-radius: 6px;
-        margin-bottom: 1.5rem;
+        // margin-bottom: 1.5rem;
 
         h2 {
           margin: 0;
@@ -416,4 +487,40 @@
 }
 .file-input-label{
   font-size: var(--label-font-size);
+}
+
+@media (max-width: 1400px) {
+  .new-staff {
+    .new-staff-header h1 { font-size: 1.35rem; }
+    .new-staff-form .tab-content {
+      padding: 0.75rem 0;
+      .form-section .section-header .form-heading h2 { font-size: 1.1rem; }
+      .contacts-table-container .contacts-table {
+        th, td { padding: 0.75rem; font-size: 0.9rem; }
+      }
+      .staff-incidents-table .incident-description-cell { max-width: 180px; }
+    }
+    .form-actions .btn-submit, .form-actions .btn-cancel {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .new-staff {
+    .new-staff-header h1 { font-size: 1.2rem; }
+    .new-staff-form .tab-content {
+      padding: 0.5rem 0;
+      .form-section .section-header .form-heading h2 { font-size: 1rem; }
+      .contacts-table-container .contacts-table {
+        th, td { padding: 0.5rem 0.6rem; font-size: 0.85rem; }
+      }
+      .staff-incidents-table .incident-description-cell { max-width: 140px; }
+    }
+    .form-actions .btn-submit, .form-actions .btn-cancel {
+      padding: 0.5rem 1.25rem;
+      font-size: 0.85rem;
+    }
+  }
 }

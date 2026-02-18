@@ -66,6 +66,8 @@ export interface BodyMapWithSeverityProps {
   activeRegionId: string | null;
   onRegionClick: (regionId: string) => void;
   onSeveritySelect: (regionId: string, severity: SeverityLevel) => void;
+  descriptionValue?: string;
+  onDescriptionChange?: (regionId: string, value: string) => void;
   width?: number;
   height?: number;
 }
@@ -76,6 +78,8 @@ const BodyMapWithSeverity: React.FC<BodyMapWithSeverityProps> = ({
   activeRegionId,
   onRegionClick,
   onSeveritySelect,
+  descriptionValue = '',
+  onDescriptionChange,
   width = 400,
   height = 600,
 }) => {
@@ -140,6 +144,18 @@ const BodyMapWithSeverity: React.FC<BodyMapWithSeverityProps> = ({
               />
             ))}
           </div>
+          {onDescriptionChange && (
+            <div className="body-map-with-severity__description-wrap">
+              <label className="body-map-with-severity__description-label">Description</label>
+              <textarea
+                className="body-map-with-severity__description-input"
+                value={descriptionValue}
+                onChange={(e) => onDescriptionChange(activeRegionId, e.target.value)}
+                placeholder="Notes for this area..."
+                rows={3}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

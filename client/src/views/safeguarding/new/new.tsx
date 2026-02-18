@@ -539,7 +539,7 @@ const New=()=>{
                     <div className='sub-content'>
                         <div className="pink-box">
                             <div className='pink-content'>
-                                <p>Refferal Type</p>
+                                <p>Referrals</p>
                                 <p>
                                     <FontAwesomeIcon icon={faChevronDown}/>
                                 </p>
@@ -652,13 +652,13 @@ const New=()=>{
                     {meetings.map((meeting,idx)=>(
                         <>
                             <div className="sub-heading">
-                                <p className='main-heading'>Meeting Notes {idx+1} </p>
+                                <p className='main-heading'>Notes {idx+1} </p>
                                 <hr className='hr-line'/>
                             </div>
                             <div className='sub-content'>
                                 <div className="pink-box">
                                     <div className='pink-content'>
-                                        <p>Follow Up Meeting Notes</p>
+                                        <p>Follow Up Notes</p>
                                         <p>
                                             <FontAwesomeIcon icon={faChevronDown}/>
                                         </p>
@@ -734,7 +734,7 @@ const New=()=>{
                                                 }} 
                                             />
                                             <span className="checkmark"></span>
-                                            Meeting Notes (What Is To Be Done, By Who & When?)
+                                            Notes (What Is To Be Done, By Who & When?)
                                         </label>
                                         {meeting.haveNotes && (
                                            <div className='meeting-input-div'>
@@ -756,7 +756,7 @@ const New=()=>{
                                         <div className='meeting-add-div'>
                                             <button className='meeting-add-btn' onClick={() => {
                                                 setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: false }]);
-                                            }}><FontAwesomeIcon icon={faAdd}/>Add New Meeting</button>
+                                            }}><FontAwesomeIcon icon={faAdd}/>Add New Notes</button>
                                         </div>  
 
                                     )}

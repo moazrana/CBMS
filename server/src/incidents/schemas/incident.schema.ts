@@ -46,15 +46,33 @@ export class Meeting {
 
   @Prop()
   notes?: string;
+
+  @Prop()
+  fileName?: string;
+
+  @Prop()
+  filePath?: string;
+
+  @Prop()
+  fileType?: string;
+
+  @Prop()
+  fileSize?: number;
 }
 
 @Schema({ timestamps: true })
 export class Incident extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Student', required: true })
-  student: Student | Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Student', required: false })
+  student?: Student | Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  staff: User | Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  staff?: User | Types.ObjectId;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Student', default: [] })
+  students?: (Student | Types.ObjectId)[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
+  staffList?: (User | Types.ObjectId)[];
 
   @Prop({ default: false })
   status: boolean;
@@ -74,6 +92,9 @@ export class Incident extends Document {
   @Prop({ type: [String], default: [] })
   directedToward?: string[];
 
+  @Prop({ type: [String], default: [] })
+  involved?: string[];
+
   @Prop({ default: false })
   physicalInterventionUsed?: boolean;
 
@@ -86,14 +107,23 @@ export class Incident extends Document {
   @Prop({ type: Object, default: {} })
   bodyMapBackMarkers?: Record<string, number>;
 
+  @Prop({ type: Object, default: {} })
+  bodyMapDescriptions?: Record<string, string>;
+
   @Prop({ type: [String], default: [] })
   action?: string[];
 
   @Prop()
   actionDescription?: string;
 
+  @Prop()
+  actionOthersDescription?: string;
+
   @Prop({ type: [String], default: [] })
   exclusion?: string[];
+
+  @Prop()
+  exclusionOthersDescription?: string;
 
   @Prop({ type: Commentary, required: false })
   commentary?: Commentary;
@@ -111,7 +141,13 @@ export class Incident extends Document {
   early_help?:string[]
 
   @Prop()
+  earlyHelpOthersDescription?: string;
+
+  @Prop()
   referral_type?:string[]
+
+  @Prop()
+  referralOthersDescription?: string;
 
   @Prop({type:MeetingNotes,required:false})
   meeting_notes?: MeetingNotes
@@ -124,6 +160,9 @@ export class Incident extends Document {
 
   @Prop({ type: [String], required: false })
   conclusion?: string[];
+
+  @Prop()
+  outcomeAttachmentNote?: string;
 
   @Prop({ required: false })
   fileName: string;

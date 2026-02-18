@@ -71,9 +71,9 @@
   font-size: 0.95rem;
   color: var(--main-text);
   gap: 0.5rem;
-
+  background-color: var(--main-bg);
   &:hover {
-    background: var(--bg-secondary);
+    // background: var(--bg-secondary);
   }
 
   input[type="checkbox"] {

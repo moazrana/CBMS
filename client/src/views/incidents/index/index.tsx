@@ -19,7 +19,7 @@ import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import TextField from '../../../components/textField/TextField';
 import ContentBox from '../../../components/contentBox/ContentBox';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAdd, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faAdd, faCheck, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import Print from '../../../assets/safeguarding/printed.svg'
 import Email from '../../../assets/safeguarding/email.svg'
 import BodyMapComponent from '../../../components/safeguarding/bodyMap/bodyMap';
@@ -36,6 +36,7 @@ interface incident{
     id:string
     status:boolean
     severity?:number
+    body_mapping?:boolean
     name?:string
     data?:any
 }
@@ -111,6 +112,21 @@ const Index=()=>{
             ),
         },
         {
+            header: 'Body map',
+            accessor: 'body_mapping',
+            sortable: false,
+            type: 'template' as const,
+            template: (row: Record<string, any>) => (
+                <span className="incidents-table-body-map" title={row.body_mapping ? 'Body map required' : 'Body map not required'}>
+                    {row.body_mapping ? (
+                        <FontAwesomeIcon icon={faCheck} className="incidents-table-body-map-tick" />
+                    ) : (
+                        <span className="incidents-table-body-map-none">—</span>
+                    )}
+                </span>
+            ),
+        },
+        {
             header: 'Severity color',
             accessor: 'severityColor',
             sortable: false,
@@ -133,15 +149,23 @@ const Index=()=>{
         const res = await executeRequest('get', '/incidents');
         setIncidents([]);
         const list: incident[] = (Array.isArray(res) ? res : []).map((element: any) => {
-            const studentName = (() => {
-                const s = element.student;
-                if (!s) return '';
-                const p = s.personalInfo || {};
-                const first = (p.legalFirstName || '').trim();
-                const last = (p.lastName || '').trim();
-                if (first || last) return [first, last].filter(Boolean).join(' . ');
-                return s.name ?? '';
-            })();
+            const studentsList = Array.isArray(element.students) ? element.students : (element.student ? [element.student] : []);
+            const staffList = Array.isArray(element.staffList) ? element.staffList : (element.staff ? [element.staff] : []);
+            const studentName = studentsList
+                .map((s: any) => {
+                    if (!s) return '';
+                    const p = s.personalInfo || {};
+                    const first = (p.legalFirstName || '').trim();
+                    const last = (p.lastName || '').trim();
+                    if (first || last) return [first, last].filter(Boolean).join(' . ');
+                    return s.name ?? '';
+                })
+                .filter(Boolean)
+                .join(', ') || '';
+            const staffName = staffList
+                .map((u: any) => u?.name || (u?.profile ? [u.profile.firstName, u.profile.lastName].filter(Boolean).join(' ') : ''))
+                .filter(Boolean)
+                .join(', ') || '';
             const dateStr = element.dateAndTime ? extractDateAndTime(String(element.dateAndTime)).date : '';
             return {
                 student: studentName,
@@ -150,10 +174,11 @@ const Index=()=>{
                 period: element.period?.name ?? '',
                 subject: 'Construction',
                 description: element.description ?? '',
-                staff: element.staff?.name ?? '',
+                staff: staffName,
                 id: element._id ?? '',
                 status: element.status ?? false,
                 severity: element.commentary?.severity ?? 1,
+                body_mapping: element.body_mapping ?? false,
                 data: element,
                 name: `${studentName || 'Incident'}${dateStr ? ` (${dateStr})` : ''}`,
             };
@@ -488,7 +513,7 @@ const Index=()=>{
             <div className='sub-content'>
                 <div className="pink-box">
                     <div className='pink-content'>
-                        <p>Refferal Type</p>
+                        <p>Referrals</p>
                         <p>
                             <FontAwesomeIcon icon={faChevronDown}/>
                         </p>
@@ -601,13 +626,13 @@ const Index=()=>{
             {meetings.map((meeting,idx)=>(
                 <>
                     <div className="sub-heading">
-                        <p className='main-heading'>Meeting Notes {idx+1} </p>
+                        <p className='main-heading'>Notes {idx+1} </p>
                         <hr className='hr-line'/>
                     </div>
                     <div className='sub-content'>
                         <div className="pink-box">
                             <div className='pink-content'>
-                                <p>Follow Up Meeting Notes</p>
+                                <p>Follow Up Notes</p>
                                 <p>
                                     <FontAwesomeIcon icon={faChevronDown}/>
                                 </p>
@@ -687,7 +712,7 @@ const Index=()=>{
                                         }} 
                                     />
                                     <span className="checkmark"></span>
-                                    Meeting Notes (What Is To Be Done, By Who & When?)
+                                    Notes (What Is To Be Done, By Who & When?)
                                 </label>
                                 {meeting.haveNotes && (
                                     <div className='meeting-input-div'>
@@ -709,7 +734,7 @@ const Index=()=>{
                                 <div className='meeting-add-div'>
                                     <button className='meeting-add-btn' onClick={() => {
                                         setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: false }]);
-                                    }}><FontAwesomeIcon icon={faAdd}/>Add New Meeting</button>
+                                    }}><FontAwesomeIcon icon={faAdd}/>Add New Notes</button>
                                 </div>  
 
                             )}
@@ -863,8 +888,11 @@ const Index=()=>{
     const openIncident=async(incident:incident)=>{
         // setSelectedSafeguard(safeguard)
         
-        setRsStudent(incident.data.student._id)
-        setRsStaff(incident.data.staff._id)
+        const data = incident.data;
+        const firstStudent = Array.isArray(data.students) ? data.students[0] : data.student;
+        const firstStaff = Array.isArray(data.staffList) ? data.staffList[0] : data.staff;
+        setRsStudent(firstStudent?._id ?? firstStudent)
+        setRsStaff(firstStaff?._id ?? firstStaff)
         setLocationStr(typeof incident.data.location === 'string' ? incident.data.location : '')
         setPeriodStr(incident.data.period?._id ?? '')
         setStatus(incident.data.status ?? true)
@@ -931,7 +959,6 @@ const Index=()=>{
                                 const id = row.data?._id ?? row.id;
                                 if (id) navigate(`/incidents/incident/${id}`);
                             }}
-                            onView={(row) => openIncident(row as incident)}
                             onDelete={async (row) => {
                                 const id = row.data?._id ?? row.id;
                                 if (!id) return;

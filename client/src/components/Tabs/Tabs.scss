@@ -62,3 +62,29 @@
   }
 }
 
+@media (max-width: 1400px) {
+  .tabs-container {
+    .tabs-header .tab-button {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+    }
+    .tabs-content {
+      padding: 1.25rem 0;
+      min-height: 320px;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .tabs-container {
+    .tabs-header .tab-button {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+    }
+    .tabs-content {
+      padding: 1rem 0;
+      min-height: 280px;
+    }
+  }
+}
+

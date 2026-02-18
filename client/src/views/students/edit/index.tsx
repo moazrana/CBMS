@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faEdit, faArrowRight, faArrowLeft, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faEdit, faCheck, faArrowRight, faArrowLeft, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
@@ -259,6 +259,22 @@ const EditStudent = () => {
 
   // Track if data has been fetched
   const [hasFetched, setHasFetched] = useState(false);
+  const [studentIncidents, setStudentIncidents] = useState<Array<{ _id: string; dateAndTime?: string; location?: string; status?: boolean; description?: string; body_mapping?: boolean; commentary?: { severity?: number } }>>([]);
+
+  // Fetch incidents for this student (only in edit mode)
+  useEffect(() => {
+    if (!id) return;
+    const fetchIncidents = async () => {
+      try {
+        const res = await executeRequest('get', `/incidents/by-student/${id}`);
+        setStudentIncidents(Array.isArray(res) ? res : []);
+      } catch {
+        setStudentIncidents([]);
+      }
+    };
+    fetchIncidents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when id changes
+  }, [id]);
 
   // Fetch student data (only in edit mode)
   useEffect(() => {
@@ -2707,6 +2723,89 @@ const EditStudent = () => {
     </div>
   );
 
+  const SEVERITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' };
+  const SEVERITY_COLORS: Record<number, string> = { 1: '#22c55e', 2: '#f97316', 3: '#ef4444' };
+
+  const IncidentsTabContent = () => (
+    <div className="tab-content">
+      <div className="form-section">
+        <div className="section-header">
+          <div className="form-heading">
+            <h2>Incidents</h2>
+          </div>
+        </div>
+        {studentIncidents.length === 0 ? (
+          <div className="empty-state">
+            <p>No incidents found for this student.</p>
+          </div>
+        ) : (
+          <div className="contacts-table-container student-incidents-table">
+            <table className="contacts-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Severity</th>
+                  <th>Body map required</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentIncidents.map((incident) => {
+                  const dateStr = incident.dateAndTime
+                    ? new Date(incident.dateAndTime).toLocaleDateString(undefined, { dateStyle: 'medium' })
+                    : '—';
+                  const severity = incident.commentary?.severity ?? 1;
+                  const severityLabel = SEVERITY_LABELS[severity] ?? 'Low';
+                  const severityColor = SEVERITY_COLORS[severity] ?? SEVERITY_COLORS[1];
+                  return (
+                    <tr key={incident._id}>
+                      <td>{dateStr}</td>
+                      <td>{incident.location ?? '—'}</td>
+                      <td>
+                        <span className={`incident-status-badge ${incident.status ? 'incident-status-open' : 'incident-status-closed'}`}>
+                          {incident.status ? 'Open' : 'Closed'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="incident-severity-cell" title={severityLabel}>
+                          <span className="incident-severity-dot" style={{ backgroundColor: severityColor }} aria-hidden />
+                          <span>{severityLabel}</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className="incident-body-map-cell" title={incident.body_mapping ? 'Body map required' : 'Body map not required'}>
+                          {incident.body_mapping ? (
+                            <FontAwesomeIcon icon={faCheck} className="incident-body-map-tick" />
+                          ) : (
+                            <span className="incident-body-map-none">—</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="incident-description-cell">{incident.description ? `${incident.description.slice(0, 80)}${incident.description.length > 80 ? '…' : ''}` : '—'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn-edit-incident"
+                          onClick={() => navigate(`/incidents/incident/${incident._id}`)}
+                        >
+                          <FontAwesomeIcon icon={faEdit} />
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const tabs = [
     { id: 'basic', label: 'Basic Information', content: <BasicInfoTab /> },
     { id: 'parents', label: 'Parents', content: <ParentsTab /> },
@@ -2716,6 +2815,7 @@ const EditStudent = () => {
     { id: 'classes', label: 'Classes', content: <ClassesTab /> },
     { id: 'engagement', label: 'Engagement', content: <EngagementTab /> },
     { id: 'timetable', label: 'Time Table', content: <TimeTableTab /> },
+    ...(id ? [{ id: 'incidents', label: 'Incidents', content: <IncidentsTabContent /> }] : []),
   ];
 
   return (

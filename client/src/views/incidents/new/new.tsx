@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../../../layouts/layout';
 // import api from '../../../services/api';
 import Select from '../../../components/Select/Select';
-import SearchableSelect, { SearchableOption } from '../../../components/SearchableSelect/SearchableSelect';
+import SearchableMultiSelect, { SearchableMultiSelectOption } from '../../../components/SearchableMultiSelect/SearchableMultiSelect';
 import Student from '../../../assets/safeguarding/student.svg';
 import Staff from '../../../assets/safeguarding/staff.svg';
 import Status from '../../../assets/safeguarding/status.svg';
@@ -36,11 +36,11 @@ export interface NewIncidentProps {
 
 const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     const navigate = useNavigate();
-    const [studentOptions, setStudentOptions] = useState<SearchableOption[]>([]);
-    const [student, setStudent] = useState<string | number>('');
+    const [studentOptions, setStudentOptions] = useState<SearchableMultiSelectOption[]>([]);
+    const [students, setStudents] = useState<string[]>([]);
 
-    const [staffOptions, setStaffOptions] = useState<SearchableOption[]>([]);
-    const [staff, setStaff] = useState<string | number>('');
+    const [staffOptions, setStaffOptions] = useState<SearchableMultiSelectOption[]>([]);
+    const [staff, setStaff] = useState<string[]>([]);
 
     const [statuses]=useState<any[]>([{value:'1',label:'Open'},{value:'0',label:'Close'}])
     const [status,setStatus]=useState<any>()
@@ -86,13 +86,18 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     const [accountChecks, setAccountChecks] = useState<string[]>([]);
     const [bodyMapFrontMarkers, setBodyMapFrontMarkers] = useState<Record<string, number>>({});
     const [bodyMapBackMarkers, setBodyMapBackMarkers] = useState<Record<string, number>>({});
+    const [bodyMapDescriptions, setBodyMapDescriptions] = useState<Record<string, string>>({});
     const [activeBodyMapRegion, setActiveBodyMapRegion] = useState<{ view: 'front' | 'back'; regionId: string } | null>(null);
     const [bodyMap, setBodyMap] = useState(false);
     const [socialCare, setSocialCare] = useState<string[]>([]);
+    const [socialCareOthersDescription, setSocialCareOthersDescription] = useState<string>('');
     const [actionChecks, setActionChecks] = useState<string[]>([]);
     const [actionDescription, setActionDescription] = useState<string>('');
+    const [actionOthersDescription, setActionOthersDescription] = useState<string>('');
     const [exclusionChecks, setExclusionChecks] = useState<string[]>([]);
+    const [exclusionOthersDescription, setExclusionOthersDescription] = useState<string>('');
     const [refferal, setRefferal] = useState<string[]>([]);
+    const [referralOthersDescription, setReferralOthersDescription] = useState<string>('');
     const [attachment, setAttachment] = useState<boolean>(false);
 
     interface meeting{
@@ -101,7 +106,12 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         havePersons:boolean,
         persons?:string,
         haveNotes:boolean,
-        notes?:string
+        notes?:string,
+        attachmentFile?: File,
+        fileName?: string,
+        filePath?: string,
+        fileType?: string,
+        fileSize?: number
     }
     const [meetings, setMeetings] = useState<meeting[]>([{haveDate:false, havePersons:false, haveNotes:false}]);
     const [conclusion, setConclusion] = useState<string[]>([]);
@@ -119,8 +129,9 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         { value: 'none_of_above', label: 'None of above' },
     ];
     const [directedTowards, setDirectedTowards] = useState<string[]>([]);
+    const [involved, setInvolved] = useState<string[]>([]);
 
-    const [activeTab, setActiveTab] = useState<string>('basic');
+    const [activeTab, setActiveTab] = useState<string>('details');
     const url = useLocation();
     const { id } = useParams();
     const isEditMode = !embedded && Boolean(id);
@@ -254,11 +265,19 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         try {
             const res = await executeRequest('get', `/students?perPage=20&page=1&search=${encodeURIComponent(search)}`, undefined, { silent: true });
             const list = Array.isArray(res) ? res : [];
-            const options: SearchableOption[] = list.map((s: { _id: string; personalInfo?: { legalFirstName?: string; lastName?: string; location?: string; yearGroup?: string } }) => ({
+            const fromApi: SearchableMultiSelectOption[] = list.map((s: { _id: string; personalInfo?: { legalFirstName?: string; lastName?: string; location?: string; yearGroup?: string } }) => ({
                 value: s._id,
                 label: studentOptionLabel(s) || 'Unknown',
             }));
-            setStudentOptions(options);
+            setStudentOptions((prev) => {
+                const selectedSet = new Set(students.map(String));
+                const keepFromPrev = prev.filter((o) => selectedSet.has(String(o.value)));
+                const combined = [...fromApi];
+                for (const o of keepFromPrev) {
+                    if (!combined.some((c) => String(c.value) === String(o.value))) combined.push(o);
+                }
+                return combined;
+            });
         } catch {
             setStudentOptions([]);
         }
@@ -278,11 +297,19 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         try {
             const res = await executeRequest('get', `/users/staff/search?perPage=20&page=1&search=${encodeURIComponent(search)}`, undefined, { silent: true });
             const list = Array.isArray(res) ? res : [];
-            const options: SearchableOption[] = list.map((u: { _id: string; name?: string; profile?: { firstName?: string; lastName?: string; workLocation?: string } }) => ({
+            const fromApi: SearchableMultiSelectOption[] = list.map((u: { _id: string; name?: string; profile?: { firstName?: string; lastName?: string; workLocation?: string } }) => ({
                 value: u._id,
                 label: staffOptionLabel(u),
             }));
-            setStaffOptions(options);
+            setStaffOptions((prev) => {
+                const selectedSet = new Set(staff.map(String));
+                const keepFromPrev = prev.filter((o) => selectedSet.has(String(o.value)));
+                const combined = [...fromApi];
+                for (const o of keepFromPrev) {
+                    if (!combined.some((c) => String(c.value) === String(o.value))) combined.push(o);
+                }
+                return combined;
+            });
         } catch {
             setStaffOptions([]);
         }
@@ -304,13 +331,29 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     };
     const handleDescriptionFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) setDescriptionFiles(Array.from(files));
+        if (files && files.length > 0) {
+            setDescriptionFiles((prev) => [...prev, ...Array.from(files)]);
+        }
+        e.target.value = '';
         setSelectedImageIndex(null);
     };
     const handleRestrainFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) setRestrainFiles(Array.from(files));
+        if (files && files.length > 0) {
+            setRestrainFiles((prev) => [...prev, ...Array.from(files)]);
+        }
+        e.target.value = '';
         setRestrainSelectedImageIndex(null);
+    };
+    const removeDescriptionFile = (index: number) => {
+        setDescriptionFiles((prev) => prev.filter((_, i) => i !== index));
+        if (selectedImageIndex === index) setSelectedImageIndex(null);
+        else if (selectedImageIndex !== null && selectedImageIndex > index) setSelectedImageIndex(selectedImageIndex - 1);
+    };
+    const removeRestrainFile = (index: number) => {
+        setRestrainFiles((prev) => prev.filter((_, i) => i !== index));
+        if (restrainSelectedImageIndex === index) setRestrainSelectedImageIndex(null);
+        else if (restrainSelectedImageIndex !== null && restrainSelectedImageIndex > index) setRestrainSelectedImageIndex(restrainSelectedImageIndex - 1);
     };
     const handleDownloadFile = (file: File, url: string) => {
         const a = document.createElement('a');
@@ -350,6 +393,22 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             alert('Error downloading file');
         }
     };
+    const downloadNoteFile = async (noteIndex: number) => {
+        if (!id) return;
+        const meeting = meetings[noteIndex];
+        if (!meeting?.fileName) return;
+        try {
+            const res = await api.get(`/incidents/${id}/note-files/${noteIndex}`, { responseType: 'blob' });
+            const url = URL.createObjectURL(res.data as Blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = meeting.fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            alert('Error downloading file');
+        }
+    };
     const handleBodyMapRegionClick = (view: 'front' | 'back', regionId: string) => {
         setActiveBodyMapRegion({ view, regionId });
     };
@@ -367,8 +426,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         saveInProgressRef.current = true;
         try {
             const formData = new FormData();
-            formData.append('student', String(student));
-            formData.append('staff', String(staff));
+            formData.append('students', JSON.stringify(students));
+            formData.append('staff', JSON.stringify(staff));
             formData.append('status', status);
             formData.append('location', location);
             formData.append('dateAndTime', `${doi}T${toi}`);
@@ -381,19 +440,29 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             formData.append('body_mapping', String(bodyMap));
             formData.append('bodyMapFrontMarkers', JSON.stringify(bodyMapFrontMarkers));
             formData.append('bodyMapBackMarkers', JSON.stringify(bodyMapBackMarkers));
+            formData.append('bodyMapDescriptions', JSON.stringify(bodyMapDescriptions));
             formData.append('early_help', JSON.stringify(socialCare));
+            formData.append('earlyHelpOthersDescription', socialCareOthersDescription);
             formData.append('referral_type', JSON.stringify(refferal));
+            formData.append('referralOthersDescription', referralOthersDescription);
             formData.append('action', JSON.stringify(actionChecks));
             formData.append('actionDescription', actionDescription);
+            formData.append('actionOthersDescription', actionOthersDescription);
             formData.append('exclusion', JSON.stringify(exclusionChecks));
+            formData.append('exclusionOthersDescription', exclusionOthersDescription);
             if (file) formData.append('file', file);
             descriptionFiles.forEach((f) => formData.append('descriptionFiles', f));
             formData.append('physicalInterventionUsed', String(physicalInterventionUsed));
             formData.append('restrainDescription', restrainDescription);
             restrainFiles.forEach((f) => formData.append('restrainFiles', f));
-            formData.append('meetings', JSON.stringify(meetings));
+            const meetingsForSubmit = meetings.map(({ attachmentFile: _omit, ...m }) => m);
+            formData.append('meetings', JSON.stringify(meetingsForSubmit));
+            meetings.forEach((m) => {
+                if (m.attachmentFile) formData.append('noteFiles', m.attachmentFile);
+            });
             formData.append('conclusion', JSON.stringify(conclusion));
             formData.append('directedToward', JSON.stringify(directedTowards));
+            formData.append('involved', JSON.stringify(involved));
             const url = isEditMode ? `/incidents/${id}` : '/incidents';
             const method = isEditMode ? 'patch' : 'post';
             await executeRequest(method, url, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -408,8 +477,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     };
     // Cancel handler
     const handleCancel = () => {
-        setStudent('');
-        setStaff('');
+        setStudents([]);
+        setStaff([]);
         setStatus('');
         setLocation('');
         setDoi('');
@@ -429,35 +498,37 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         setAccountChecks([]);
         setBodyMapFrontMarkers({});
         setBodyMapBackMarkers({});
+        setBodyMapDescriptions({});
         setActiveBodyMapRegion(null);
         setBodyMap(false);
         setSocialCare([]);
+        setSocialCareOthersDescription('');
+        setReferralOthersDescription('');
         setActionChecks([]);
         setActionDescription('');
+        setActionOthersDescription('');
         setExclusionChecks([]);
+        setExclusionOthersDescription('');
         setDirectedTowards([]);
+        setInvolved([]);
     };
 
     const openIncident=async(incident:any)=>{
-        // Basic Details
-        const sid = incident.student?._id ?? incident.student;
-        if (sid) {
-            setStudent(sid);
-            setStudentOptions((prev) => {
-                if (prev.some((o) => String(o.value) === String(sid))) return prev;
-                const label = getStudentDisplayName(incident.student) || (typeof incident.student === 'object' ? 'Selected student' : '');
-                return [{ value: sid, label }, ...prev];
-            });
-        }
-        const staffId = incident.staff?._id ?? incident.staff;
-        if (staffId) {
-            setStaff(staffId);
-            setStaffOptions((prev) => {
-                if (prev.some((o) => String(o.value) === String(staffId))) return prev;
-                const label = incident.staff?.name || staffOptionLabel(incident.staff) || 'Selected staff';
-                return [{ value: staffId, label }, ...prev];
-            });
-        }
+        // Basic Details: students and staff (arrays), with backward compat for single student/staff
+        const studentsList = Array.isArray(incident.students) ? incident.students : (incident.student ? [incident.student] : []);
+        const staffList = Array.isArray(incident.staffList) ? incident.staffList : (incident.staff ? [incident.staff] : []);
+        const studentIds = studentsList.map((s: { _id?: string }) => s._id ?? s);
+        const staffIds = staffList.map((s: { _id?: string }) => s._id ?? s);
+        setStudents(studentIds);
+        setStaff(staffIds);
+        setStudentOptions(studentsList.map((s: { _id?: string; personalInfo?: { legalFirstName?: string; lastName?: string }; name?: string }) => ({
+            value: s._id ?? s,
+            label: getStudentDisplayName(s) || 'Unknown',
+        })));
+        setStaffOptions(staffList.map((s: { _id?: string; name?: string; profile?: { firstName?: string; lastName?: string; workLocation?: string } }) => ({
+            value: (s._id ?? s) as string,
+            label: staffOptionLabel({ _id: String(s._id ?? s), name: s?.name, profile: s?.profile }) || s?.name || 'Unknown',
+        })));
         setStatus(incident.status === true || incident.status === '1' ? '1' : '0');
         setLocation(incident.location ?? '');
         if (incident.dateAndTime) {
@@ -468,6 +539,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             }
         }
         setDirectedTowards(Array.isArray(incident.directedToward) ? incident.directedToward : []);
+        setInvolved(Array.isArray(incident.involved) ? incident.involved : []);
 
         // Description & Commentary
         setDescription(incident.description ?? '');
@@ -481,6 +553,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         setBodyMap(Boolean(incident.body_mapping));
         setBodyMapFrontMarkers(typeof incident.bodyMapFrontMarkers === 'object' && incident.bodyMapFrontMarkers !== null ? incident.bodyMapFrontMarkers : {});
         setBodyMapBackMarkers(typeof incident.bodyMapBackMarkers === 'object' && incident.bodyMapBackMarkers !== null ? incident.bodyMapBackMarkers : {});
+        setBodyMapDescriptions(typeof incident.bodyMapDescriptions === 'object' && incident.bodyMapDescriptions !== null ? incident.bodyMapDescriptions : {});
 
         // Restrain
         setPhysicalInterventionUsed(Boolean(incident.physicalInterventionUsed));
@@ -489,14 +562,18 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         // Action
         setActionChecks(Array.isArray(incident.action) ? incident.action : []);
         setActionDescription(incident.actionDescription ?? '');
+        setActionOthersDescription(incident.actionOthersDescription ?? '');
         setExclusionChecks(Array.isArray(incident.exclusion) ? incident.exclusion : []);
+        setExclusionOthersDescription(incident.exclusionOthersDescription ?? '');
 
         // Social Care & Referral
         setSocialCare(Array.isArray(incident.early_help) ? incident.early_help : []);
+        setSocialCareOthersDescription(incident.earlyHelpOthersDescription ?? '');
         setRefferal(Array.isArray(incident.referral_type) ? incident.referral_type : []);
+        setReferralOthersDescription(incident.referralOthersDescription ?? '');
 
         // Meetings, Conclusion
-        setMeetings(Array.isArray(incident.meetings) ? incident.meetings : [{ haveDate: false, havePersons: false, haveNotes: false }]);
+        setMeetings(Array.isArray(incident.meetings) ? (incident.meetings as meeting[]).map((m: meeting) => ({ ...m, attachmentFile: undefined })) : [{ haveDate: false, havePersons: false, haveNotes: false }]);
         setConclusion(Array.isArray(incident.conclusion) ? incident.conclusion : []);
 
         // Existing attached files (from server)
@@ -523,8 +600,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
 
     const tabs = [
         {
-            id: 'basic',
-            label: 'Basic Details',
+            id: 'details',
+            label: 'Details',
             content: (
                 <div className="tab-content">
                     <div className="form-section">
@@ -532,20 +609,20 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             <h2>Details</h2>
                         </div>
                         <div className="form-row">
-                            <SearchableSelect
-                                name="student"
-                                value={student}
-                                onChange={(v) => setStudent(v)}
+                            <SearchableMultiSelect
+                                name="students"
+                                value={students}
+                                onChange={(v) => setStudents(v as string[])}
                                 options={studentOptions}
                                 onSearch={fetchStudentOptions}
-                                label="Student"
+                                label="Students"
                                 placeholder="Search by name..."
                                 icon={Student}
                             />
-                            <SearchableSelect
+                            <SearchableMultiSelect
                                 name="staff"
                                 value={staff}
-                                onChange={(v) => setStaff(v)}
+                                onChange={(v) => setStaff(v as string[])}
                                 options={staffOptions}
                                 onSearch={fetchStaffOptions}
                                 label="Staff"
@@ -561,8 +638,14 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 placeholder="Select..."
                                 icon={Status}
                             />
-                        </div>
-                        <div className="form-row">
+                            <MultiSelect
+                                name="involved"
+                                label="Involved"
+                                value={involved}
+                                onChange={setInvolved}
+                                options={DIRECTED_TOWARDS_OPTIONS}
+                                placeholder="Select..."
+                            />
                             <Select
                                 key={'location'}
                                 name="location"
@@ -634,23 +717,88 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            )},
-        {
-            id: 'description',
-            label: 'Description ',
-            content: (
-                <div className="tab-content">
-                    <div className="description">
-                        <TextField
-                            label='Description'
-                            name='description'
-                            onChange={(e:React.ChangeEvent<HTMLTextAreaElement>)=>{setDescription(e.target.value)}}
-                            value={description}
-                            icon={Description}
-                            placeholder='What happened? Who was involved? What was said/done? Witnesses?'
-                        />
+                        <div className="form-section">
+                            <div className="form-heading" style={{ marginBottom: '0rem' }}>
+                                <h2>Description</h2>
+                            </div>
+                            <div className="description">
+                                <div className='box-content'>
+                                    <div className='check-boxes'>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Physical')} onChange={() => handleCheckbox('Physical', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Physical
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Physchological')} onChange={() => handleCheckbox('Physchological', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Physchological
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Neglect')} onChange={() => handleCheckbox('Neglect', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Neglect
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Sexual')} onChange={() => handleCheckbox('Sexual', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Sexual
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Student')} onChange={() => handleCheckbox('Student', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Student
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Staff')} onChange={() => handleCheckbox('Staff', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Staff
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Visitor / public')} onChange={() => handleCheckbox('Visitor / public', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Visitor / public
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Unknown')} onChange={() => handleCheckbox('Unknown', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Unknown
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Parent')} onChange={() => handleCheckbox('Parent', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Parent
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Carer')} onChange={() => handleCheckbox('Carer', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Carer
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Property')} onChange={() => handleCheckbox('Property', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Property
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('Self')} onChange={() => handleCheckbox('Self', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            Self
+                                        </label>
+                                        <label className="custom-checkbox">
+                                            <input type="checkbox" checked={concernTypes.includes('None of above')} onChange={() => handleCheckbox('None of above', concernTypes, setConcernTypes)} />
+                                            <span className="checkmark"></span>
+                                            None of above
+                                        </label>
+                                    </div>
+                                </div>
+                                <TextField
+                                    label='Description'
+                                    name='description'
+                                    onChange={(e:React.ChangeEvent<HTMLTextAreaElement>)=>{setDescription(e.target.value)}}
+                                    value={description}
+                                    icon={Description}
+                                    placeholder='What happened? Who was involved? What was said/done? Witnesses?'
+                                />
                         <div className="description-files-wrap">
                             {existingDescriptionFiles.length > 0 && (
                                 <div className="existing-files-section">
@@ -722,6 +870,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                         <img src={url} alt={file.name} />
                                                     </button>
                                                     <span className="description-file-viewer__thumb-name">{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="description-file-viewer__remove-btn"
+                                                        onClick={() => removeDescriptionFile(index)}
+                                                        title="Remove"
+                                                        aria-label="Remove file"
+                                                    >
+                                                        <FontAwesomeIcon icon={faTimes} />
+                                                    </button>
                                                 </div>
                                             );
                                         }
@@ -735,6 +892,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                     onClick={() => handleDownloadFile(file, url)}
                                                 >
                                                     Download
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="description-file-viewer__remove-btn"
+                                                    onClick={() => removeDescriptionFile(index)}
+                                                    title="Remove"
+                                                    aria-label="Remove file"
+                                                >
+                                                    <FontAwesomeIcon icon={faTimes} />
                                                 </button>
                                             </div>
                                         );
@@ -781,17 +947,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                     </div>
                                 </div>
                             )}
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )},
-        {
-            id: 'restrain',
-            label: 'Restrain',
-            content: (
-                <div className="tab-content">
-                    <div className="description">
-                        <label className="custom-checkbox restrain-physical-checkbox">
+                        </div>
+                        <div className="form-section">
+                            <div className="form-heading">
+                                <h2>Restrain</h2>
+                            </div>
+                            <div className="description">
+                                <label className="custom-checkbox restrain-physical-checkbox">
                             <input
                                 type="checkbox"
                                 checked={physicalInterventionUsed}
@@ -800,8 +964,6 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             <span className="checkmark"></span>
                             Physical intervention used
                         </label>
-                        {physicalInterventionUsed && (
-                            <>
                         <TextField
                             label='Restrain'
                             name='restrainDescription'
@@ -809,6 +971,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             value={restrainDescription}
                             icon={Description}
                             placeholder='Who performed it / Why / Duration / Witnesses'
+                            textFieldWidth='90%'
                         />
                         <div className="description-files-wrap">
                             {existingRestrainFiles.length > 0 && (
@@ -881,6 +1044,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                         <img src={url} alt={file.name} />
                                                     </button>
                                                     <span className="description-file-viewer__thumb-name">{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        className="description-file-viewer__remove-btn"
+                                                        onClick={() => removeRestrainFile(index)}
+                                                        title="Remove"
+                                                        aria-label="Remove file"
+                                                    >
+                                                        <FontAwesomeIcon icon={faTimes} />
+                                                    </button>
                                                 </div>
                                             );
                                         }
@@ -894,6 +1066,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                     onClick={() => handleDownloadFile(file, url)}
                                                 >
                                                     Download
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="description-file-viewer__remove-btn"
+                                                    onClick={() => removeRestrainFile(index)}
+                                                    title="Remove"
+                                                    aria-label="Remove file"
+                                                >
+                                                    <FontAwesomeIcon icon={faTimes} />
                                                 </button>
                                             </div>
                                         );
@@ -940,137 +1121,18 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                     </div>
                                 </div>
                             )}
+                            </div>
+                            </div>
                         </div>
-                            </>
-                        )}
                     </div>
                 </div>
             )},
         {
             id: 'type',
-            label: 'Type & Account',
+            label: 'Body Map',
             content: (
                 <div className="tab-content">
-                    <div className="sub-heading">
-                        <p className='main-heading'>Type</p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Concern Type</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes'>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Physical')} onChange={() => handleCheckbox('Physical', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Physical
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Physchological')} onChange={() => handleCheckbox('Physchological', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Physchological
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Neglect')} onChange={() => handleCheckbox('Neglect', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Neglect
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Sexual')} onChange={() => handleCheckbox('Sexual', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Sexual
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Student')} onChange={() => handleCheckbox('Student', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Student
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Staff')} onChange={() => handleCheckbox('Staff', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Staff
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Visitor / public')} onChange={() => handleCheckbox('Visitor / public', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Visitor / public
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Unknown')} onChange={() => handleCheckbox('Unknown', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Unknown
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Parent')} onChange={() => handleCheckbox('Parent', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Parent
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Carer')} onChange={() => handleCheckbox('Carer', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Carer
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Property')} onChange={() => handleCheckbox('Property', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Property
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('Self')} onChange={() => handleCheckbox('Self', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    Self
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={concernTypes.includes('None of above')} onChange={() => handleCheckbox('None of above', concernTypes, setConcernTypes)} />
-                                    <span className="checkmark"></span>
-                                    None of above
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="sub-heading">
-                        <p className='main-heading'>Account Details</p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Your Account</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={accountChecks.includes('Tick If This Concern Has Been Raised Before')} onChange={() => handleCheckbox('Tick If This Concern Has Been Raised Before', accountChecks, setAccountChecks)} />
-                                    <span className="checkmark"></span>
-                                    Tick If This Concern Has Been Raised Before
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={accountChecks.includes('Tick If You Spoken With Child')} onChange={() => handleCheckbox('Tick If You Spoken With Child', accountChecks, setAccountChecks)} />
-                                    <span className="checkmark"></span>
-                                    Tick If You Spoken With Child
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={accountChecks.includes('Tick If You Have Spoken Wth Parent/Carer')} onChange={() => handleCheckbox('Tick If You Have Spoken Wth Parent/Carer', accountChecks, setAccountChecks)} />
-                                    <span className="checkmark"></span>
-                                    Tick If You Have Spoken Wth Parent/Carer
-                                </label>
-                                
-                            </div>
-                        </div>
-                    </div> 
-                    {/*  */}
-                    <div className="pink-box" style={{ marginTop: '1.5rem' }}>
+                    <div className="pink-box">
                             <div className='pink-content'>
                                 <p>Body Map (Tick If Required)</p>
                                 <p>
@@ -1093,6 +1155,10 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                     activeRegionId={activeBodyMapRegion?.view === 'front' ? activeBodyMapRegion.regionId : null}
                                     onRegionClick={(regionId) => handleBodyMapRegionClick('front', regionId)}
                                     onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('front', regionId, severity)}
+                                    descriptionValue={activeBodyMapRegion?.view === 'front' ? (bodyMapDescriptions['front-' + activeBodyMapRegion.regionId] ?? '') : ''}
+                                    onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['front-' + regionId]: value }))}
+                                    width={800}
+                                    height={1200}
                                 />
                             </div>
                             <div className="type-account-body-maps__cell">
@@ -1103,6 +1169,10 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                     activeRegionId={activeBodyMapRegion?.view === 'back' ? activeBodyMapRegion.regionId : null}
                                     onRegionClick={(regionId) => handleBodyMapRegionClick('back', regionId)}
                                     onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('back', regionId, severity)}
+                                    descriptionValue={activeBodyMapRegion?.view === 'back' ? (bodyMapDescriptions['back-' + activeBodyMapRegion.regionId] ?? '') : ''}
+                                    onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['back-' + regionId]: value }))}
+                                    width={800}
+                                    height={1200}
                                 />
                             </div>
                         </div>}
@@ -1111,119 +1181,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                 </div>
             )},
         {
-            id: 'action',
-            label: 'Action',
-            content: (
-                <div className="tab-content">
-                    <div className="sub-heading">
-                        <p className='main-heading'>Action</p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Action</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Verbal warning')} onChange={() => handleCheckbox('Verbal warning', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Verbal warning
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Restorative action')} onChange={() => handleCheckbox('Restorative action', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Restorative action
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Out of class')} onChange={() => handleCheckbox('Out of class', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Out of class
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Detention')} onChange={() => handleCheckbox('Detention', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Detention
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Senior leader informed')} onChange={() => handleCheckbox('Senior leader informed', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Senior leader informed
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Parent/guardian contacted')} onChange={() => handleCheckbox('Parent/guardian contacted', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Parent/guardian contacted
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Individual Behaviour Plan (IBP)')} onChange={() => handleCheckbox('Individual Behaviour Plan (IBP)', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Individual Behaviour Plan (IBP)
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Referral to external agency')} onChange={() => handleCheckbox('Referral to external agency', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Referral to external agency
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={actionChecks.includes('Reported to Local Authority')} onChange={() => handleCheckbox('Reported to Local Authority', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Reported to Local Authority
-                                </label>
-                            </div>
-                        </div>
-                        <div className="pink-box" style={{ marginTop: '1.5rem' }}>
-                            <div className='pink-content'>
-                                <p>Exclusions</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={exclusionChecks.includes('Internal exclusion')} onChange={() => handleCheckbox('Internal exclusion', exclusionChecks, setExclusionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Internal exclusion
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={exclusionChecks.includes('External exclusion')} onChange={() => handleCheckbox('External exclusion', exclusionChecks, setExclusionChecks)} />
-                                    <span className="checkmark"></span>
-                                    External exclusion
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={exclusionChecks.includes('Fixed-term exclusion')} onChange={() => handleCheckbox('Fixed-term exclusion', exclusionChecks, setExclusionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Fixed-term exclusion
-                                </label>
-                                <label className="custom-checkbox">
-                                    <input type="checkbox" checked={exclusionChecks.includes('Permanent exclusion')} onChange={() => handleCheckbox('Permanent exclusion', exclusionChecks, setExclusionChecks)} />
-                                    <span className="checkmark"></span>
-                                    Permanent exclusion
-                                </label>
-                            </div>
-                        </div>
-                        <div className="action-description-wrap" style={{ marginTop: '1.5rem' }}>
-                            <TextField
-                                label="Description"
-                                name="actionDescription"
-                                value={actionDescription}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setActionDescription(e.target.value)}
-                                placeholder="Describe any additional action taken or notes..."
-                            />
-                        </div>
-                    </div>
-                </div>
-            )},
-        {
             id: 'social',
-            label: 'Social Care & Referral',
+            label: 'Referrals',
             content: (
                 <div className="tab-content">
                     <div className="sub-heading">
@@ -1265,9 +1224,25 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                     <input type="checkbox" checked={socialCare.includes('None')} onChange={() => handleCheckbox('None', socialCare, setSocialCare)} />
                                     <span className="checkmark"></span>
                                     None 
-                                </label> 
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={socialCare.includes('Others')} onChange={() => handleCheckbox('Others', socialCare, setSocialCare)} />
+                                    <span className="checkmark"></span>
+                                    Others
+                                </label>
                             </div>
                         </div>
+                        {socialCare.includes('Others') && (
+                            <div className="social-care-others-description-wrap" style={{ marginTop: '1rem' }}>
+                                <TextField
+                                    label="Description (Others)"
+                                    name="socialCareOthersDescription"
+                                    value={socialCareOthersDescription}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSocialCareOthersDescription(e.target.value)}
+                                    placeholder="Describe the other social care status..."
+                                />
+                            </div>
+                        )}
                     </div>  
                     {/*  */}
                     {/*  */}
@@ -1278,7 +1253,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                     <div className='sub-content'>
                         <div className="pink-box">
                             <div className='pink-content'>
-                                <p>Refferal Type</p>
+                                <p>Referrals</p>
                                 <p>
                                     <FontAwesomeIcon icon={faChevronDown}/>
                                 </p>
@@ -1380,28 +1355,221 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                         <span className="checkmark"></span>
                                         LA Services
                                     </label>
+                                    <label className="custom-checkbox">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={refferal.includes('Others')} 
+                                            onChange={() => handleCheckbox(
+                                                'Others', 
+                                                refferal, 
+                                                setRefferal
+                                            )} 
+                                        />
+                                        <span className="checkmark"></span>
+                                        Others
+                                    </label>
                                     <div style={{width:200}}></div>
                                 </div>
                             </div>
                         </div>
+                        {refferal.includes('Others') && (
+                            <div className="referral-others-description-wrap" style={{ marginTop: '1rem' }}>
+                                <TextField
+                                    label="Description (Others)"
+                                    name="referralOthersDescription"
+                                    value={referralOthersDescription}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReferralOthersDescription(e.target.value)}
+                                    placeholder="Describe the other referral type..."
+                                />
+                            </div>
+                        )}
                     </div>  
                 </div>
             )},
         {
             id: 'meetings',
-            label: 'Meetings',
+            label: 'Outcome',
             content: (
                 <div className="tab-content">
+                    <div className="sub-heading">
+                        <p className='main-heading'>Action</p>
+                        <hr className='hr-line'/>
+                    </div>
+                    <div className='sub-content'>
+                        <div className="pink-box">
+                            <div className='pink-content'>
+                                <p>Action</p>
+                                <p>
+                                    <FontAwesomeIcon icon={faChevronDown}/>
+                                </p>
+                            </div>
+                        </div>
+                        <div className='box-content'>
+                            <div className='check-boxes-column'>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Verbal warning')} onChange={() => handleCheckbox('Verbal warning', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Verbal warning
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Restorative action')} onChange={() => handleCheckbox('Restorative action', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Restorative action
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Out of class')} onChange={() => handleCheckbox('Out of class', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Out of class
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Detention')} onChange={() => handleCheckbox('Detention', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Detention
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Senior leader informed')} onChange={() => handleCheckbox('Senior leader informed', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Senior leader informed
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Parent/guardian contacted')} onChange={() => handleCheckbox('Parent/guardian contacted', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Parent/guardian contacted
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Individual Behaviour Plan (IBP)')} onChange={() => handleCheckbox('Individual Behaviour Plan (IBP)', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Individual Behaviour Plan (IBP)
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Referral to external agency')} onChange={() => handleCheckbox('Referral to external agency', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Referral to external agency
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Reported to Local Authority')} onChange={() => handleCheckbox('Reported to Local Authority', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Reported to Local Authority
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={actionChecks.includes('Others')} onChange={() => handleCheckbox('Others', actionChecks, setActionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Others
+                                </label>
+                            </div>
+                        </div>
+                        {actionChecks.includes('Others') && (
+                            <div className="action-others-description-wrap" style={{ marginTop: '1rem' }}>
+                                <TextField
+                                    label="Description (Others)"
+                                    name="actionOthersDescription"
+                                    value={actionOthersDescription}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setActionOthersDescription(e.target.value)}
+                                    placeholder="Describe the other action taken..."
+                                />
+                            </div>
+                        )}
+                        <div className="pink-box" style={{ marginTop: '1.5rem' }}>
+                            <div className='pink-content'>
+                                <p>Exclusions</p>
+                                <p>
+                                    <FontAwesomeIcon icon={faChevronDown}/>
+                                </p>
+                            </div>
+                        </div>
+                        <div className='box-content'>
+                            <div className='check-boxes-column'>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={exclusionChecks.includes('Internal exclusion')} onChange={() => handleCheckbox('Internal exclusion', exclusionChecks, setExclusionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Internal exclusion
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={exclusionChecks.includes('External exclusion')} onChange={() => handleCheckbox('External exclusion', exclusionChecks, setExclusionChecks)} />
+                                    <span className="checkmark"></span>
+                                    External exclusion
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={exclusionChecks.includes('Fixed-term exclusion')} onChange={() => handleCheckbox('Fixed-term exclusion', exclusionChecks, setExclusionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Fixed-term exclusion
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={exclusionChecks.includes('Permanent exclusion')} onChange={() => handleCheckbox('Permanent exclusion', exclusionChecks, setExclusionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Permanent exclusion
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={exclusionChecks.includes('Others')} onChange={() => handleCheckbox('Others', exclusionChecks, setExclusionChecks)} />
+                                    <span className="checkmark"></span>
+                                    Others
+                                </label>
+                            </div>
+                        </div>
+                        {exclusionChecks.includes('Others') && (
+                            <div className="exclusion-others-description-wrap" style={{ marginTop: '1rem' }}>
+                                <TextField
+                                    label="Description (Others)"
+                                    name="exclusionOthersDescription"
+                                    value={exclusionOthersDescription}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExclusionOthersDescription(e.target.value)}
+                                    placeholder="Describe the other exclusion..."
+                                />
+                            </div>
+                        )}
+                        <div className="action-description-wrap" style={{ marginTop: '1.5rem' }}>
+                            <TextField
+                                label="Description"
+                                name="actionDescription"
+                                value={actionDescription}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setActionDescription(e.target.value)}
+                                placeholder="Describe any additional action taken or notes..."
+                            />
+                        </div>
+                    </div>
+                    <div className="sub-heading" style={{ marginTop: '1.5rem' }}>
+                        <p className='main-heading'>Your Account</p>
+                        <hr className='hr-line'/>
+                    </div>
+                    <div className='sub-content'>
+                        <div className="pink-box">
+                            <div className='pink-content'>
+                                <p>Your Account</p>
+                                <p>
+                                    <FontAwesomeIcon icon={faChevronDown}/>
+                                </p>
+                            </div>
+                        </div>
+                        <div className='box-content'>
+                            <div className='check-boxes-column'>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={accountChecks.includes('Tick If This Concern Has Been Raised Before')} onChange={() => handleCheckbox('Tick If This Concern Has Been Raised Before', accountChecks, setAccountChecks)} />
+                                    <span className="checkmark"></span>
+                                    Tick If This Concern Has Been Raised Before
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={accountChecks.includes('Tick If You Spoken With Child')} onChange={() => handleCheckbox('Tick If You Spoken With Child', accountChecks, setAccountChecks)} />
+                                    <span className="checkmark"></span>
+                                    Tick If You Spoken With Child
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={accountChecks.includes('Tick If You Have Spoken Wth Parent/Carer')} onChange={() => handleCheckbox('Tick If You Have Spoken Wth Parent/Carer', accountChecks, setAccountChecks)} />
+                                    <span className="checkmark"></span>
+                                    Tick If You Have Spoken Wth Parent/Carer
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     {meetings.map((meeting,idx)=>(
                         <>
                             <div className="sub-heading">
-                                <p className='main-heading'>Meeting Notes {idx+1} </p>
+                                <p className='main-heading'>Notes {idx+1} </p>
                                 <hr className='hr-line'/>
                             </div>
                             <div className='sub-content'>
                                 <div className="pink-box">
                                     <div className='pink-content'>
-                                        <p>Follow Up Meeting Notes</p>
+                                        <p>Follow Up Notes</p>
                                         <p>
                                             <FontAwesomeIcon icon={faChevronDown}/>
                                         </p>
@@ -1440,35 +1608,6 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                         <label className="custom-checkbox">
                                             <input 
                                                 type="checkbox" 
-                                                checked={meeting.havePersons} 
-                                                onChange={() => {
-                                                    const updated = [...meetings];
-                                                    updated[idx] = { ...updated[idx], havePersons: !updated[idx].havePersons };
-                                                    setMeetings(updated);
-                                                }} 
-                                            />
-                                            <span className="checkmark"></span>
-                                            Persons Attending Meeting
-                                        </label>
-                                        {meeting.havePersons && (
-                                           <div className='meeting-input-div'>
-                                                <Input
-                                                    type="text"
-                                                    name={`meeting-names-${idx}`}
-                                                    value={meeting.persons ? meeting.persons : ''}
-                                                    onChange={e => {
-                                                    const updated = [...meetings];
-                                                    updated[idx] = { ...updated[idx], persons: e.target.value ? e.target.value : '' };
-                                                    setMeetings(updated);
-                                                    }}
-                                                    label=""
-                                                    labelFont={15}
-                                                />
-                                            </div>
-                                        )}
-                                        <label className="custom-checkbox">
-                                            <input 
-                                                type="checkbox" 
                                                 checked={meeting.haveNotes} 
                                                 onChange={() => {
                                                     const updated = [...meetings];
@@ -1477,7 +1616,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                 }} 
                                             />
                                             <span className="checkmark"></span>
-                                            Meeting Notes (What Is To Be Done, By Who & When?)
+                                            Notes (What Is To Be Done, By Who & When?)
                                         </label>
                                         {meeting.haveNotes && (
                                            <div className='meeting-input-div'>
@@ -1494,100 +1633,45 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                 />
                                             </div>
                                         )}
+                                        <div className='meeting-input-div' style={{ marginTop: '0.75rem' }}>
+                                            <Input
+                                                type="file"
+                                                name={`note-file-${idx}`}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    const updated = [...meetings];
+                                                    updated[idx] = { ...updated[idx], attachmentFile: file };
+                                                    setMeetings(updated);
+                                                }}
+                                                label="Attachment"
+                                                labelFont={15}
+                                            />
+                                            {(meeting.attachmentFile || meeting.fileName) && (
+                                                <span className="outcome-attachment-filename">
+                                                    {meeting.attachmentFile?.name ?? meeting.fileName}
+                                                    {id && meeting.filePath && (
+                                                        <>
+                                                            {' '}
+                                                            <button type="button" className="description-file-viewer__download-btn" onClick={() => downloadNoteFile(idx)}>
+                                                                <FontAwesomeIcon icon={faDownload} /> Download
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     {idx==meetings.length-1&&(
                                         <div className='meeting-add-div'>
                                             <button className='meeting-add-btn' onClick={() => {
                                                 setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: false }]);
-                                            }}><FontAwesomeIcon icon={faAdd}/>Add New Meeting</button>
+                                            }}><FontAwesomeIcon icon={faAdd}/>Add New Notes</button>
                                         </div>  
                                     )}
                                 </div>
                             </div>
                         </>
                     ))}
-                </div>
-            )},
-        {
-            id: 'conclusion',
-            label: 'Conclusion & Attachments',
-            content: (
-                <div className="tab-content">
-                    <div className="sub-heading">
-                        <p className='main-heading'>Conclusion </p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Outcome</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <div className="check-boxes">
-                                    <label className="custom-checkbox">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={conclusion.includes('Outcome')} 
-                                            onChange={() => handleCheckbox(
-                                                'Outcome', 
-                                                conclusion, 
-                                                setConclusion
-                                            )} 
-                                        />
-                                        <span className="checkmark"></span>
-                                        Outcome
-                                    </label> 
-                                </div> 
-                            </div>
-                        </div>
-                    </div>  
-                    {/*  */}
-                    {/*  */}
-                    <div className="sub-heading">
-                        <p className='main-heading'>Attachments </p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Upload Supporting Files</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
-                            </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <div className="check-boxes">
-                                    <label className="custom-checkbox">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={attachment} 
-                                            onChange={() => {setAttachment(!attachment)}} 
-                                        />
-                                        <span className="checkmark"></span>
-                                        Attachments
-                                    </label>
-                                </div> 
-                                <div className="meeting-input-div">
-                                    {attachment && (
-                                        <Input
-                                            type="file"
-                                            name="attachment"
-                                            onChange={handleFileChange}
-                                            label=""
-                                            labelFont={15}
-                                        />
-                                    )} 
-                                </div>
-                            </div>
-                        </div>
-                    </div>  
                 </div>
             )},
     ];

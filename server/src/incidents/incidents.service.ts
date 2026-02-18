@@ -11,8 +11,8 @@ export class IncidentsService {
 
   async create(data: Partial<Incident>): Promise<Incident> {
     const {
-      student,
-      staff,
+      students,
+      staffList,
       status,
       location,
       dateAndTime,
@@ -24,6 +24,7 @@ export class IncidentsService {
       body_mapping,
       bodyMapFrontMarkers,
       bodyMapBackMarkers,
+      bodyMapDescriptions,
       early_help,
       referral_type,
       meeting_notes,
@@ -37,16 +38,22 @@ export class IncidentsService {
       meetings,
       conclusion,
       directedToward,
+      involved,
       physicalInterventionUsed,
       restrainDescription,
       action,
       actionDescription,
+      actionOthersDescription,
       exclusion,
+      exclusionOthersDescription,
+      earlyHelpOthersDescription,
+      referralOthersDescription,
+      outcomeAttachmentNote,
     } = data;
 
     const created = new this.incidentModel({
-      student,
-      staff,
+      students: students ?? [],
+      staffList: staffList ?? [],
       status,
       location,
       dateAndTime,
@@ -58,8 +65,11 @@ export class IncidentsService {
       body_mapping,
       bodyMapFrontMarkers: bodyMapFrontMarkers ?? {},
       bodyMapBackMarkers: bodyMapBackMarkers ?? {},
+      bodyMapDescriptions: bodyMapDescriptions ?? {},
       early_help,
+      earlyHelpOthersDescription,
       referral_type,
+      referralOthersDescription,
       meeting_notes,
       outcome,
       fileName,
@@ -70,25 +80,80 @@ export class IncidentsService {
       restrainFiles: restrainFiles ?? [],
       meetings,
       conclusion,
+      outcomeAttachmentNote,
       directedToward: directedToward ?? [],
+      involved: involved ?? [],
       physicalInterventionUsed: physicalInterventionUsed ?? false,
       restrainDescription,
       action: action ?? [],
       actionDescription,
+      actionOthersDescription,
       exclusion: exclusion ?? [],
+      exclusionOthersDescription,
     });
     return created.save();
   }
 
   async findAll(): Promise<Incident[]> {
-    return this.incidentModel.find()
+    const list = await this.incidentModel
+      .find()
       .sort({ createdAt: -1 })
       .populate([
-      { path: 'student', select: 'personalInfo' },
-      { path: 'staff', select: 'name profile' },
-      { path: 'period', select: 'name' },
-    ])
+        { path: 'student', select: 'personalInfo' },
+        { path: 'staff', select: 'name profile' },
+        { path: 'students', select: 'personalInfo' },
+        { path: 'staffList', select: 'name profile' },
+        { path: 'period', select: 'name' },
+      ])
       .exec();
+    return list.map((doc) => {
+      const obj = doc.toObject ? doc.toObject() : doc;
+      if (!obj.students?.length && obj.student) obj.students = [obj.student];
+      if (!obj.staffList?.length && obj.staff) obj.staffList = [obj.staff];
+      return obj as Incident;
+    });
+  }
+
+  async findByStudentId(studentId: string): Promise<Incident[]> {
+    const list = await this.incidentModel
+      .find({
+        $or: [
+          { students: studentId },
+          { student: studentId },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .populate({ path: 'students', select: 'personalInfo' })
+      .populate({ path: 'staffList', select: 'name profile' })
+      .populate('period')
+      .exec();
+    return list.map((doc) => {
+      const obj = doc.toObject ? doc.toObject() : doc;
+      if (!obj.students?.length && obj.student) obj.students = [obj.student];
+      if (!obj.staffList?.length && obj.staff) obj.staffList = [obj.staff];
+      return obj as Incident;
+    });
+  }
+
+  async findByStaffId(staffId: string): Promise<Incident[]> {
+    const list = await this.incidentModel
+      .find({
+        $or: [
+          { staffList: staffId },
+          { staff: staffId },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .populate({ path: 'students', select: 'personalInfo' })
+      .populate({ path: 'staffList', select: 'name profile' })
+      .populate('period')
+      .exec();
+    return list.map((doc) => {
+      const obj = doc.toObject ? doc.toObject() : doc;
+      if (!obj.students?.length && obj.student) obj.students = [obj.student];
+      if (!obj.staffList?.length && obj.staff) obj.staffList = [obj.staff];
+      return obj as Incident;
+    });
   }
 
   async findOne(id: string): Promise<Incident> {
@@ -96,16 +161,28 @@ export class IncidentsService {
       .findById(id)
       .populate({ path: 'student', select: 'personalInfo' })
       .populate({ path: 'staff', select: 'name profile' })
+      .populate({ path: 'students', select: 'personalInfo' })
+      .populate({ path: 'staffList', select: 'name profile' })
       .populate('period')
       .exec();
     if (!found) throw new NotFoundException('Incident not found');
-    return found;
+    const obj = found.toObject ? found.toObject() : found;
+    if (!obj.students?.length && obj.student) obj.students = [obj.student];
+    if (!obj.staffList?.length && obj.staff) obj.staffList = [obj.staff];
+    return obj as Incident;
   }
 
   async update(id: string, data: Partial<Incident>): Promise<Incident> {
-    const updated = await this.incidentModel.findByIdAndUpdate(id, data, { new: true }).exec();
+    const updated = await this.incidentModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .populate({ path: 'students', select: 'personalInfo' })
+      .populate({ path: 'staffList', select: 'name profile' })
+      .exec();
     if (!updated) throw new NotFoundException('Incident not found');
-    return updated;
+    const obj = updated.toObject ? updated.toObject() : updated;
+    if (!obj.students?.length && obj.student) obj.students = [obj.student];
+    if (!obj.staffList?.length && obj.staff) obj.staffList = [obj.staff];
+    return obj as Incident;
   }
 
   async remove(id: string): Promise<void> {

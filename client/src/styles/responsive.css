@@ -1,0 +1,38 @@
+/**
+ * Responsive layout for 1920x1080 and 1366x768 (and similar)
+ * Breakpoint at 1400px: below = compact (1366), above = standard (1920)
+ */
+
+/* Standard: 1920x1080 and above */
+@media (min-width: 1401px) {
+  :root {
+    --responsive-scale: 1;
+    --responsive-spacing: 1rem;
+    --responsive-gap: 1rem;
+    --responsive-heading: 1.25rem;
+    --responsive-base: 14px;
+  }
+}
+
+/* Compact: 1366x768 and similar (max 1400px width) */
+@media (max-width: 1400px) {
+  :root {
+    font-size: 13px;
+    --responsive-scale: 0.85;
+    --responsive-spacing: 0.75rem;
+    --responsive-gap: 0.75rem;
+    --responsive-heading: 1.1rem;
+    --responsive-base: 13px;
+  }
+}
+
+/* Extra compact for very narrow (e.g. 1366 with sidebar) */
+@media (max-width: 1200px) {
+  :root {
+    font-size: 12px;
+    --responsive-scale: 0.75;
+    --responsive-spacing: 0.5rem;
+    --responsive-gap: 0.5rem;
+    --responsive-heading: 1rem;
+  }
+}
