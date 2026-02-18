@@ -152,7 +152,7 @@ const BodyMapWithSeverity: React.FC<BodyMapWithSeverityProps> = ({
                 value={descriptionValue}
                 onChange={(e) => onDescriptionChange(activeRegionId, e.target.value)}
                 placeholder="Notes for this area..."
-                rows={3}
+                rows={7}
               />
             </div>
           )}

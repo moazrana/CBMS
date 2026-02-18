@@ -51,6 +51,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         {value:'off site',label:'Off site'}
     ];
     const [location, setLocation] = useState<string>('');
+    const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
+    const [period, setPeriod] = useState<string>('');
 
     const [doi,setDoi]=useState<string>('')
 
@@ -106,13 +108,10 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         persons?:string,
         haveNotes:boolean,
         notes?:string,
-        attachmentFile?: File,
-        fileName?: string,
-        filePath?: string,
-        fileType?: string,
-        fileSize?: number
+        attachmentFiles?: File[],
+        noteFiles?: { fileName: string; filePath: string; fileType?: string; fileSize?: number }[]
     }
-    const [meetings, setMeetings] = useState<meeting[]>([{haveDate:false, havePersons:false, haveNotes:false}]);
+    const [meetings, setMeetings] = useState<meeting[]>([{haveDate:false, havePersons:false, haveNotes:true, attachmentFiles: [], noteFiles: []}]);
     const [conclusion, setConclusion] = useState<string[]>([]);
 
     // Incident Directed towards (multiselect)
@@ -175,6 +174,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             urls.forEach((u) => URL.revokeObjectURL(u));
         };
     }, [restrainFiles]);
+
+    const [noteFilePreviewUrls, setNoteFilePreviewUrls] = useState<string[][]>([]);
+    useEffect(() => {
+        const grid = meetings.map((m) => (m.attachmentFiles ?? []).map((f) => URL.createObjectURL(f)));
+        setNoteFilePreviewUrls(grid);
+        return () => {
+            grid.flat().forEach((u) => URL.revokeObjectURL(u));
+        };
+    }, [meetings]);
 
     // Fetch blob URLs for existing description files that are images (for viewer)
     useEffect(() => {
@@ -388,21 +396,39 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             alert('Error downloading file');
         }
     };
-    const downloadNoteFile = async (noteIndex: number) => {
+    const downloadNoteFile = async (meetingIndex: number, fileIndex: number) => {
         if (!id) return;
-        const meeting = meetings[noteIndex];
-        if (!meeting?.fileName) return;
+        const meeting = meetings[meetingIndex];
+        const list = meeting?.noteFiles ?? [];
+        const file = list[fileIndex];
+        if (!file?.fileName) return;
         try {
-            const res = await api.get(`/incidents/${id}/note-files/${noteIndex}`, { responseType: 'blob' });
+            const res = await api.get(`/incidents/${id}/note-files/${meetingIndex}/${fileIndex}`, { responseType: 'blob' });
             const url = URL.createObjectURL(res.data as Blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = meeting.fileName;
+            a.download = file.fileName;
             a.click();
             URL.revokeObjectURL(url);
         } catch {
             alert('Error downloading file');
         }
+    };
+    const handleNoteFilesChange = (meetingIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const updated = [...meetings];
+            const current = updated[meetingIdx]?.attachmentFiles ?? [];
+            updated[meetingIdx] = { ...updated[meetingIdx], attachmentFiles: [...current, ...Array.from(files)] };
+            setMeetings(updated);
+        }
+        e.target.value = '';
+    };
+    const removeNoteFile = (meetingIdx: number, fileIdx: number) => {
+        const updated = [...meetings];
+        const list = updated[meetingIdx]?.attachmentFiles ?? [];
+        updated[meetingIdx] = { ...updated[meetingIdx], attachmentFiles: list.filter((_, i) => i !== fileIdx) };
+        setMeetings(updated);
     };
     const handleBodyMapRegionClick = (view: 'front' | 'back', regionId: string) => {
         setActiveBodyMapRegion({ view, regionId });
@@ -425,6 +451,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             formData.append('staff', JSON.stringify(staff));
             formData.append('status', status);
             formData.append('location', location);
+            if (period) formData.append('period', period);
             formData.append('dateAndTime', `${doi}T${toi}`);
             formData.append('description', description);
             formData.append('commentary[severity]', String(severity));
@@ -450,10 +477,12 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             formData.append('physicalInterventionUsed', String(physicalInterventionUsed));
             formData.append('restrainDescription', restrainDescription);
             restrainFiles.forEach((f) => formData.append('restrainFiles', f));
-            const meetingsForSubmit = meetings.map(({ attachmentFile: _omit, ...m }) => m);
+            const meetingsForSubmit = meetings.map(({ attachmentFiles: _omit, ...m }) => m);
             formData.append('meetings', JSON.stringify(meetingsForSubmit));
+            const noteFileCounts = meetings.map((m) => m.attachmentFiles?.length ?? 0);
+            formData.append('noteFileCounts', JSON.stringify(noteFileCounts));
             meetings.forEach((m) => {
-                if (m.attachmentFile) formData.append('noteFiles', m.attachmentFile);
+                (m.attachmentFiles ?? []).forEach((f) => formData.append('noteFiles', f));
             });
             formData.append('conclusion', JSON.stringify(conclusion));
             formData.append('directedToward', JSON.stringify(directedTowards));
@@ -526,6 +555,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         })));
         setStatus(incident.status === true || incident.status === '1' ? '1' : '0');
         setLocation(incident.location ?? '');
+        const periodId = incident.period && (typeof incident.period === 'object' ? (incident.period as { _id?: string })._id : incident.period);
+        setPeriod(periodId ? String(periodId) : '');
         if (incident.dateAndTime) {
             const d = new Date(incident.dateAndTime);
             if (!isNaN(d.getTime())) {
@@ -568,7 +599,10 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         setReferralOthersDescription(incident.referralOthersDescription ?? '');
 
         // Meetings, Conclusion
-        setMeetings(Array.isArray(incident.meetings) ? (incident.meetings as meeting[]).map((m: meeting) => ({ ...m, attachmentFile: undefined })) : [{ haveDate: false, havePersons: false, haveNotes: false }]);
+        setMeetings(Array.isArray(incident.meetings) ? (incident.meetings as (meeting & { fileName?: string; filePath?: string; fileType?: string; fileSize?: number })[]).map((m) => {
+                const noteFiles = (m as { noteFiles?: { fileName: string; filePath: string; fileType?: string; fileSize?: number }[] }).noteFiles ?? (m.fileName && m.filePath ? [{ fileName: m.fileName, filePath: m.filePath, fileType: m.fileType, fileSize: m.fileSize }] : []);
+                return { ...m, attachmentFiles: [], noteFiles, fileName: undefined, filePath: undefined, fileType: undefined, fileSize: undefined };
+            }) : [{ haveDate: false, havePersons: false, haveNotes: true, attachmentFiles: [], noteFiles: [] }]);
         setConclusion(Array.isArray(incident.conclusion) ? incident.conclusion : []);
 
         // Existing attached files (from server)
@@ -581,6 +615,19 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         const res=await executeRequest(method, address);
         openIncident(res)
     }
+    useEffect(() => {
+        const loadPeriods = async () => {
+            try {
+                const res = await api.get('/periods');
+                const list = Array.isArray(res.data) ? res.data : [];
+                setPeriodOptions(list.map((p: { _id: string; name?: string }) => ({ value: String(p._id), label: p.name ?? String(p._id) })));
+            } catch {
+                setPeriodOptions([]);
+            }
+        };
+        loadPeriods();
+    }, []);
+
     useEffect(() => {
         fetchStudentOptions('');
         fetchStaffOptions('');
@@ -635,7 +682,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             />
                             <MultiSelect
                                 name="involved"
-                                label="Involved"
+                                label="Others"
                                 value={involved}
                                 onChange={setInvolved}
                                 options={DIRECTED_TOWARDS_OPTIONS}
@@ -650,6 +697,15 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 label="Location"
                                 placeholder="Select..."
                                 icon={Location}
+                            />
+                            <Select
+                                name="period"
+                                value={period}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setPeriod(e.target.value)}}
+                                options={periodOptions}
+                                label="Period"
+                                placeholder="Select session..."
+                                icon={Clock}
                             />
                             <DateInput
                                 name='doi'
@@ -717,6 +773,11 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 <h2>Description</h2>
                             </div>
                             <div className="description">
+                                <div className="pink-box description-type-heading">
+                                    <div className='pink-content'>
+                                        <p>Type</p>
+                                    </div>
+                                </div>
                                 <div className='box-content'>
                                     <div className='check-boxes'>
                                         <label className="custom-checkbox">
@@ -967,6 +1028,9 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             icon={Description}
                             placeholder='Who performed it / Why / Duration / Witnesses'
                             textFieldWidth='90%'
+                            notes='How effective was the physical intervention?
+                                How was the incident resolved and what were the consequences?
+                                How was the physical intervention in the best interest of the student?'
                         />
                         <div className="description-files-wrap">
                             {existingRestrainFiles.length > 0 && (
@@ -1523,13 +1587,13 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                         </div>
                     </div>
                     <div className="sub-heading" style={{ marginTop: '1.5rem' }}>
-                        <p className='main-heading'>Your Account</p>
+                        <p className='main-heading'>Action</p>
                         <hr className='hr-line'/>
                     </div>
                     <div className='sub-content'>
                         <div className="pink-box">
                             <div className='pink-content'>
-                                <p>Your Account</p>
+                                <p>Action</p>
                                 <p>
                                     <FontAwesomeIcon icon={faChevronDown}/>
                                 </p>
@@ -1572,94 +1636,119 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 </div>
                                 <div className='box-content'>
                                     <div className='check-boxes-column'>
-                                        <label className="custom-checkbox">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={meeting.haveDate} 
-                                                onChange={() => {
-                                                    const updated = [...meetings];
-                                                    updated[idx] = { ...updated[idx], haveDate: !updated[idx].haveDate };
-                                                    setMeetings(updated);
-                                                }} 
-                                            />
-                                            <span className="checkmark"></span>
-                                            Date
-                                        </label>
-                                        {meeting.haveDate && (
-                                           <div className='meeting-input-div'>
-                                                <DateInput
-                                                    name={`meeting-date-${idx}`}
-                                                    value={meeting.date ? meeting.date.toISOString().split('T')[0] : ''}
-                                                    onChange={e => {
+                                        <div className='meeting-input-div'>
+                                            <DateInput
+                                                name={`meeting-date-${idx}`}
+                                                value={meeting.date ? meeting.date.toISOString().split('T')[0] : ''}
+                                                onChange={e => {
                                                     const updated = [...meetings];
                                                     updated[idx] = { ...updated[idx], date: e.target.value ? new Date(e.target.value) : undefined };
                                                     setMeetings(updated);
-                                                    }}
-                                                    label=""
-                                                    labelFont={15}
-                                                />
-                                            </div>
-                                        )} 
-                                        <label className="custom-checkbox">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={meeting.haveNotes} 
-                                                onChange={() => {
-                                                    const updated = [...meetings];
-                                                    updated[idx] = { ...updated[idx], haveNotes: !updated[idx].haveNotes };
-                                                    setMeetings(updated);
-                                                }} 
-                                            />
-                                            <span className="checkmark"></span>
-                                            Notes (What Is To Be Done, By Who & When?)
-                                        </label>
-                                        {meeting.haveNotes && (
-                                           <div className='meeting-input-div'>
-                                                <TextField
-                                                    label=""
-                                                    name={`meeting-notes-${idx}`}
-                                                    value={meeting.notes ? meeting.notes : ''}
-                                                    onChange={e => {
-                                                        const updated = [...meetings];
-                                                        updated[idx] = { ...updated[idx], notes: e.target.value };
-                                                        setMeetings(updated);
-                                                    }}
-                                                    rows={3}
-                                                />
-                                            </div>
-                                        )}
-                                        <div className='meeting-input-div' style={{ marginTop: '0.75rem' }}>
-                                            <Input
-                                                type="file"
-                                                name={`note-file-${idx}`}
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    const updated = [...meetings];
-                                                    updated[idx] = { ...updated[idx], attachmentFile: file };
-                                                    setMeetings(updated);
                                                 }}
-                                                label="Attachment"
+                                                label="Date"
                                                 labelFont={15}
                                             />
-                                            {(meeting.attachmentFile || meeting.fileName) && (
-                                                <span className="outcome-attachment-filename">
-                                                    {meeting.attachmentFile?.name ?? meeting.fileName}
-                                                    {id && meeting.filePath && (
-                                                        <>
-                                                            {' '}
-                                                            <button type="button" className="description-file-viewer__download-btn" onClick={() => downloadNoteFile(idx)}>
-                                                                <FontAwesomeIcon icon={faDownload} /> Download
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </span>
+                                        </div>
+                                        <div className='meeting-input-div'>
+                                            <TextField
+                                                label="Notes"
+                                                name={`meeting-notes-${idx}`}
+                                                value={meeting.notes ? meeting.notes : ''}
+                                                onChange={e => {
+                                                    const updated = [...meetings];
+                                                    updated[idx] = { ...updated[idx], notes: e.target.value };
+                                                    setMeetings(updated);
+                                                }}
+                                                placeholder='What Is To Be Done, By Who & When?'
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="description-files-wrap outcome-note-files-wrap" style={{ marginTop: '0.75rem' }}>
+                                            {(meeting.noteFiles?.length ?? 0) > 0 && (
+                                                <div className="existing-files-section">
+                                                    <label className="description-files-label">Existing attached files</label>
+                                                    <div className="description-file-viewer">
+                                                        {(meeting.noteFiles ?? []).map((f, fileIdx) => (
+                                                            <div key={`note-existing-${idx}-${fileIdx}`} className="description-file-viewer__download-item">
+                                                                <FontAwesomeIcon icon={faDownload} className="description-file-viewer__download-icon" />
+                                                                <span className="description-file-viewer__download-name">{f.fileName}</span>
+                                                                {id && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="description-file-viewer__download-btn"
+                                                                        onClick={() => downloadNoteFile(idx, fileIdx)}
+                                                                    >
+                                                                        Download
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <label className="description-files-label">Attach files</label>
+                                            <input
+                                                type="file"
+                                                name={`note-files-${idx}`}
+                                                multiple
+                                                onChange={(e) => handleNoteFilesChange(idx, e)}
+                                                className="description-files-input"
+                                            />
+                                            {(meeting.attachmentFiles?.length ?? 0) > 0 && (
+                                                <div className="description-file-viewer">
+                                                    {(meeting.attachmentFiles ?? []).map((file, fileIdx) => {
+                                                        const url = noteFilePreviewUrls[idx]?.[fileIdx];
+                                                        if (!url) return null;
+                                                        if (isImageFile(file)) {
+                                                            return (
+                                                                <div key={`note-new-${idx}-${fileIdx}`} className="description-file-viewer__thumb-wrap">
+                                                                    <div className="description-file-viewer__thumb" title={file.name}>
+                                                                        <img src={url} alt={file.name} />
+                                                                    </div>
+                                                                    <span className="description-file-viewer__thumb-name">{file.name}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="description-file-viewer__remove-btn"
+                                                                        onClick={() => removeNoteFile(idx, fileIdx)}
+                                                                        title="Remove"
+                                                                        aria-label="Remove file"
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faTimes} />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <div key={`note-new-${idx}-${fileIdx}`} className="description-file-viewer__download-item">
+                                                                <FontAwesomeIcon icon={faDownload} className="description-file-viewer__download-icon" />
+                                                                <span className="description-file-viewer__download-name">{file.name}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="description-file-viewer__download-btn"
+                                                                    onClick={() => handleDownloadFile(file, url)}
+                                                                >
+                                                                    Download
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="description-file-viewer__remove-btn"
+                                                                    onClick={() => removeNoteFile(idx, fileIdx)}
+                                                                    title="Remove"
+                                                                    aria-label="Remove file"
+                                                                >
+                                                                    <FontAwesomeIcon icon={faTimes} />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
                                     {idx==meetings.length-1&&(
                                         <div className='meeting-add-div'>
                                             <button className='meeting-add-btn' onClick={() => {
-                                                setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: false }]);
+                                                setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: true, attachmentFiles: [], noteFiles: [] }]);
                                             }}><FontAwesomeIcon icon={faAdd}/>Add New Notes</button>
                                         </div>  
                                     )}

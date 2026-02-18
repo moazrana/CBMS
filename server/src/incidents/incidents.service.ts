@@ -51,7 +51,14 @@ export class IncidentsService {
       outcomeAttachmentNote,
     } = data;
 
+    let number = data.number;
+    if (number == null || number === undefined) {
+      const last = await this.incidentModel.findOne().sort({ number: -1 }).select('number').lean().exec();
+      number = (last?.number ?? 0) + 1;
+    }
+
     const created = new this.incidentModel({
+      number,
       students: students ?? [],
       staffList: staffList ?? [],
       status,

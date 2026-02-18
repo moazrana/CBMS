@@ -8,6 +8,7 @@ export function parseIncidentBody(body: Record<string, any>): Record<string, any
   const singleKeys = [
     'status',
     'location',
+    'period',
     'dateAndTime',
     'description',
     'body_mapping',

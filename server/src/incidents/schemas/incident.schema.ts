@@ -58,10 +58,16 @@ export class Meeting {
 
   @Prop()
   fileSize?: number;
+
+  @Prop({ type: [{ fileName: String, filePath: String, fileType: String, fileSize: Number }], default: [] })
+  noteFiles?: { fileName: string; filePath: string; fileType?: string; fileSize?: number }[];
 }
 
 @Schema({ timestamps: true })
 export class Incident extends Document {
+  @Prop({ type: Number, unique: true, sparse: true })
+  number?: number;
+
   @Prop({ type: Types.ObjectId, ref: 'Student', required: false })
   student?: Student | Types.ObjectId;
 

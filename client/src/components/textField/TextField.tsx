@@ -11,6 +11,7 @@ interface TextFieldProps {
   onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
   error?: string;
+  notes?: string;
   rows?: number;
   icon?:string;
   textFieldWidth?:string;
@@ -25,6 +26,7 @@ const TextField: React.FC<TextFieldProps> = ({
   onBlur,
   placeholder,
   error,
+  notes,
   rows = 4,
   icon,
   textFieldWidth='90%'
@@ -47,6 +49,7 @@ const TextField: React.FC<TextFieldProps> = ({
           />}
         {label}
       </label>
+      {notes && <span className="text-field__notes">{notes}</span>}
       <textarea
         id={name}
         name={name}

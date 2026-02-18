@@ -407,7 +407,7 @@ const Index=()=>{
             <div className='sub-content'>
                 <div className="pink-box">
                     <div className='pink-content'>
-                        <p>Your Account</p>
+                        <p>Action</p>
                         <p>
                             <FontAwesomeIcon icon={faChevronDown}/>
                         </p>

@@ -228,6 +228,7 @@
   .description-file-viewer {
     margin-top: 1rem;
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 1rem;
     align-items: flex-start;
@@ -238,11 +239,14 @@
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+    flex: 0 0 auto;
+    width: 100px;
   }
 
   .description-file-viewer__thumb {
     width: 100px;
     height: 100px;
+    flex-shrink: 0;
     padding: 0;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -283,7 +287,11 @@
     background: #f5f5f5;
     border-radius: 8px;
     border: 1px solid #eee;
+    width: 200px;
     min-width: 200px;
+    max-width: 200px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
   }
 
   .description-file-viewer__download-icon {
@@ -516,6 +524,13 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+
+  &.description-type-heading {
+    background-color: transparent;
+    color: var(--main-text);
+    // border-bottom: 1px solid var(--border-color);
+    // padding-bottom: 0.5rem;
+  }
 }
 .pink-content{
   width:97%;
@@ -603,6 +618,29 @@
   padding-top: 20px;
   padding-bottom: 10px;
 }
+
+.outcome-note-files-wrap {
+  .description-file-viewer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-start;
+    margin-top: 0.5rem;
+  }
+  .description-file-viewer__thumb-wrap {
+    flex: 0 0 100px;
+    width: 100px;
+  }
+  .description-file-viewer__download-item {
+    flex: 0 0 auto;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    box-sizing: border-box;
+  }
+}
+
 .btns{
   width:95%;
   display:flex;
@@ -670,7 +708,9 @@
   margin-bottom:1.5rem;
 
 }
-
+.type-account-body-maps__title{
+  font-size: 28px;
+}
 @media (max-width: 1400px) {
   .new-staff {
     .new-staff-header {

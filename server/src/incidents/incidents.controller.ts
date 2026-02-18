@@ -35,7 +35,7 @@ export class IncidentsController {
         { name: 'file', maxCount: 1 },
         { name: 'descriptionFiles', maxCount: 20 },
         { name: 'restrainFiles', maxCount: 20 },
-        { name: 'noteFiles', maxCount: 20 },
+        { name: 'noteFiles', maxCount: 50 },
       ],
       multerOpts,
     ),
@@ -79,16 +79,32 @@ export class IncidentsController {
     }
 
     if (files?.noteFiles?.length && Array.isArray(data.meetings)) {
-      files.noteFiles.forEach((f, i) => {
-        if (data.meetings[i]) {
-          data.meetings[i] = {
-            ...data.meetings[i],
-            fileName: f.originalname,
-            filePath: f.path,
-            fileType: f.mimetype,
-            fileSize: f.size,
-          };
+      const noteFileCountsRaw = body.noteFileCounts;
+      let noteFileCounts: number[] = [];
+      if (typeof noteFileCountsRaw === 'string') {
+        try {
+          noteFileCounts = JSON.parse(noteFileCountsRaw);
+        } catch {
+          noteFileCounts = data.meetings.map(() => 0);
         }
+      }
+      if (!Array.isArray(noteFileCounts) || noteFileCounts.length !== data.meetings.length) {
+        noteFileCounts = data.meetings.map(() => 0);
+      }
+      let fileIdx = 0;
+      data.meetings = data.meetings.map((meeting: any, i: number) => {
+        const count = Math.max(0, Math.min(noteFileCounts[i] ?? 0, files.noteFiles.length - fileIdx));
+        const newFiles = files.noteFiles.slice(fileIdx, fileIdx + count).map((f: Express.Multer.File) => ({
+          fileName: f.originalname,
+          filePath: f.path,
+          fileType: f.mimetype,
+          fileSize: f.size,
+        }));
+        fileIdx += count;
+        const existing = meeting.noteFiles ?? [];
+        const legacy = meeting.fileName ? [{ fileName: meeting.fileName, filePath: meeting.filePath, fileType: meeting.fileType, fileSize: meeting.fileSize }] : [];
+        const combined = existing.length ? existing : legacy;
+        return { ...meeting, noteFiles: [...combined, ...newFiles], fileName: undefined, filePath: undefined, fileType: undefined, fileSize: undefined };
       });
     }
 
@@ -142,20 +158,25 @@ export class IncidentsController {
     res.sendFile(file.filePath);
   }
 
-  @Get(':id/note-files/:index')
+  @Get(':id/note-files/:meetingIndex/:fileIndex')
   async getNoteFile(
     @Param('id') id: string,
-    @Param('index') index: string,
+    @Param('meetingIndex') meetingIndex: string,
+    @Param('fileIndex') fileIndex: string,
     @Res() res: Response,
   ) {
     const incident = await this.incidentsService.findOne(id);
-    const idx = parseInt(index, 10);
+    const mIdx = parseInt(meetingIndex, 10);
+    const fIdx = parseInt(fileIndex, 10);
     const meetings = incident.meetings ?? [];
-    if (isNaN(idx) || idx < 0 || idx >= meetings.length) throw new NotFoundException('File not found');
-    const meeting = meetings[idx];
-    if (!meeting?.filePath || !fs.existsSync(meeting.filePath)) throw new NotFoundException('File not found');
-    res.setHeader('Content-Disposition', `attachment; filename="${meeting.fileName}"`);
-    res.sendFile(meeting.filePath);
+    if (isNaN(mIdx) || mIdx < 0 || mIdx >= meetings.length) throw new NotFoundException('File not found');
+    const meeting = meetings[mIdx] as any;
+    const list = meeting?.noteFiles ?? (meeting?.filePath ? [{ fileName: meeting.fileName, filePath: meeting.filePath, fileType: meeting.fileType, fileSize: meeting.fileSize }] : []);
+    if (isNaN(fIdx) || fIdx < 0 || fIdx >= list.length) throw new NotFoundException('File not found');
+    const file = list[fIdx];
+    if (!file?.filePath || !fs.existsSync(file.filePath)) throw new NotFoundException('File not found');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+    res.sendFile(file.filePath);
   }
 
   @Get(':id')
@@ -170,7 +191,7 @@ export class IncidentsController {
         { name: 'file', maxCount: 1 },
         { name: 'descriptionFiles', maxCount: 20 },
         { name: 'restrainFiles', maxCount: 20 },
-        { name: 'noteFiles', maxCount: 20 },
+        { name: 'noteFiles', maxCount: 50 },
       ],
       multerOpts,
     ),
@@ -218,16 +239,33 @@ export class IncidentsController {
     }
 
     if (files?.noteFiles?.length && Array.isArray(data.meetings)) {
-      files.noteFiles.forEach((f, i) => {
-        if (data.meetings[i]) {
-          data.meetings[i] = {
-            ...data.meetings[i],
-            fileName: f.originalname,
-            filePath: f.path,
-            fileType: f.mimetype,
-            fileSize: f.size,
-          };
+      const noteFileCountsRaw = body.noteFileCounts;
+      let noteFileCounts: number[] = [];
+      if (typeof noteFileCountsRaw === 'string') {
+        try {
+          noteFileCounts = JSON.parse(noteFileCountsRaw);
+        } catch {
+          noteFileCounts = data.meetings.map(() => 0);
         }
+      }
+      if (!Array.isArray(noteFileCounts) || noteFileCounts.length !== data.meetings.length) {
+        noteFileCounts = data.meetings.map(() => 0);
+      }
+      let fileIdx = 0;
+      data.meetings = data.meetings.map((meeting: any, i: number) => {
+        const count = Math.max(0, Math.min(noteFileCounts[i] ?? 0, files.noteFiles.length - fileIdx));
+        const newFiles = files.noteFiles.slice(fileIdx, fileIdx + count).map((f: Express.Multer.File) => ({
+          fileName: f.originalname,
+          filePath: f.path,
+          fileType: f.mimetype,
+          fileSize: f.size,
+        }));
+        fileIdx += count;
+        const existingMeeting = existing.meetings?.[i] as any;
+        const existingList = existingMeeting?.noteFiles ?? (existingMeeting?.filePath ? [{ fileName: existingMeeting.fileName, filePath: existingMeeting.filePath, fileType: existingMeeting.fileType, fileSize: existingMeeting.fileSize }] : []);
+        const incomingExisting = meeting?.noteFiles ?? [];
+        const combined = (Array.isArray(incomingExisting) && incomingExisting.length) ? incomingExisting : existingList;
+        return { ...meeting, noteFiles: [...combined, ...newFiles], fileName: undefined, filePath: undefined, fileType: undefined, fileSize: undefined };
       });
     }
 
