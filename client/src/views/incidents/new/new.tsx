@@ -98,7 +98,6 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     const [exclusionOthersDescription, setExclusionOthersDescription] = useState<string>('');
     const [refferal, setRefferal] = useState<string[]>([]);
     const [referralOthersDescription, setReferralOthersDescription] = useState<string>('');
-    const [attachment, setAttachment] = useState<boolean>(false);
 
     interface meeting{
         haveDate:boolean,
@@ -324,11 +323,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
         }
     };
     // File handler
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
+    
     const handleDescriptionFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
