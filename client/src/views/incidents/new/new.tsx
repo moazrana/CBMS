@@ -1639,7 +1639,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                         <div className='meeting-input-div'>
                                             <DateInput
                                                 name={`meeting-date-${idx}`}
-                                                value={meeting.date ? meeting.date.toISOString().split('T')[0] : ''}
+                                                value={meeting.date ? (typeof meeting.date === 'string' ? meeting.date.split('T')[0] : meeting.date.toISOString().split('T')[0]) : ''}
                                                 onChange={e => {
                                                     const updated = [...meetings];
                                                     updated[idx] = { ...updated[idx], date: e.target.value ? new Date(e.target.value) : undefined };

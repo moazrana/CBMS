@@ -196,4 +196,34 @@ export class IncidentsService {
     const res = await this.incidentModel.findByIdAndDelete(id).exec();
     if (!res) throw new NotFoundException('Incident not found');
   }
+
+  /**
+   * Backfill `number` for incidents that don't have one.
+   * Assigns numbers in ascending createdAt order, starting after the current max number.
+   */
+  async backfillIncidentNumbers(): Promise<{ updated: number; maxNumber: number }> {
+    const maxDoc = await this.incidentModel
+      .findOne({ number: { $exists: true, $ne: null } })
+      .sort({ number: -1 })
+      .select('number')
+      .lean()
+      .exec();
+    const nextNumber = (maxDoc?.number ?? 0) + 1;
+
+    const withoutNumber = await this.incidentModel
+      .find({ $or: [{ number: { $exists: false } }, { number: null }] })
+      .sort({ createdAt: 1 })
+      .select('_id')
+      .lean()
+      .exec();
+
+    let n = nextNumber;
+    for (const doc of withoutNumber) {
+      await this.incidentModel.updateOne({ _id: doc._id }, { $set: { number: n } }).exec();
+      n += 1;
+    }
+
+    const updated = withoutNumber.length;
+    return { updated, maxNumber: n - 1 };
+  }
 } 

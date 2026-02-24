@@ -1,0 +1,208 @@
+.reports-page {
+  &__panel {
+    min-height: 200px;
+  }
+
+  &__incidents {
+    padding: 0;
+  }
+
+  &__incidents-loading,
+  &__incidents-empty {
+    color: var(--secondary-text, #6b7280);
+    padding: 1rem;
+    margin: 0;
+  }
+
+  &__expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: var(--secondary-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: var(--main-text);
+    }
+  }
+
+  &__incidents-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+  }
+
+  &__incidents-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--main-text);
+  }
+
+  &__incidents-th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    background: var(--sidebar-bg, #f1f5f9);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+
+    &--chevron {
+      width: 2.5rem;
+    }
+  }
+
+  &__incidents-td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+
+    &--chevron {
+      width: 2.5rem;
+    }
+  }
+
+  &__incident-row {
+    cursor: pointer;
+    background: var(--input-bg, #fff);
+
+    &:hover {
+      background: var(--border-color);
+    }
+
+    &--expanded {
+      background: var(--border-color);
+    }
+  }
+
+  &__incident-chevron {
+    color: var(--secondary-text);
+    font-size: 0.875rem;
+  }
+
+  &__incident-status {
+    &[data-status='true'] {
+      color: var(--status-open, #22c55e);
+    }
+    &[data-status='false'] {
+      color: var(--secondary-text);
+    }
+  }
+
+  &__incident-bodymap {
+    &-yes {
+      color: var(--status-open, #22c55e);
+    }
+    &-no {
+      color: var(--secondary-text);
+    }
+  }
+
+  &__incident-severity-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  &__incident-detail-row {
+    background: var(--sidebar-bg, #f8fafc);
+  }
+
+  &__incident-detail-cell {
+    padding: 0;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+  }
+
+  &__incident-detail {
+    padding: 1rem 1rem 1rem 2.5rem;
+  }
+
+  &__incident-detail-title {
+    margin: 0 0 0.5rem;
+    // font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--main-text);
+  }
+
+  &__involved-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    counter-reset: involved;
+  }
+
+  &__involved-item {
+    counter-increment: involved;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    min-height: 2.25rem;
+    background: var(--surface-alt, rgba(0, 0, 0, 0.03));
+    border: 1px dotted var(--border-color, rgba(0, 0, 0, 0.08));
+    border-radius: 8px;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    width: 40%;
+
+    &::before {
+      content: counter(involved);
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-right: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--primary-color, #6366f1);
+      background: var(--primary-light, rgba(99, 102, 241, 0.12));
+      border-radius: 50%;
+    }
+
+    &:hover {
+      background: var(--surface-hover, rgba(0, 0, 0, 0.04));
+      border-color: var(--border-hover, rgba(0, 0, 0, 0.12));
+    }
+  }
+
+  &__student-name-btn {
+    flex: 1;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.5rem 0;
+    font: inherit;
+    font-size: 0.9375rem;
+    color: var(--primary-color, #6366f1);
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--primary-hover, #4f46e5);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color, #6366f1);
+      outline-offset: 2px;
+    }
+  }
+
+  &__involved-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--secondary-text);
+  }
+}

@@ -105,7 +105,7 @@ export default function Sidebar() {
           </div>
         </Link>
 
-        <Link to="/classes" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+        <Link to="/reports" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={reports} alt="logo" className='sidebar-icon' />
             Reports

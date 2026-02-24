@@ -25,6 +25,7 @@ import ClassList from './views/class/list';
 import EditClass from './views/class/edit';
 import AllocateStudents from './views/class/allocate';
 import Engagement from './views/engagement';
+import Reports from './views/reports';
 import TestPage from './views/test';
 
 function App() {
@@ -64,6 +65,7 @@ function App() {
               <Route path="/classes/edit/:id" element={<EditClass/>}/>
               <Route path="/classes/:id/allocate" element={<AllocateStudents/>}/>
               <Route path="/engagement" element={<Engagement/>}/>
+              <Route path="/reports" element={<Reports/>}/>
               <Route path="/test" element={<TestPage/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
