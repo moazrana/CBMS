@@ -13,11 +13,7 @@ const SEVERITY_COLOR_NAMES: Record<number, string> = { 1: 'Green', 2: 'Amber', 3
 
 const PAGE_W = 210;
 const MARGIN = 5;
-const BOX_GRAY = [1, 1, 1] as [number, number, number];
 const HEADER_GRAY = [0.88, 0.88, 0.88] as [number, number, number];
-const ATTACH_BG = [0.85, 0.92, 1] as [number, number, number];
-const ATTACH_TEXT = [0.2, 0.4, 0.8] as [number, number, number];
-const FOOTER_GRAY = [0.35, 0.35, 0.35] as [number, number, number];
 const ORG_NAME = 'Achieve Group';
 
 type IncidentForReport = {
@@ -176,10 +172,8 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
 
   const generatePdf = () => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageH = 297;
     let y = MARGIN;
     const lineH = 5;
-    const boxH = 7;
     const colW = (PAGE_W - MARGIN * 2 - 4) / 2;
     const leftX = MARGIN;
     const rightX = MARGIN + colW + 4;
@@ -246,7 +240,6 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
     y = yBoxStart + 3;
 
     // ----- Two-column key-value boxes
-    const labelFont = 9;
     const valueFont = 9;
     const leftPairs: [string, string][] = [
       ['Student', form.studentName || '—'],
