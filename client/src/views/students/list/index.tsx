@@ -1,5 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
@@ -23,13 +25,15 @@ interface Student {
     admissionDate?: string;
     ethnicity?: string;
     photo?: string;
+    location?: string;
   };
-  parents?: Array<unknown>;
-  emergencyContacts?: Array<unknown>;
-  medical?: unknown;
+  parents?: Array<{ mobile?: string; email?: string; homePhone?: string }>;
+  emergencyContacts?: Array<{ mobile?: string; email?: string; dayPhone?: string; eveningPhone?: string }>;
+  medical?: { ehcp?: { hasEHCP?: boolean } };
   behaviour?: unknown;
   createdAt: string;
   updatedAt: string;
+  classSubjects?: string;
 }
 
 const StudentList = () => {
@@ -122,49 +126,80 @@ const StudentList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Format contact: student email/mobile, or first parent/emergency contact
+  const getContact = (s: Student): string => {
+    const p = s.personalInfo;
+    if (p?.mobile?.trim()) return p.mobile.trim();
+    if (p?.email?.trim()) return p.email.trim();
+    const parent = s.parents?.[0];
+    if (parent?.mobile?.trim()) return parent.mobile.trim();
+    if (parent?.email?.trim()) return parent.email.trim();
+    if (parent?.homePhone?.trim()) return parent.homePhone.trim();
+    const ec = s.emergencyContacts?.[0];
+    if (ec?.mobile?.trim()) return ec.mobile.trim();
+    if (ec?.dayPhone?.trim()) return ec.dayPhone.trim();
+    if (ec?.eveningPhone?.trim()) return ec.eveningPhone.trim();
+    if (ec?.email?.trim()) return ec.email.trim();
+    return '—';
+  };
+
   // Format student data for display
   const formattedStudents = students.map((student) => {
     const personalInfo = student.personalInfo || {};
     const firstName = personalInfo.legalFirstName || '';
     const lastName = personalInfo.lastName || '';
     const studentName = `${firstName} ${lastName}`.trim() || 'N/A';
-    const preferredName = personalInfo.preferredName || '--';
     const yearGroup = personalInfo.yearGroup || '--';
-    const form = '--'; // Not in schema yet
-    const adno = personalInfo.adno || '--';
     const sex = personalInfo.sex || '--';
-    const upn = personalInfo.upn || '--';
     const dateOfBirth = personalInfo.dateOfBirth || null;
-    const fsnEligibility = '--'; // Not in schema yet
     const age = calculateAge(personalInfo.dateOfBirth);
-    
+    const subject = (student as Student & { classSubjects?: string }).classSubjects?.trim() || '—';
+    const location = personalInfo.location?.trim() || '—';
+    const contact = getContact(student);
+    const hasEHCP = student.medical?.ehcp?.hasEHCP === true;
+
     return {
       ...student,
       studentName,
-      preferredName,
       yearGroup,
-      form,
-      adno,
       sex,
-      upn,
       dateOfBirth,
-      fsnEligibility,
       age,
+      subject,
+      location,
+      contact,
+      hasEHCP,
       id: student._id,
     };
   });
 
   const columns = [
     { header: 'Student Name', accessor: 'studentName', sortable: true, type: 'string' as const },
-    { header: 'Preferred Name', accessor: 'preferredName', sortable: true, type: 'string' as const },
     { header: 'Year Group', accessor: 'yearGroup', sortable: true, type: 'string' as const },
-    { header: 'Form', accessor: 'form', sortable: true, type: 'string' as const },
-    { header: 'ADNO', accessor: 'adno', sortable: true, type: 'string' as const },
     { header: 'Sex', accessor: 'sex', sortable: true, type: 'string' as const },
-    { header: 'UPN', accessor: 'upn', sortable: true, type: 'string' as const },
     { header: 'Date of Birth', accessor: 'dateOfBirth', sortable: true, type: 'date' as const },
-    { header: 'FSN Eligibility', accessor: 'fsnEligibility', sortable: true, type: 'string' as const },
     { header: 'Age', accessor: 'age', sortable: true, type: 'string' as const },
+    { header: 'Subject', accessor: 'subject', sortable: false, type: 'string' as const },
+    { header: 'Location', accessor: 'location', sortable: true, type: 'string' as const },
+    { header: 'Contact', accessor: 'contact', sortable: false, type: 'string' as const },
+    {
+      header: 'EHCP',
+      accessor: 'hasEHCP',
+      sortable: false,
+      type: 'template' as const,
+      template: (row: Record<string, unknown>) => {
+        const hasEHCP = row.hasEHCP === true;
+        return (
+          <span title={hasEHCP ? 'Has EHCP' : 'No EHCP'} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            {hasEHCP ? (
+              <FontAwesomeIcon icon={faCheck} style={{ color: '#22c55e' }} />
+            ) : (
+              <FontAwesomeIcon icon={faTimes} style={{ color: '#ef4444' }} />
+            )}
+          </span>
+        );
+      },
+    },
   ];
 
   return (
@@ -180,7 +215,6 @@ const StudentList = () => {
             onSearch={handleSearch}
             PerPage={setPerPage}
             onEdit={handleEdit}
-            onView={handleView}
             onAdd={onAdd}
             addPermission='create_student'
           />

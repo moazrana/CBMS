@@ -209,33 +209,58 @@ export class StudentsService {
 
   async findAll(sort: string = 'createdAt', order: string = 'DESC', search: string = '', page: number = 1, perPage: number = 10): Promise<StudentDocument[]> {
     const sortOrder = order === 'DESC' ? -1 : 1;
-    const query = this.studentModel.find({ deletedAt: null });
-    
+    const match: Record<string, unknown> = { deletedAt: null };
     if (search) {
-      query.where({
-        $or: [
-          { 'personalInfo.legalFirstName': { $regex: search, $options: 'i' } },
-          { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
-          { 'personalInfo.preferredName': { $regex: search, $options: 'i' } },
-          { 'personalInfo.adno': { $regex: search, $options: 'i' } },
-          { 'personalInfo.upn': { $regex: search, $options: 'i' } },
-        ],
-      });
+      match.$or = [
+        { 'personalInfo.legalFirstName': { $regex: search, $options: 'i' } },
+        { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
+        { 'personalInfo.preferredName': { $regex: search, $options: 'i' } },
+        { 'personalInfo.adno': { $regex: search, $options: 'i' } },
+        { 'personalInfo.upn': { $regex: search, $options: 'i' } },
+      ];
     }
-    
-    // Handle nested field sorting
-    let sortField: any = { [sort]: sortOrder };
-    if (sort === 'createdAt' || sort === 'updatedAt') {
-      sortField = { [sort]: sortOrder };
-    } else if (sort.startsWith('personalInfo.')) {
-      sortField = { [sort]: sortOrder };
-    }
-    
-    return query
-      .sort(sortField)
-      .skip((page - 1) * perPage)
-      .limit(perPage)
-      .lean();
+    const sortField: Record<string, 1 | -1> =
+      sort === 'createdAt' || sort === 'updatedAt' || sort.startsWith('personalInfo.')
+        ? { [sort]: sortOrder as 1 | -1 }
+        : { [sort]: sortOrder as 1 | -1 };
+
+    const pipeline = [
+      { $match: match },
+      { $sort: sortField },
+      { $skip: (page - 1) * perPage },
+      { $limit: perPage },
+      {
+        $lookup: {
+          from: 'classes',
+          localField: '_id',
+          foreignField: 'students',
+          as: 'enrolledClasses',
+        },
+      },
+      {
+        $addFields: {
+          classSubjects: {
+            $reduce: {
+              input: '$enrolledClasses',
+              initialValue: '',
+              in: {
+                $concat: [
+                  '$$value',
+                  { $cond: [{ $eq: ['$$value', ''] }, '', ', '] },
+                  { $ifNull: ['$$this.subject', ''] },
+                ],
+              },
+            },
+          },
+        },
+      },
+      { $project: { enrolledClasses: 0 } },
+    ];
+
+    const result = await this.studentModel
+      .aggregate(pipeline as Parameters<Model<StudentDocument>['aggregate']>[0])
+      .exec();
+    return result as StudentDocument[];
   }
 
   async findOne(id: string): Promise<StudentDocument> {

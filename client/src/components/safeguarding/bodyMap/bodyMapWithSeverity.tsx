@@ -109,7 +109,8 @@ const BodyMapWithSeverity: React.FC<BodyMapWithSeverityProps> = ({
 
   return (
     <div className="body-map-with-severity">
-      <div className="body-map-with-severity__map" style={{ position: 'relative', width, height }}>
+      <div className="body-map-with-severity__map-outer">
+        <div className="body-map-with-severity__map" style={{ position: 'relative', width, height }}>
         {regions.map((region) => {
           const filter = getFilter(region.id);
           return (
@@ -129,6 +130,7 @@ const BodyMapWithSeverity: React.FC<BodyMapWithSeverityProps> = ({
             />
           );
         })}
+        </div>
       </div>
       {activeRegionId && (
         <div className="body-map-with-severity__dropdown-wrap" ref={dropdownRef}>

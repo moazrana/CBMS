@@ -51,6 +51,15 @@
         outline: none;
         border-color: var(--primary-color, #6366f1);
       }
+
+      &:disabled,
+      &[readonly] {
+        background: var(--surface-alt, #515253);
+        color: var(--secondary-text, #6b7280);
+        cursor: not-allowed;
+        pointer-events: none;
+        opacity: 0.9;
+      }
     }
 
     textarea {

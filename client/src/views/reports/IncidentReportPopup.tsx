@@ -12,7 +12,9 @@ const SEVERITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'Hig
 const SEVERITY_COLOR_NAMES: Record<number, string> = { 1: 'Green', 2: 'Amber', 3: 'Red' };
 
 const PAGE_W = 210;
+const PAGE_H = 297;
 const MARGIN = 5;
+const MIN_SPACE_FOR_ACTION = 35;
 const HEADER_GRAY = [0.88, 0.88, 0.88] as [number, number, number];
 const ORG_NAME = 'Achieve Group';
 
@@ -34,12 +36,15 @@ type IncidentForReport = {
   staffList?: Array<{ name?: string; profile?: { firstName?: string; lastName?: string } }>;
 };
 
+export type ReportType = 'incident' | 'safeguarding';
+
 export type IncidentReportPopupProps = {
   isOpen: boolean;
   onClose: () => void;
   incident: IncidentForReport | null;
   studentName: string;
   studentId?: string;
+  reportType?: ReportType;
 };
 
 function formatDate(d: string | undefined): string {
@@ -63,18 +68,371 @@ function formatStaff(staff: IncidentForReport['staff'], staffList?: IncidentForR
   return '';
 }
 
-function formatParentGuardian(parents: Parent[] | undefined): { name: string; notes: string } {
+export function formatParentGuardian(parents: Parent[] | undefined): { name: string; notes: string } {
   if (!parents?.length) return { name: '', notes: '' };
   const names = parents.map((p) => [p.firstName, p.lastName].filter(Boolean).join(' ').trim() + (p.relationship ? ` (${p.relationship})` : '')).filter(Boolean);
   const notes = parents.map((p) => [p.mobile && `Mobile: ${p.mobile}`, p.homePhone && `Home: ${p.homePhone}`, p.workPhone && `Work: ${p.workPhone}`, p.email && `Email: ${p.email}`, p.notes].filter(Boolean).join('; ')).filter(Boolean).join('\n');
   return { name: names.join(', ') || '—', notes: notes || '—' };
 }
 
-function formatExternalContact(contacts: EmergencyContact[] | undefined): { name: string; notes: string } {
+export function formatExternalContact(contacts: EmergencyContact[] | undefined): { name: string; notes: string } {
   if (!contacts?.length) return { name: '', notes: '' };
   const names = contacts.map((c) => (c.name || '—') + (c.relationship ? ` (${c.relationship})` : ''));
   const notes = contacts.map((c) => [c.mobile && `Mobile: ${c.mobile}`, c.dayPhone && `Day: ${c.dayPhone}`, c.eveningPhone && `Evening: ${c.eveningPhone}`, c.email && `Email: ${c.email}`, c.notes].filter(Boolean).join('; ')).filter(Boolean).join('\n');
   return { name: names.join(', ') || '—', notes: notes || '—' };
+}
+
+export type IncidentReportFormState = {
+  studentName: string;
+  date: string;
+  period: string;
+  staff: string;
+  location: string;
+  status: string;
+  description: string;
+  dayBookId: string;
+  severity: string;
+  directedToward: string;
+  behaviour: string;
+  subject: string;
+  restrainDetails: string;
+  interventionEffective: string;
+  resolutionConsequences: string;
+  bestInterestStudent: string;
+  studentReflection: string;
+  actionDetails: string;
+  parentGuardianName: string;
+  parentGuardianNotes: string;
+  externalContactName: string;
+  externalContactNotes: string;
+};
+
+export type IncidentReportContactOverrides = Partial<Pick<IncidentReportFormState, 'parentGuardianName' | 'parentGuardianNotes' | 'externalContactName' | 'externalContactNotes'>>;
+
+export function buildFormFromIncident(
+  incident: IncidentForReport | null,
+  studentName: string,
+  contactOverrides?: IncidentReportContactOverrides
+): IncidentReportFormState {
+  const defaults = {
+    parentGuardianName: '',
+    parentGuardianNotes: '',
+    externalContactName: '',
+    externalContactNotes: '',
+  };
+  if (!incident) {
+    return {
+      studentName,
+      date: '', period: '', staff: '', location: '', status: 'Open', description: '', dayBookId: '',
+      severity: 'Low', directedToward: '', behaviour: '', subject: '',
+      restrainDetails: '', interventionEffective: '', resolutionConsequences: '', bestInterestStudent: '', studentReflection: '', actionDetails: '',
+      ...defaults,
+      ...contactOverrides,
+    };
+  }
+  const severity = incident.commentary?.severity ?? 1;
+  const conclusion = (incident.conclusion ?? []).filter(Boolean).join('\n');
+  const actionDesc = incident.actionDescription ?? '';
+  return {
+    studentName,
+    date: formatDate(incident.dateAndTime),
+    period: incident.period?.name ?? '',
+    staff: formatStaff(incident.staff, incident.staffList),
+    location: incident.location ?? '',
+    status: incident.status ? 'Open' : 'Closed',
+    description: incident.description ?? '',
+    dayBookId: String(incident.number ?? ''),
+    severity: SEVERITY_COLOR_NAMES[severity] ?? SEVERITY_LABELS[severity] ?? 'Low',
+    directedToward: incident.commentary?.direction?.trim() || (Array.isArray(incident.directedToward) && incident.directedToward.length ? incident.directedToward.join(', ') : '') || '',
+    behaviour: incident.commentary?.behavior ?? '',
+    subject: '',
+    restrainDetails: incident.restrainDescription ?? '',
+    interventionEffective: '',
+    resolutionConsequences: conclusion || actionDesc,
+    bestInterestStudent: '',
+    studentReflection: '',
+    actionDetails: (incident.action ?? []).concat(actionDesc).filter(Boolean).join(', ') || '',
+    ...defaults,
+    ...contactOverrides,
+  };
+}
+
+function doGenerateIncidentReportPdf(
+  incident: IncidentForReport | null,
+  form: IncidentReportFormState,
+  reportType: ReportType = 'incident'
+): void {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = MARGIN;
+  const lineH = 5;
+  const valueFont = 9;
+  const colW = (PAGE_W - MARGIN * 2 - 4) / 2;
+  const leftX = MARGIN;
+  const rightX = MARGIN + colW + 4;
+  const logoDataUrl = logo;
+  const printDate = new Date().toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const reportTitle = reportType === 'safeguarding' ? 'Safeguarding' : 'Incident';
+
+  doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  doc.text(printDate, leftX, y);
+  doc.text('Slip Print', PAGE_W - MARGIN, y, { align: 'right' });
+  y += 8;
+
+  if (typeof logoDataUrl === 'string' && logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', leftX, y, 12, 12);
+  }
+  doc.setFontSize(18);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text(reportTitle, leftX, y + 20);
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'normal');
+  doc.text(ORG_NAME, PAGE_W - MARGIN, y + 20, { align: 'right' });
+  y += 30;
+
+  const boxPadding = 4;
+  const boxWidth = PAGE_W - MARGIN * 2;
+  const drawLabelValueBox = (x: number, label: string, value: string, width: number) => {
+    const labelPart = `${label}: `;
+    doc.setFontSize(valueFont);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('times new roman', 'bold');
+    doc.text(labelPart, x, y + 4);
+    const labelWidth = doc.getTextWidth(labelPart);
+    doc.setFont('times new roman', 'normal');
+    const valueStr = value || '—';
+    const valueLines = doc.splitTextToSize(valueStr, width - labelWidth);
+    valueLines.forEach((line: string, i: number) => {
+      doc.text(line, i === 0 ? x + labelWidth : x, y + 4 + i * lineH);
+    });
+    y += 1 + valueLines.length * lineH;
+  };
+
+  const yBoxStart = y;
+  const slipText = `Slip (${form.dayBookId || '—'})`;
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const slipTextWidth = doc.getTextWidth(slipText);
+  const slipGap = 4;
+  doc.text(slipText, leftX + boxPadding, yBoxStart + 1);
+  y = yBoxStart + 3;
+
+  const leftPairs: [string, string][] = [
+    ['Student', form.studentName || '—'],
+    ['Period', form.period || '—'],
+    ['Subject', form.subject || '—'],
+    ['Status', form.status || '—'],
+    ['Description', form.description || '—'],
+    ['Day Book Id', form.dayBookId || '—'],
+  ];
+  const rightPairs: [string, string][] = [
+    ['Date', form.date || '—'],
+    ['Staff', form.staff || '—'],
+    ['Location', form.location || '—'],
+  ];
+  const yStartRow = y;
+  leftPairs.forEach(([label, value]) => drawLabelValueBox(leftX + boxPadding, label, value, colW - boxPadding));
+  const yAfterLeft = y;
+  y = yStartRow;
+  rightPairs.forEach(([label, value]) => drawLabelValueBox(rightX + 15, label, value, colW - boxPadding));
+  y = Math.max(y, yAfterLeft);
+  const yBottom = y;
+
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yBoxStart, leftX + boxPadding, yBoxStart);
+  doc.line(leftX + boxPadding + slipTextWidth + slipGap, yBoxStart, leftX + boxWidth, yBoxStart);
+  doc.line(leftX, yBoxStart, leftX, yBottom);
+  doc.line(leftX + boxWidth, yBoxStart, leftX + boxWidth, yBottom);
+  doc.line(leftX, yBottom, leftX + boxWidth, yBottom);
+  y += 4;
+
+  const severityGap = 4;
+  y += 2;
+  const ySeverityStart = y;
+  const severityLabel = 'Level of Severity';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const severityLabelWidth = doc.getTextWidth(severityLabel);
+  doc.text(severityLabel, leftX + boxPadding, ySeverityStart + 1);
+  y = ySeverityStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setTextColor(0, 0, 0);
+  doc.text(form.severity || '—', leftX + boxPadding, y + 4);
+  y += lineH + boxPadding;
+  const ySeverityBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, ySeverityStart, leftX + boxPadding, ySeverityStart);
+  doc.line(leftX + boxPadding + severityLabelWidth + severityGap, ySeverityStart, leftX + boxWidth, ySeverityStart);
+  doc.line(leftX, ySeverityStart, leftX, ySeverityBottom);
+  doc.line(leftX + boxWidth, ySeverityStart, leftX + boxWidth, ySeverityBottom);
+  doc.line(leftX, ySeverityBottom, leftX + boxWidth, ySeverityBottom);
+  y += 4;
+
+  y += 4;
+  const yDirectedStart = y;
+  const directedLabel = reportType === 'safeguarding' ? 'Safeguarding Directed Towards' : 'Incident Directed Towards';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const directedLabelWidth = doc.getTextWidth(directedLabel);
+  doc.text(directedLabel, leftX + boxPadding, yDirectedStart + 1);
+  y = yDirectedStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setFont('times new roman', 'normal');
+  doc.setTextColor(0, 0, 0);
+  doc.text(form.directedToward || '—', leftX + boxPadding, y + 4);
+  y += lineH + boxPadding;
+  const yDirectedBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yDirectedStart, leftX + boxPadding, yDirectedStart);
+  doc.line(leftX + boxPadding + directedLabelWidth + severityGap, yDirectedStart, leftX + boxWidth, yDirectedStart);
+  doc.line(leftX, yDirectedStart, leftX, yDirectedBottom);
+  doc.line(leftX + boxWidth, yDirectedStart, leftX + boxWidth, yDirectedBottom);
+  doc.line(leftX, yDirectedBottom, leftX + boxWidth, yDirectedBottom);
+  y += 4;
+
+  y += 4;
+  const yRestraintStart = y;
+  const restraintLabel = 'Restraint Details';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const restraintLabelWidth = doc.getTextWidth(restraintLabel);
+  doc.text(restraintLabel, leftX + boxPadding, yRestraintStart + 1);
+  y = yRestraintStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setFont('times new roman', 'normal');
+  doc.setTextColor(0, 0, 0);
+  const restraintParts = [
+    form.restrainDetails && `Restraint details: ${form.restrainDetails}`,
+    form.interventionEffective && `How effective was the physical intervention? ${form.interventionEffective}`,
+    form.resolutionConsequences && `How was the incident resolved and what were the consequences? ${form.resolutionConsequences}`,
+    form.bestInterestStudent && `How was the physical intervention in the best interest of the student? ${form.bestInterestStudent}`,
+    form.studentReflection && `Student reflection: ${form.studentReflection}`,
+  ].filter(Boolean);
+  const restraintContent = restraintParts.length ? restraintParts.join('\n\n') : '—';
+  const restraintLines = doc.splitTextToSize(restraintContent, boxWidth - boxPadding * 2);
+  restraintLines.forEach((line: string, i: number) => {
+    doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
+  });
+  y += 4 + restraintLines.length * lineH + boxPadding;
+  const yRestraintBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yRestraintStart, leftX + boxPadding, yRestraintStart);
+  doc.line(leftX + boxPadding + restraintLabelWidth + severityGap, yRestraintStart, leftX + boxWidth, yRestraintStart);
+  doc.line(leftX, yRestraintStart, leftX, yRestraintBottom);
+  doc.line(leftX + boxWidth, yRestraintStart, leftX + boxWidth, yRestraintBottom);
+  doc.line(leftX, yRestraintBottom, leftX + boxWidth, yRestraintBottom);
+  y += 4;
+
+  y += 4;
+  const yParentStart = y;
+  const parentLabel = 'Parent/Guardian Contact';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const parentLabelWidth = doc.getTextWidth(parentLabel);
+  doc.text(parentLabel, leftX + boxPadding, yParentStart + 1);
+  y = yParentStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setFont('times new roman', 'normal');
+  doc.setTextColor(0, 0, 0);
+  const parentParts = [
+    form.parentGuardianName && `Parent/guardian name: ${form.parentGuardianName}`,
+    form.parentGuardianNotes && `Parent/guardian contact notes: ${form.parentGuardianNotes}`,
+  ].filter(Boolean);
+  const parentContent = parentParts.length ? parentParts.join('\n\n') : '—';
+  const parentLines = doc.splitTextToSize(parentContent, boxWidth - boxPadding * 2);
+  parentLines.forEach((line: string, i: number) => {
+    doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
+  });
+  y += 4 + parentLines.length * lineH + boxPadding;
+  const yParentBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yParentStart, leftX + boxPadding, yParentStart);
+  doc.line(leftX + boxPadding + parentLabelWidth + severityGap, yParentStart, leftX + boxWidth, yParentStart);
+  doc.line(leftX, yParentStart, leftX, yParentBottom);
+  doc.line(leftX + boxWidth, yParentStart, leftX + boxWidth, yParentBottom);
+  doc.line(leftX, yParentBottom, leftX + boxWidth, yParentBottom);
+  y += 4;
+
+  y += 4;
+  const yExternalStart = y;
+  const externalLabel = 'External Contact';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const externalLabelWidth = doc.getTextWidth(externalLabel);
+  doc.text(externalLabel, leftX + boxPadding, yExternalStart + 1);
+  y = yExternalStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setFont('times new roman', 'normal');
+  doc.setTextColor(0, 0, 0);
+  const externalParts = [
+    form.externalContactName && `Contact name: ${form.externalContactName}`,
+    form.externalContactNotes && `External contact notes: ${form.externalContactNotes}`,
+  ].filter(Boolean);
+  const externalContent = externalParts.length ? externalParts.join('\n\n') : '—';
+  const externalLines = doc.splitTextToSize(externalContent, boxWidth - boxPadding * 2);
+  externalLines.forEach((line: string, i: number) => {
+    doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
+  });
+  y += 4 + externalLines.length * lineH + boxPadding;
+  const yExternalBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yExternalStart, leftX + boxPadding, yExternalStart);
+  doc.line(leftX + boxPadding + externalLabelWidth + severityGap, yExternalStart, leftX + boxWidth, yExternalStart);
+  doc.line(leftX, yExternalStart, leftX, yExternalBottom);
+  doc.line(leftX + boxWidth, yExternalStart, leftX + boxWidth, yExternalBottom);
+  doc.line(leftX, yExternalBottom, leftX + boxWidth, yExternalBottom);
+  y += 4;
+
+  y += 4;
+  if (y > PAGE_H - MARGIN - MIN_SPACE_FOR_ACTION) {
+    doc.addPage();
+    y = MARGIN;
+  }
+  const yActionStart = y;
+  const actionLabel = 'Action Details';
+  doc.setFontSize(10);
+  doc.setFont('times new roman', 'bold');
+  doc.setTextColor(60, 60, 60);
+  const actionLabelWidth = doc.getTextWidth(actionLabel);
+  doc.text(actionLabel, leftX + boxPadding, yActionStart + 1);
+  y = yActionStart + 6;
+  doc.setFontSize(valueFont);
+  doc.setFont('times new roman', 'normal');
+  doc.setTextColor(0, 0, 0);
+  const actionContent = form.actionDetails || '—';
+  const actionLines = doc.splitTextToSize(actionContent, boxWidth - boxPadding * 2);
+  actionLines.forEach((line: string, i: number) => {
+    doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
+  });
+  y += 4 + actionLines.length * lineH + boxPadding;
+  const yActionBottom = y;
+  doc.setDrawColor(180, 180, 180);
+  doc.line(leftX, yActionStart, leftX + boxPadding, yActionStart);
+  doc.line(leftX + boxPadding + actionLabelWidth + severityGap, yActionStart, leftX + boxWidth, yActionStart);
+  doc.line(leftX, yActionStart, leftX, yActionBottom);
+  doc.line(leftX + boxWidth, yActionStart, leftX + boxWidth, yActionBottom);
+  doc.line(leftX, yActionBottom, leftX + boxWidth, yActionBottom);
+
+  const prefix = reportType === 'safeguarding' ? 'safeguarding-report' : 'incident-report';
+  const filename = `${prefix}-${(form.studentName || reportType).replace(/\s+/g, '-').replace(/,/g, '')}-${form.dayBookId || 'report'}.pdf`;
+  doc.save(filename);
+}
+
+export function downloadIncidentReportPdf(
+  incident: IncidentForReport | null,
+  allStudentNames: string,
+  contactOverrides?: IncidentReportContactOverrides,
+  reportType: ReportType = 'incident'
+): void {
+  const form = buildFormFromIncident(incident, allStudentNames, contactOverrides);
+  doGenerateIncidentReportPdf(incident, form, reportType);
 }
 
 export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
@@ -83,6 +441,7 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
   incident,
   studentName,
   studentId,
+  reportType = 'incident',
 }) => {
   const { executeRequest } = useApiRequest();
   const [form, setForm] = useState({
@@ -171,375 +530,7 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
   }, [isOpen, studentId]);
 
   const generatePdf = () => {
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    let y = MARGIN;
-    const lineH = 5;
-    const colW = (PAGE_W - MARGIN * 2 - 4) / 2;
-    const leftX = MARGIN;
-    const rightX = MARGIN + colW + 4;
-    form.dayBookId=incident?.number?.toString() ?? '';
-    const logoDataUrl = logo;
-
-    const printDate = new Date().toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-    // ----- Header: date left, "Slip Print" right
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    doc.text(printDate, leftX, y);
-    doc.text('Slip Print', PAGE_W - MARGIN, y, { align: 'right' });
-    y += 8;
-
-    // ----- Logo area (simple hexagon placeholder) + Title "Incident" + "Achieve Group"
-    doc.setFillColor(...HEADER_GRAY);
-    // Draw the logo in the PDF at the leftX position.
-    // Make sure to have the logo loaded as a dataUrl image somewhere in scope, e.g., as `logoDataUrl`.
-    // Place the logo as a 12x12 mm image (same as the hexagon placeholder was).
-    if (typeof logoDataUrl === 'string' && logoDataUrl) {
-      doc.addImage(logoDataUrl, 'PNG', leftX, y, 12, 12);
-    }
-    // doc.roundedRect(leftX, y, 12, 12, 1, 1, 'F');
-    doc.setFontSize(18);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Incident', leftX , y + 20);
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'normal');
-    doc.text(ORG_NAME, PAGE_W - MARGIN, y + 20, { align: 'right' });
-    y += 30;
-    
-    const drawLabelValueBox = (x: number, label: string, value: string, width: number) => {
-      const labelPart = `${label}: `;
-      doc.setFontSize(valueFont);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('times new roman', 'bold');
-      doc.text(labelPart, x, y + 4);
-      const labelWidth = doc.getTextWidth(labelPart);
-      doc.setFont('times new roman', 'normal');
-      const valueStr = value || '—';
-      const valueLines = doc.splitTextToSize(valueStr, width - labelWidth);
-      valueLines.forEach((line: string, i: number) => {
-        doc.text(line, i === 0 ? x + labelWidth : x, y + 4 + i * lineH);
-      });
-      y += 1 + valueLines.length * lineH;
-    };
-
-    // ----- Border with "Slip (5)" in the top border (line interrupted by text)
-    const yBoxStart = y;
-    const boxPadding = 4;
-    const boxWidth = PAGE_W - MARGIN * 2;
-    const slipText = `Slip (${form.dayBookId || '—'})`;
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const slipTextWidth = doc.getTextWidth(slipText);
-    const slipGap = 4;
-    // Draw "Slip (5)" aligned with top border (slightly above the line so it breaks the border)
-    doc.text(slipText, leftX + boxPadding, yBoxStart+1 );
-
-    // Content starts below the top border
-    y = yBoxStart + 3;
-
-    // ----- Two-column key-value boxes
-    const valueFont = 9;
-    const leftPairs: [string, string][] = [
-      ['Student', form.studentName || '—'],
-      ['Period', form.period || '—'],
-      ['Subject', form.subject || '—'],
-      ['Status', form.status || '—'],
-      ['Description', form.description || '—'],
-      ['Day Book Id', form.dayBookId || '—'],
-    ];
-    const rightPairs: [string, string][] = [
-      ['Date', form.date || '—'],
-      ['Staff', form.staff || '—'],
-      ['Location', form.location || '—'],
-    ];
-
-    const yStartRow = y;
-    leftPairs.forEach(([label, value]) => drawLabelValueBox(leftX + boxPadding, label, value, colW - boxPadding));
-    const yAfterLeft = y;
-    y = yStartRow;
-    rightPairs.forEach(([label, value]) => drawLabelValueBox(rightX+15, label, value, colW - boxPadding));
-    y = Math.max(y, yAfterLeft);
-
-    const yBottom = y;
-
-    // ----- Border: top in two segments (gap where "Slip (5)" sits), then left, bottom, right
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yBoxStart, leftX + boxPadding, yBoxStart);
-    doc.line(leftX + boxPadding + slipTextWidth + slipGap, yBoxStart, leftX + boxWidth, yBoxStart);
-    doc.line(leftX, yBoxStart, leftX, yBottom);
-    doc.line(leftX + boxWidth, yBoxStart, leftX + boxWidth, yBottom);
-    doc.line(leftX, yBottom, leftX + boxWidth, yBottom);
-
-    y += 4;
-
-    // ----- Level of Severity box (label in top border, like Slip)
-    y += 2;
-    const ySeverityStart = y;
-    const severityLabel = 'Level of Severity';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const severityLabelWidth = doc.getTextWidth(severityLabel);
-    const severityGap = 4;
-    doc.text(severityLabel, leftX + boxPadding, ySeverityStart +1);
-
-    y = ySeverityStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setTextColor(0, 0, 0);
-    doc.text(form.severity || '—', leftX + boxPadding, y + 4);
-    y += lineH + boxPadding;
-
-    const ySeverityBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, ySeverityStart, leftX + boxPadding, ySeverityStart);
-    doc.line(leftX + boxPadding + severityLabelWidth + severityGap, ySeverityStart, leftX + boxWidth, ySeverityStart);
-    doc.line(leftX, ySeverityStart, leftX, ySeverityBottom);
-    doc.line(leftX + boxWidth, ySeverityStart, leftX + boxWidth, ySeverityBottom);
-    doc.line(leftX, ySeverityBottom, leftX + boxWidth, ySeverityBottom);
-
-    y += 4;
-
-    // ----- Incident Directed Towards box (label in top border, like Level of Severity)
-    y += 4;
-    const yDirectedStart = y;
-    const directedLabel = 'Incident Directed Towards';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const directedLabelWidth = doc.getTextWidth(directedLabel);
-    doc.text(directedLabel, leftX + boxPadding, yDirectedStart + 1);
-
-    y = yDirectedStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setFont('times new roman', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(form.directedToward || '—', leftX + boxPadding, y + 4);
-    y += lineH + boxPadding;
-
-    const yDirectedBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yDirectedStart, leftX + boxPadding, yDirectedStart);
-    doc.line(leftX + boxPadding + directedLabelWidth + severityGap, yDirectedStart, leftX + boxWidth, yDirectedStart);
-    doc.line(leftX, yDirectedStart, leftX, yDirectedBottom);
-    doc.line(leftX + boxWidth, yDirectedStart, leftX + boxWidth, yDirectedBottom);
-    doc.line(leftX, yDirectedBottom, leftX + boxWidth, yDirectedBottom);
-
-    y += 4;
-
-    // ----- Restraint Details box (label in top border, like Level of Severity)
-    y += 4;
-    const yRestraintStart = y;
-    const restraintLabel = 'Restraint Details';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const restraintLabelWidth = doc.getTextWidth(restraintLabel);
-    doc.text(restraintLabel, leftX + boxPadding, yRestraintStart + 1);
-
-    y = yRestraintStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setFont('times new roman', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const restraintParts = [
-      form.restrainDetails && `Restraint details: ${form.restrainDetails}`,
-      form.interventionEffective && `How effective was the physical intervention? ${form.interventionEffective}`,
-      form.resolutionConsequences && `How was the incident resolved and what were the consequences? ${form.resolutionConsequences}`,
-      form.bestInterestStudent && `How was the physical intervention in the best interest of the student? ${form.bestInterestStudent}`,
-      form.studentReflection && `Student reflection: ${form.studentReflection}`,
-    ].filter(Boolean);
-    const restraintContent = restraintParts.length ? restraintParts.join('\n\n') : '—';
-    const restraintLines = doc.splitTextToSize(restraintContent, boxWidth - boxPadding * 2);
-    restraintLines.forEach((line: string, i: number) => {
-      doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
-    });
-    y += 4 + restraintLines.length * lineH + boxPadding;
-
-    const yRestraintBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yRestraintStart, leftX + boxPadding, yRestraintStart);
-    doc.line(leftX + boxPadding + restraintLabelWidth + severityGap, yRestraintStart, leftX + boxWidth, yRestraintStart);
-    doc.line(leftX, yRestraintStart, leftX, yRestraintBottom);
-    doc.line(leftX + boxWidth, yRestraintStart, leftX + boxWidth, yRestraintBottom);
-    doc.line(leftX, yRestraintBottom, leftX + boxWidth, yRestraintBottom);
-
-    y += 4;
-
-    // ----- Parent/Guardian Contact box (label in top border, like Level of Severity)
-    y += 4;
-    const yParentStart = y;
-    const parentLabel = 'Parent/Guardian Contact';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const parentLabelWidth = doc.getTextWidth(parentLabel);
-    doc.text(parentLabel, leftX + boxPadding, yParentStart + 1);
-
-    y = yParentStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setFont('times new roman', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const parentParts = [
-      form.parentGuardianName && `Parent/guardian name: ${form.parentGuardianName}`,
-      form.parentGuardianNotes && `Parent/guardian contact notes: ${form.parentGuardianNotes}`,
-    ].filter(Boolean);
-    const parentContent = parentParts.length ? parentParts.join('\n\n') : '—';
-    const parentLines = doc.splitTextToSize(parentContent, boxWidth - boxPadding * 2);
-    parentLines.forEach((line: string, i: number) => {
-      doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
-    });
-    y += 4 + parentLines.length * lineH + boxPadding;
-
-    const yParentBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yParentStart, leftX + boxPadding, yParentStart);
-    doc.line(leftX + boxPadding + parentLabelWidth + severityGap, yParentStart, leftX + boxWidth, yParentStart);
-    doc.line(leftX, yParentStart, leftX, yParentBottom);
-    doc.line(leftX + boxWidth, yParentStart, leftX + boxWidth, yParentBottom);
-    doc.line(leftX, yParentBottom, leftX + boxWidth, yParentBottom);
-
-    y += 4;
-
-    // ----- External Contact box (label in top border, like Level of Severity)
-    y += 4;
-    const yExternalStart = y;
-    const externalLabel = 'External Contact';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const externalLabelWidth = doc.getTextWidth(externalLabel);
-    doc.text(externalLabel, leftX + boxPadding, yExternalStart + 1);
-
-    y = yExternalStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setFont('times new roman', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const externalParts = [
-      form.externalContactName && `Contact name: ${form.externalContactName}`,
-      form.externalContactNotes && `External contact notes: ${form.externalContactNotes}`,
-    ].filter(Boolean);
-    const externalContent = externalParts.length ? externalParts.join('\n\n') : '—';
-    const externalLines = doc.splitTextToSize(externalContent, boxWidth - boxPadding * 2);
-    externalLines.forEach((line: string, i: number) => {
-      doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
-    });
-    y += 4 + externalLines.length * lineH + boxPadding;
-
-    const yExternalBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yExternalStart, leftX + boxPadding, yExternalStart);
-    doc.line(leftX + boxPadding + externalLabelWidth + severityGap, yExternalStart, leftX + boxWidth, yExternalStart);
-    doc.line(leftX, yExternalStart, leftX, yExternalBottom);
-    doc.line(leftX + boxWidth, yExternalStart, leftX + boxWidth, yExternalBottom);
-    doc.line(leftX, yExternalBottom, leftX + boxWidth, yExternalBottom);
-
-    y += 4;
-
-    // ----- Action Details box (label in top border, like Level of Severity)
-    y += 4;
-    const yActionStart = y;
-    const actionLabel = 'Action Details';
-    doc.setFontSize(10);
-    doc.setFont('times new roman', 'bold');
-    doc.setTextColor(60, 60, 60);
-    const actionLabelWidth = doc.getTextWidth(actionLabel);
-    doc.text(actionLabel, leftX + boxPadding, yActionStart + 1);
-
-    y = yActionStart + 6;
-    doc.setFontSize(valueFont);
-    doc.setFont('times new roman', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const actionContent = form.actionDetails || '—';
-    const actionLines = doc.splitTextToSize(actionContent, boxWidth - boxPadding * 2);
-    actionLines.forEach((line: string, i: number) => {
-      doc.text(line, leftX + boxPadding, y + 4 + i * lineH);
-    });
-    y += 4 + actionLines.length * lineH + boxPadding;
-
-    const yActionBottom = y;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(leftX, yActionStart, leftX + boxPadding, yActionStart);
-    doc.line(leftX + boxPadding + actionLabelWidth + severityGap, yActionStart, leftX + boxWidth, yActionStart);
-    doc.line(leftX, yActionStart, leftX, yActionBottom);
-    doc.line(leftX + boxWidth, yActionStart, leftX + boxWidth, yActionBottom);
-    doc.line(leftX, yActionBottom, leftX + boxWidth, yActionBottom);
-
-    y += 4;
-
-    // // ----- Section helper
-    // const sectionHeader = (title: string) => {
-    //   doc.setFillColor(...HEADER_GRAY);
-    //   doc.rect(leftX, y, PAGE_W - MARGIN * 2, 6, 'F');
-    //   doc.setFontSize(10);
-    //   doc.setFont('helvetica', 'bold');
-    //   doc.setTextColor(0, 0, 0);
-    //   doc.text(title, leftX + 2, y + 4);
-    //   y += 8;
-    // };
-    // const sectionBox = (content: string, opts?: { height?: number }) => {
-    //   const h = opts?.height ?? Math.min(content.split('\n').length * lineH + 4, 25);
-    //   doc.setFillColor(...BOX_GRAY);
-    //   doc.rect(leftX, y, PAGE_W - MARGIN * 2, h, 'F');
-    //   doc.setFontSize(valueFont);
-    //   doc.setTextColor(0, 0, 0);
-    //   const lines = doc.splitTextToSize(content || '—', PAGE_W - MARGIN * 2 - 4);
-    //   lines.slice(0, Math.floor((h - 4) / lineH)).forEach((line: string, i: number) => {
-    //     doc.text(line, leftX + 2, y + 4 + i * lineH);
-    //   });
-    //   y += h + 4;
-    // };
-
-    // sectionHeader('Level of Severity');
-    // sectionBox(form.severity, { height: boxH });
-
-    // sectionHeader('Incident Directed Towards');
-    // sectionBox(form.directedToward || '—', { height: boxH });
-
-    // sectionHeader('Behaviour');
-    // sectionBox(form.behaviour || '—', { height: boxH });
-
-    // sectionHeader('Restraint Details');
-    // const restraintContent = [
-    //   'How effective was the physical intervention?',
-    //   form.interventionEffective || '',
-    //   'How was the incident resolved and what were the consequences?',
-    //   form.resolutionConsequences || '',
-    //   'How was the physical intervention in the best interest of the student?',
-    //   form.bestInterestStudent || '',
-    //   'Student reflection',
-    //   form.studentReflection || '',
-    // ].join('\n');
-    // sectionBox(restraintContent || '—', { height: 32 });
-
-    // sectionHeader('Parent/Guardian Contact');
-    // sectionBox(`Parent/guardian name\n${form.parentGuardianName || ''}\nParent/guardian contact notes\n${form.parentGuardianNotes || ''}`, { height: 22 });
-
-    // sectionHeader('External Contact');
-    // sectionBox(`Contact name\n${form.externalContactName || ''}\nExternal contact notes\n${form.externalContactNotes || ''}`, { height: 22 });
-
-    // sectionHeader('Action Details');
-    // sectionBox(`Action taken and by whom\n${form.actionDetails || '—'}`, { height: 20 });
-
-    // sectionHeader('Attachments');
-    // doc.setFillColor(...ATTACH_BG);
-    // doc.rect(leftX, y, PAGE_W - MARGIN * 2, 12, 'F');
-    // doc.setFontSize(9);
-    // doc.setTextColor(...ATTACH_TEXT);
-    // doc.text('Please attach any relevant supplemental documents relating to this Behavioural Incident, if required.', leftX + 2, y + 7, { maxWidth: PAGE_W - MARGIN * 2 - 4 });
-    // y += 16;
-
-    // // ----- Footer
-    // if (y < pageH - 18) {
-    //   doc.setFillColor(...FOOTER_GRAY);
-    //   doc.rect(0, pageH - 12, PAGE_W, 12, 'F');
-    //   doc.setFontSize(9);
-    //   doc.setTextColor(255, 255, 255);
-    //   doc.text('Page 1 / 1', MARGIN, pageH - 5);
-    // }
-
-    const filename = `incident-report-${(form.studentName || 'student').replace(/\s+/g, '-')}-${form.dayBookId || 'report'}.pdf`;
-    doc.save(filename);
+    doGenerateIncidentReportPdf(incident, form, reportType ?? 'incident');
   };
 
   const handleConfirm = () => {
@@ -554,7 +545,7 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={handleConfirm}
-      title={`Incident Report – ${studentName || 'Student'}`}
+      title={`${reportType === 'safeguarding' ? 'Safeguarding' : 'Incident'} Report – ${studentName || 'Student'}`}
       confirmText="OK (Generate PDF)"
       cancelText="Cancel"
       width="70%"
@@ -568,7 +559,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.studentName}
-              onChange={(e) => setForm((f) => ({ ...f, studentName: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -576,7 +570,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -584,7 +581,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.period}
-              onChange={(e) => setForm((f) => ({ ...f, period: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -592,7 +592,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.staff}
-              onChange={(e) => setForm((f) => ({ ...f, staff: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -600,7 +603,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.location}
-              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -608,7 +614,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -616,8 +625,11 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.subject}
-              onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
               placeholder="e.g. Motor Vehicle"
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -625,15 +637,21 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.dayBookId}
-              onChange={(e) => setForm((f) => ({ ...f, dayBookId: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row incident-report-popup__row--full">
             <label>Description</label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={4}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -641,8 +659,11 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.severity}
-              onChange={(e) => setForm((f) => ({ ...f, severity: e.target.value }))}
               placeholder="e.g. Red, Amber, Green"
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -650,7 +671,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.directedToward}
-              onChange={(e) => setForm((f) => ({ ...f, directedToward: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row">
@@ -658,7 +682,10 @@ export const IncidentReportPopup: React.FC<IncidentReportPopupProps> = ({
             <input
               type="text"
               value={form.behaviour}
-              onChange={(e) => setForm((f) => ({ ...f, behaviour: e.target.value }))}
+              readOnly
+              disabled={true}
+              tabIndex={-1}
+              aria-readonly="true"
             />
           </div>
           <div className="incident-report-popup__row incident-report-popup__row--full">

@@ -43,19 +43,19 @@ export default function Sidebar() {
           <Link to="/incidents" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
             <div className='link'>
               <img src={incidents} alt="logo" className='sidebar-icon' />
-              Incidents
+              Incidents & Safeguarding
             </div>
           </Link>
         </PermissionGuard>
         
-        <PermissionGuard permission="read_safeguarding">
+        {/* <PermissionGuard permission="read_safeguarding">
           <Link to="/safeguarding" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
             <div className='link'>
               <img src={safeguarding} alt="logo" className='sidebar-icon' />
               Safeguarding
             </div>
           </Link>
-        </PermissionGuard>
+        </PermissionGuard> */}
         <PermissionGuard permission="view_attendance">
           <Link to="/attendance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
             <div className='link'>

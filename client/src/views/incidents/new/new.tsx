@@ -1208,31 +1208,35 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                         {bodyMap&&<div className="type-account-body-maps__row">
                             <div className="type-account-body-maps__cell">
                                 <p className="type-account-body-maps__title">Front view</p>
-                                <BodyMapWithSeverity
-                                    view="front"
-                                    markers={bodyMapFrontMarkers}
-                                    activeRegionId={activeBodyMapRegion?.view === 'front' ? activeBodyMapRegion.regionId : null}
-                                    onRegionClick={(regionId) => handleBodyMapRegionClick('front', regionId)}
-                                    onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('front', regionId, severity)}
-                                    descriptionValue={activeBodyMapRegion?.view === 'front' ? (bodyMapDescriptions['front-' + activeBodyMapRegion.regionId] ?? '') : ''}
-                                    onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['front-' + regionId]: value }))}
-                                    width={800}
+                                <div className="type-account-body-maps__map-clip">
+                                    <BodyMapWithSeverity
+                                        view="front"
+                                        markers={bodyMapFrontMarkers}
+                                        activeRegionId={activeBodyMapRegion?.view === 'front' ? activeBodyMapRegion.regionId : null}
+                                        onRegionClick={(regionId) => handleBodyMapRegionClick('front', regionId)}
+                                        onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('front', regionId, severity)}
+                                        descriptionValue={activeBodyMapRegion?.view === 'front' ? (bodyMapDescriptions['front-' + activeBodyMapRegion.regionId] ?? '') : ''}
+                                        onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['front-' + regionId]: value }))}
+width={800}
                                     height={1200}
                                 />
+                                </div>
                             </div>
                             <div className="type-account-body-maps__cell">
                                 <p className="type-account-body-maps__title">Back view</p>
-                                <BodyMapWithSeverity
-                                    view="back"
-                                    markers={bodyMapBackMarkers}
-                                    activeRegionId={activeBodyMapRegion?.view === 'back' ? activeBodyMapRegion.regionId : null}
-                                    onRegionClick={(regionId) => handleBodyMapRegionClick('back', regionId)}
-                                    onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('back', regionId, severity)}
-                                    descriptionValue={activeBodyMapRegion?.view === 'back' ? (bodyMapDescriptions['back-' + activeBodyMapRegion.regionId] ?? '') : ''}
-                                    onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['back-' + regionId]: value }))}
-                                    width={800}
-                                    height={1200}
-                                />
+                                <div className="type-account-body-maps__map-clip">
+                                    <BodyMapWithSeverity
+                                        view="back"
+                                        markers={bodyMapBackMarkers}
+                                        activeRegionId={activeBodyMapRegion?.view === 'back' ? activeBodyMapRegion.regionId : null}
+                                        onRegionClick={(regionId) => handleBodyMapRegionClick('back', regionId)}
+                                        onSeveritySelect={(regionId, severity) => handleBodyMapSeveritySelect('back', regionId, severity)}
+                                        descriptionValue={activeBodyMapRegion?.view === 'back' ? (bodyMapDescriptions['back-' + activeBodyMapRegion.regionId] ?? '') : ''}
+                                        onDescriptionChange={(regionId, value) => setBodyMapDescriptions((prev) => ({ ...prev, ['back-' + regionId]: value }))}
+                                        width={800}
+                                        height={1200}
+                                    />
+                                </div>
                             </div>
                         </div>}
                         
@@ -1565,17 +1569,6 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 </label>
                             </div>
                         </div>
-                        {exclusionChecks.includes('Others') && (
-                            <div className="exclusion-others-description-wrap" style={{ marginTop: '1rem' }}>
-                                <TextField
-                                    label="Description (Others)"
-                                    name="exclusionOthersDescription"
-                                    value={exclusionOthersDescription}
-                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExclusionOthersDescription(e.target.value)}
-                                    placeholder="Describe the other exclusion..."
-                                />
-                            </div>
-                        )}
                         <div className="action-description-wrap" style={{ marginTop: '1.5rem' }}>
                             <TextField
                                 label="Description"

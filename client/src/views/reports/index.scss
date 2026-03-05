@@ -29,6 +29,22 @@
     }
   }
 
+  &__download-row-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.35rem;
+    color: var(--secondary-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+
+    &:hover {
+      color: var(--primary-color, #6366f1);
+    }
+  }
+
   &__incidents-table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border-color);
@@ -122,9 +138,19 @@
     padding: 1rem 1rem 1rem 2.5rem;
   }
 
+  &__involved-columns {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  &__involved-column {
+    flex: 1;
+    min-width: 0;
+  }
+
   &__incident-detail-title {
     margin: 0 0 0.5rem;
-    // font-size: 0.875rem;
     font-weight: 600;
     color: var(--main-text);
   }
@@ -137,6 +163,14 @@
     flex-direction: column;
     gap: 0.5rem;
     counter-reset: involved;
+
+    &--staff {
+      counter-reset: staff;
+    }
+
+    &--others {
+      counter-reset: others;
+    }
   }
 
   &__involved-item {
@@ -152,7 +186,7 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
     transition: background-color 0.15s ease, border-color 0.15s ease;
-    width: 40%;
+    width: 100%;
 
     &::before {
       content: counter(involved);
@@ -168,6 +202,22 @@
       color: var(--primary-color, #6366f1);
       background: var(--primary-light, rgba(99, 102, 241, 0.12));
       border-radius: 50%;
+    }
+
+    .reports-page__involved-list--staff & {
+      counter-increment: staff;
+
+      &::before {
+        content: counter(staff);
+      }
+    }
+
+    .reports-page__involved-list--others & {
+      counter-increment: others;
+
+      &::before {
+        content: counter(others);
+      }
     }
 
     &:hover {

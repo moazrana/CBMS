@@ -5,6 +5,13 @@
   gap: 1rem;
 }
 
+.body-map-with-severity__map-outer {
+  flex-shrink: 0;
+  height: 820px;
+  width: 800px;
+  overflow: hidden;
+}
+
 .body-map-with-severity__map {
   flex-shrink: 0;
 }
@@ -20,7 +27,7 @@
   border-radius: 8px;
   border: 1px solid #eee;
   width: 100%;
-  // max-width: 320px;
+  max-width: 610px;
 }
 
 .body-map-with-severity__description-wrap {
