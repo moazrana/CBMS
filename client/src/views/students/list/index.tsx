@@ -93,18 +93,6 @@ const StudentList = () => {
     navigate(`/students/edit/${student._id}`);
   };
 
-  const handleView = async (row: Record<string, unknown>) => {
-    const student = row as unknown as Student;
-    try {
-      const response = await executeRequest('get', `/students/${student._id}`);
-      setViewingStudent(response as Student);
-      setIsViewOpen(true);
-    } catch (error) {
-      console.error('Error fetching student details:', error);
-      alert('Failed to load student details');
-    }
-  };
-
   const calculateAge = (dateOfBirth: string | undefined): string => {
     if (!dateOfBirth) return '--';
     try {

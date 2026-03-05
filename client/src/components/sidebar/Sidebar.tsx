@@ -8,7 +8,6 @@ import './sidebar.scss';
 import logo from '/logo.png';
 import dashboard from '../../assets/sidebar/dashboard.svg';
 import incidents from '../../assets/sidebar/incidents.svg';
-import safeguarding from '../../assets/sidebar/safeguarding.svg';
 import attendance from '../../assets/sidebar/attendance.svg';
 import studentBehavior from '../../assets/sidebar/studentBehavior.svg';
 import classes from '../../assets/sidebar/classes.svg';

@@ -15,7 +15,6 @@ const PAGE_W = 210;
 const PAGE_H = 297;
 const MARGIN = 5;
 const MIN_SPACE_FOR_ACTION = 35;
-const HEADER_GRAY = [0.88, 0.88, 0.88] as [number, number, number];
 const ORG_NAME = 'Achieve Group';
 
 type IncidentForReport = {
@@ -158,7 +157,7 @@ export function buildFormFromIncident(
 }
 
 function doGenerateIncidentReportPdf(
-  incident: IncidentForReport | null,
+  _incident: IncidentForReport | null,
   form: IncidentReportFormState,
   reportType: ReportType = 'incident'
 ): void {
