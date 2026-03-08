@@ -1,4 +1,4 @@
-import { IsMongoId, IsEnum, IsBoolean, IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsMongoId, IsEnum, IsBoolean, IsString, IsOptional, IsDateString, IsIn } from 'class-validator';
 import { Session, Behaviour } from '../engagement.schema';
 
 export class CreateEngagementDto {
@@ -14,12 +14,21 @@ export class CreateEngagementDto {
   @IsBoolean()
   attendance: boolean;
 
+  @IsOptional()
+  @IsString()
+  @IsIn(['authorized', 'unauthorized'])
+  absenceType?: string;
+
   @IsEnum(Behaviour)
   behaviour: Behaviour;
 
   @IsOptional()
   @IsString()
   comment?: string;
+
+  @IsOptional()
+  @IsString()
+  workUndertaken?: string;
 
   @IsDateString()
   engagementDate: string;

@@ -38,6 +38,10 @@ export class Engagement {
   @Prop({ type: Boolean, required: true })
   attendance: boolean;
 
+  /** When attendance is false: 'authorized' | 'unauthorized' */
+  @Prop({ type: String, enum: ['authorized', 'unauthorized'], trim: true })
+  absenceType?: string;
+
   @Prop({ 
     type: String, 
     enum: Object.values(Behaviour), 
@@ -47,6 +51,9 @@ export class Engagement {
 
   @Prop({ type: String, trim: true })
   comment?: string;
+
+  @Prop({ type: String, trim: true })
+  workUndertaken?: string;
 
   @Prop({ type: Date, required: true })
   engagementDate: Date;
