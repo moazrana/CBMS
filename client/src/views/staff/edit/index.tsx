@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash, faEdit, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTrash, faEdit, faCheck, faPrint } from '@fortawesome/free-solid-svg-icons';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import Layout from '../../../layouts/layout';
 import Input from '../../../components/input/Input';
 import TextField from '../../../components/textField/TextField';
@@ -12,6 +14,7 @@ import DateInput from '../../../components/dateInput/DateInput';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import { formatDateDisplay } from '../../../functions/formatDate';
+import TimeTableComponent from '../../../components/timeTable/timeTable';
 import './index.scss';
 
 interface Address {
@@ -171,6 +174,15 @@ const EditStaff = () => {
   const [activeTab, setActiveTab] = useState('basic');
   const isEditMode = !!id;
   const [staffIncidents, setStaffIncidents] = useState<Array<{ _id: string; dateAndTime?: string; location?: string; status?: boolean; description?: string; body_mapping?: boolean; commentary?: { severity?: number } }>>([]);
+  const [staffTimetableSchedules, setStaffTimetableSchedules] = useState<Array<{
+    _id: string;
+    class?: { _id: string; subject?: string; yeargroup?: string; fromDate?: string; toDate?: string };
+    day?: string;
+    period?: { _id: string; name: string; startTime?: string; endTime?: string };
+    location?: string;
+    staff?: { _id?: string; name?: string };
+    teacher?: { _id?: string; name?: string };
+  }>>([]);
 
   // Fetch incidents for this staff (only in edit mode)
   useEffect(() => {
@@ -185,6 +197,30 @@ const EditStaff = () => {
     };
     fetchIncidents();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when id changes
+  }, [id]);
+
+  // Fetch staff's timetable (schedules where this staff is assigned as staff or teacher)
+  useEffect(() => {
+    if (!id) {
+      setStaffTimetableSchedules([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const schedulesRes = await executeRequest('get', '/schedules/timetable');
+        if (cancelled) return;
+        const allSchedules = Array.isArray(schedulesRes) ? schedulesRes : [];
+        const staffId = (x: unknown) => (x && typeof x === 'object' && x !== null && '_id' in x ? String((x as { _id: string })._id) : '');
+        const forStaff = allSchedules.filter((s: { staff?: unknown; teacher?: unknown }) => staffId(s.staff) === id || staffId(s.teacher) === id);
+        setStaffTimetableSchedules(forStaff);
+      } catch {
+        if (!cancelled) setStaffTimetableSchedules([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- when staff id changes
   }, [id]);
 
   // Ref to track focused input
@@ -2920,6 +2956,123 @@ const EditStaff = () => {
     );
   };
 
+  // Build calendar events from staff's timetable schedules
+  const staffTimetableEvents = useMemo(() => {
+    const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const parseTime = (s: string | undefined): [number, number] => {
+      if (!s || typeof s !== 'string') return [9, 0];
+      const [h, m] = s.trim().split(/[:\s]/).map(Number);
+      return [isNaN(h) ? 9 : h, isNaN(m) ? 0 : m];
+    };
+    const events: Array<{ id: number; start: Date; end: Date; events?: Array<{ id: number; title: string; eventType: string; category: string; source: string }> }> = [];
+    let id = 0;
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const numWeeks = 12;
+    for (let w = 0; w < numWeeks; w++) {
+      const weekStart = new Date(startOfThisWeek);
+      weekStart.setDate(weekStart.getDate() + w * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      for (const s of staffTimetableSchedules) {
+        const cls = s.class;
+        if (!cls || typeof cls !== 'object') continue;
+        const from = cls.fromDate ? new Date(cls.fromDate).getTime() : 0;
+        const to = cls.toDate ? new Date(cls.toDate).getTime() : 0;
+        if (from === 0 && to === 0) continue;
+        if (weekEnd.getTime() < from || weekStart.getTime() > to) continue;
+        const dayIdx = DAY_ORDER.indexOf(s.day || '');
+        if (dayIdx < 0) continue;
+        const period = s.period && typeof s.period === 'object' ? s.period : { name: 'Session', startTime: '09:00', endTime: '10:00' };
+        const [startH, startM] = parseTime(period.startTime);
+        const [endH, endM] = parseTime(period.endTime);
+        const eventDate = new Date(weekStart);
+        eventDate.setDate(eventDate.getDate() + dayIdx);
+        const start = new Date(eventDate);
+        start.setHours(startH, startM, 0, 0);
+        const end = new Date(eventDate);
+        end.setHours(endH, endM, 0, 0);
+        const classLabel = [cls.subject, cls.yeargroup].filter(Boolean).join(' - ') || 'Class';
+        const staffName = s.staff && typeof s.staff === 'object' && s.staff.name ? s.staff.name : '';
+        events.push({
+          id: ++id,
+          start,
+          end,
+          events: [{
+            id,
+            title: period.name || 'Session',
+            category: classLabel,
+            eventType: s.location || '',
+            source: staffName,
+          }],
+        });
+      }
+    }
+    return events;
+  }, [staffTimetableSchedules]);
+
+  const TimeTableTab = () => {
+    const [pdfGenerating, setPdfGenerating] = useState(false);
+    const handlePrintTimetablePdf = async () => {
+      const el = document.getElementById('time-table-div');
+      if (!el) return;
+      setPdfGenerating(true);
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+        });
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+        const ratio = Math.min(pageW / imgW, pageH / imgH) * 0.95;
+        pdf.addImage(imgData, 'PNG', (pageW - imgW * ratio) / 2, (pageH - imgH * ratio) / 2, imgW * ratio, imgH * ratio);
+        pdf.save('staff-timetable.pdf');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to generate PDF.');
+      } finally {
+        setPdfGenerating(false);
+      }
+    };
+    return (
+      <div className="tab-content">
+        <div className="timetable-tab-wrapper timetable-tab-with-print">
+          {!id ? (
+            <div className="empty-state">
+              <p>Save the staff member first to view their timetable.</p>
+            </div>
+          ) : (
+            <>
+              <TimeTableComponent
+                onTimeSlotButtonPress={() => {}}
+                propEvents={staffTimetableEvents}
+              />
+              <button
+                type="button"
+                className="tt-print-pdf-btn"
+                onClick={handlePrintTimetablePdf}
+                disabled={pdfGenerating}
+                title="Download timetable as PDF"
+              >
+                <FontAwesomeIcon icon={faPrint} />
+                {pdfGenerating ? ' Generating…' : ' Print / PDF'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const SEVERITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' };
   const SEVERITY_COLORS: Record<number, string> = { 1: '#22c55e', 2: '#f97316', 3: '#ef4444' };
 
@@ -3012,6 +3165,7 @@ const EditStaff = () => {
     { id: 'qualifications', label: 'Qualifications', content: <QualificationsTab /> },
     { id: 'hr', label: 'HR', content: <HRTab /> },
     { id: 'medical', label: 'Medical Needs', content: <MedicalNeedsTab /> },
+    ...(id ? [{ id: 'timetable', label: 'Time Table', content: <TimeTableTab /> }] : []),
     ...(id ? [{ id: 'incidents', label: 'Incidents', content: <IncidentsTabContent /> }] : []),
   ];
 

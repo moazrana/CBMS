@@ -659,27 +659,27 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 onSearch={fetchStudentOptions}
                                 label="Students"
                                 placeholder="Search by name..."
-                                icon={Student}
-                            />
+                                    icon={Student}
+                                />
                             <SearchableMultiSelect
-                                name="staff"
-                                value={staff}
+                                    name="staff"
+                                    value={staff}
                                 onChange={(v) => setStaff(v as string[])}
                                 options={staffOptions}
                                 onSearch={fetchStaffOptions}
-                                label="Staff"
+                                    label="Staff"
                                 placeholder="Search by name..."
-                                icon={Staff}
-                            />
-                            <Select
-                                name="status"
-                                value={status}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStatus(e.target.value)}}
-                                options={statuses}
-                                label="Status"
-                                placeholder="Select..."
-                                icon={Status}
-                            />
+                                    icon={Staff}
+                                />
+                                <Select
+                                    name="status"
+                                    value={status}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setStatus(e.target.value)}}
+                                    options={statuses}
+                                    label="Status"
+                                    placeholder="Select..."
+                                    icon={Status}
+                                />
                             <MultiSelect
                                 name="involved"
                                 label="Others"
@@ -688,16 +688,16 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 options={DIRECTED_TOWARDS_OPTIONS}
                                 placeholder="Select..."
                             />
-                            <Select
-                                key={'location'}
-                                name="location"
-                                value={location}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setLocation(e.target.value)}}
+                                <Select
+                                    key={'location'}
+                                    name="location"
+                                    value={location}
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>{setLocation(e.target.value)}}
                                 options={locationOptions}
-                                label="Location"
-                                placeholder="Select..."
-                                icon={Location}
-                            />
+                                    label="Location"
+                                    placeholder="Select..."
+                                    icon={Location}
+                                />
                             <Select
                                 name="period"
                                 value={period}
@@ -707,28 +707,28 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                 placeholder="Select session..."
                                 icon={Clock}
                             />
-                            <DateInput
-                                name='doi'
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{setDoi(e.target.value)}}
-                                value={doi}
-                                label='Date of incident'
-                                icon={Calender}
-                                labelFont={15}
-                            />
-                            <Input
-                                name='toi'
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{setToi(e.target.value)}}
-                                type='time'
-                                value={toi}
-                                icon={Clock}
-                                label='Time'
-                                labelFont={15}
-                            />
-                        </div>
+                                <DateInput
+                                    name='doi'
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{setDoi(e.target.value)}}
+                                    value={doi}
+                                    label='Date of incident'
+                                    icon={Calender}
+                                    labelFont={15}
+                                />
+                                <Input
+                                    name='toi'
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>)=>{setToi(e.target.value)}}
+                                    type='time'
+                                    value={toi}
+                                    icon={Clock}
+                                    label='Time'
+                                    labelFont={15}
+                                />
+                            </div>
                         <div className="incident-directed-section">
                             <div className="form-heading">
                                 <h2>Incident Directed towards</h2>
-                            </div>
+                        </div>
                             <div className="incident-directed-row">
                                 <div className="incident-directed-input-wrap">
                                     <MultiSelect
@@ -737,9 +737,9 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                         value={directedTowards}
                                         onChange={setDirectedTowards}
                                         options={DIRECTED_TOWARDS_OPTIONS}
-                                        placeholder="Select..."
-                                    />
-                                </div>
+                                    placeholder="Select..."
+                                />
+                            </div>
                                 <div className="comentary-input-div severity-in-basic" ref={severityDropdownRef}>
                                     <label className="severity-label">Level Of Severity</label>
                                     <div
@@ -750,7 +750,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSeverityDropdownOpen((v) => !v); }}
                                     >
                                         <span className={`severity-ball severity-ball--${severityColor}`} title={severityColor} />
-                                    </div>
+                        </div>
                                     {severityDropdownOpen && (
                                         <div className="severity-dropdown">
                                             {SEVERITY_OPTIONS.map((opt) => (
@@ -765,56 +765,56 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                             ))}
                                         </div>
                                     )}
-                                </div>
-                            </div>
-                        </div>
+                                        </div>
+                                        </div>
+                                    </div>
                         <div className="form-section">
                             <div className="form-heading" style={{ marginBottom: '0rem' }}>
                                 <h2>Description</h2>
-                            </div>
+                                </div>
                             <div className="description">
                                 <div className="pink-box description-type-heading">
-                                    <div className='pink-content'>
+                            <div className='pink-content'>
                                         <p>Type</p>
-                                    </div>
-                                </div>
-                                <div className='box-content'>
-                                    <div className='check-boxes'>
-                                        <label className="custom-checkbox">
-                                            <input type="checkbox" checked={concernTypes.includes('Physical')} onChange={() => handleCheckbox('Physical', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
-                                            Physical
-                                        </label>
-                                        <label className="custom-checkbox">
-                                            <input type="checkbox" checked={concernTypes.includes('Physchological')} onChange={() => handleCheckbox('Physchological', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
-                                            Physchological
-                                        </label>
-                                        <label className="custom-checkbox">
-                                            <input type="checkbox" checked={concernTypes.includes('Neglect')} onChange={() => handleCheckbox('Neglect', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
-                                            Neglect
-                                        </label>
-                                        <label className="custom-checkbox">
-                                            <input type="checkbox" checked={concernTypes.includes('Sexual')} onChange={() => handleCheckbox('Sexual', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
-                                            Sexual
-                                        </label>
-                                        <label className="custom-checkbox">
+                            </div>
+                        </div>
+                        <div className='box-content'>
+                            <div className='check-boxes'>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={concernTypes.includes('Physical')} onChange={() => handleCheckbox('Physical', concernTypes, setConcernTypes)} />
+                                    <span className="checkmark"></span>
+                                    Physical
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={concernTypes.includes('Physchological')} onChange={() => handleCheckbox('Physchological', concernTypes, setConcernTypes)} />
+                                    <span className="checkmark"></span>
+                                    Physchological
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={concernTypes.includes('Neglect')} onChange={() => handleCheckbox('Neglect', concernTypes, setConcernTypes)} />
+                                    <span className="checkmark"></span>
+                                    Neglect
+                                </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={concernTypes.includes('Sexual')} onChange={() => handleCheckbox('Sexual', concernTypes, setConcernTypes)} />
+                                    <span className="checkmark"></span>
+                                    Sexual
+                                </label>
+                                <label className="custom-checkbox">
                                             <input type="checkbox" checked={concernTypes.includes('Student')} onChange={() => handleCheckbox('Student', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
+                                    <span className="checkmark"></span>
                                             Student
-                                        </label>
-                                        <label className="custom-checkbox">
+                                </label>
+                                <label className="custom-checkbox">
                                             <input type="checkbox" checked={concernTypes.includes('Staff')} onChange={() => handleCheckbox('Staff', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
+                                    <span className="checkmark"></span>
                                             Staff
-                                        </label>
-                                        <label className="custom-checkbox">
+                                </label>
+                                <label className="custom-checkbox">
                                             <input type="checkbox" checked={concernTypes.includes('Visitor / public')} onChange={() => handleCheckbox('Visitor / public', concernTypes, setConcernTypes)} />
-                                            <span className="checkmark"></span>
+                                    <span className="checkmark"></span>
                                             Visitor / public
-                                        </label>
+                                </label>
                                         <label className="custom-checkbox">
                                             <input type="checkbox" checked={concernTypes.includes('Unknown')} onChange={() => handleCheckbox('Unknown', concernTypes, setConcernTypes)} />
                                             <span className="checkmark"></span>
@@ -845,8 +845,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                             <span className="checkmark"></span>
                                             None of above
                                         </label>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
                                 <TextField
                                     label='Description'
                                     name='description'
@@ -881,7 +881,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                         >
                                                             Download
                                                         </button>
-                                                    </div>
+                    </div> 
                                                 );
                                             }
                                             return (
@@ -895,7 +895,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                                                     >
                                                         Download
                                                     </button>
-                                                </div>
+                    </div>
                                             );
                                         })}
                                     </div>
@@ -1191,7 +1191,7 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
             label: 'Body Map',
             content: (
                 <div className="tab-content">
-                    <div className="pink-box">
+                        <div className="pink-box">
                             <div className='pink-content'>
                                 <p>Body Map (Tick If Required)</p>
                                 <p>
@@ -1200,11 +1200,11 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
                             </div>
                         </div>
                     <div className='sub-content type-account-body-maps' style={{ marginTop: '1.5rem' }}>
-                        <label className="custom-checkbox">
-                            <input type="checkbox" checked={bodyMap} onChange={() => setBodyMap(!bodyMap)} />
-                            <span className="checkmark"></span>
-                            Body Map (Tick If Required)
-                        </label>
+                                <label className="custom-checkbox">
+                                    <input type="checkbox" checked={bodyMap} onChange={() => setBodyMap(!bodyMap)} />
+                                    <span className="checkmark"></span>
+                                    Body Map (Tick If Required)
+                                </label> 
                         {bodyMap&&<div className="type-account-body-maps__row">
                             <div className="type-account-body-maps__cell">
                                 <p className="type-account-body-maps__title">Front view</p>
@@ -1220,8 +1220,8 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
 width={800}
                                     height={1200}
                                 />
-                                </div>
                             </div>
+                        </div>
                             <div className="type-account-body-maps__cell">
                                 <p className="type-account-body-maps__title">Back view</p>
                                 <div className="type-account-body-maps__map-clip">
@@ -1236,7 +1236,7 @@ width={800}
                                         width={800}
                                         height={1200}
                                     />
-                                </div>
+                    </div>  
                             </div>
                         </div>}
                         
@@ -1287,7 +1287,7 @@ width={800}
                                     <input type="checkbox" checked={socialCare.includes('None')} onChange={() => handleCheckbox('None', socialCare, setSocialCare)} />
                                     <span className="checkmark"></span>
                                     None 
-                                </label>
+                                </label> 
                                 <label className="custom-checkbox">
                                     <input type="checkbox" checked={socialCare.includes('Others')} onChange={() => handleCheckbox('Others', socialCare, setSocialCare)} />
                                     <span className="checkmark"></span>
@@ -1444,7 +1444,7 @@ width={800}
                                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReferralOthersDescription(e.target.value)}
                                     placeholder="Describe the other referral type..."
                                 />
-                            </div>
+                    </div>  
                         )}
                     </div>  
                 </div>
@@ -1454,36 +1454,36 @@ width={800}
             label: 'Outcome',
             content: (
                 <div className="tab-content">
-                    <div className="sub-heading">
+                            <div className="sub-heading">
                         <p className='main-heading'>Action</p>
-                        <hr className='hr-line'/>
-                    </div>
-                    <div className='sub-content'>
-                        <div className="pink-box">
-                            <div className='pink-content'>
-                                <p>Action</p>
-                                <p>
-                                    <FontAwesomeIcon icon={faChevronDown}/>
-                                </p>
+                                <hr className='hr-line'/>
                             </div>
-                        </div>
-                        <div className='box-content'>
-                            <div className='check-boxes-column'>
-                                <label className="custom-checkbox">
+                            <div className='sub-content'>
+                                <div className="pink-box">
+                                    <div className='pink-content'>
+                                <p>Action</p>
+                                        <p>
+                                            <FontAwesomeIcon icon={faChevronDown}/>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className='box-content'>
+                                    <div className='check-boxes-column'>
+                                        <label className="custom-checkbox">
                                     <input type="checkbox" checked={actionChecks.includes('Verbal warning')} onChange={() => handleCheckbox('Verbal warning', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
+                                            <span className="checkmark"></span>
                                     Verbal warning
-                                </label>
-                                <label className="custom-checkbox">
+                                        </label>
+                                        <label className="custom-checkbox">
                                     <input type="checkbox" checked={actionChecks.includes('Restorative action')} onChange={() => handleCheckbox('Restorative action', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
+                                            <span className="checkmark"></span>
                                     Restorative action
-                                </label>
-                                <label className="custom-checkbox">
+                                        </label>
+                                        <label className="custom-checkbox">
                                     <input type="checkbox" checked={actionChecks.includes('Out of class')} onChange={() => handleCheckbox('Out of class', actionChecks, setActionChecks)} />
-                                    <span className="checkmark"></span>
+                                            <span className="checkmark"></span>
                                     Out of class
-                                </label>
+                                        </label>
                                 <label className="custom-checkbox">
                                     <input type="checkbox" checked={actionChecks.includes('Detention')} onChange={() => handleCheckbox('Detention', actionChecks, setActionChecks)} />
                                     <span className="checkmark"></span>
@@ -1523,23 +1523,23 @@ width={800}
                         </div>
                         {actionChecks.includes('Others') && (
                             <div className="action-others-description-wrap" style={{ marginTop: '1rem' }}>
-                                <TextField
+                                                <TextField
                                     label="Description (Others)"
                                     name="actionOthersDescription"
                                     value={actionOthersDescription}
                                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setActionOthersDescription(e.target.value)}
                                     placeholder="Describe the other action taken..."
-                                />
-                            </div>
-                        )}
+                                                />
+                                            </div>
+                                        )}
                         <div className="pink-box" style={{ marginTop: '1.5rem' }}>
                             <div className='pink-content'>
                                 <p>Exclusions</p>
                                 <p>
                                     <FontAwesomeIcon icon={faChevronDown}/>
                                 </p>
-                            </div>
-                        </div>
+                                    </div>
+                                        </div>  
                         <div className='box-content'>
                             <div className='check-boxes-column'>
                                 <label className="custom-checkbox">
@@ -1567,8 +1567,8 @@ width={800}
                                     <span className="checkmark"></span>
                                     Others
                                 </label>
+                                </div>
                             </div>
-                        </div>
                         <div className="action-description-wrap" style={{ marginTop: '1.5rem' }}>
                             <TextField
                                 label="Description"
@@ -1594,9 +1594,9 @@ width={800}
                         </div>
                         <div className='box-content'>
                             <div className='check-boxes-column'>
-                                <label className="custom-checkbox">
+                                    <label className="custom-checkbox">
                                     <input type="checkbox" checked={accountChecks.includes('Tick If This Concern Has Been Raised Before')} onChange={() => handleCheckbox('Tick If This Concern Has Been Raised Before', accountChecks, setAccountChecks)} />
-                                    <span className="checkmark"></span>
+                                        <span className="checkmark"></span>
                                     Tick If This Concern Has Been Raised Before
                                 </label>
                                 <label className="custom-checkbox">
@@ -1608,27 +1608,27 @@ width={800}
                                     <input type="checkbox" checked={accountChecks.includes('Tick If You Have Spoken Wth Parent/Carer')} onChange={() => handleCheckbox('Tick If You Have Spoken Wth Parent/Carer', accountChecks, setAccountChecks)} />
                                     <span className="checkmark"></span>
                                     Tick If You Have Spoken Wth Parent/Carer
-                                </label>
+                                    </label> 
+                                </div> 
                             </div>
                         </div>
-                    </div>
                     {meetings.map((meeting,idx)=>(
                         <>
-                            <div className="sub-heading">
+                    <div className="sub-heading">
                                 <p className='main-heading'>Notes {idx+1} </p>
-                                <hr className='hr-line'/>
-                            </div>
-                            <div className='sub-content'>
-                                <div className="pink-box">
-                                    <div className='pink-content'>
+                        <hr className='hr-line'/>
+                    </div>
+                    <div className='sub-content'>
+                        <div className="pink-box">
+                            <div className='pink-content'>
                                         <p>Follow Up Notes</p>
-                                        <p>
-                                            <FontAwesomeIcon icon={faChevronDown}/>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className='box-content'>
-                                    <div className='check-boxes-column'>
+                                <p>
+                                    <FontAwesomeIcon icon={faChevronDown}/>
+                                </p>
+                            </div>
+                        </div>
+                        <div className='box-content'>
+                            <div className='check-boxes-column'>
                                         <div className='meeting-input-div'>
                                             <DateInput
                                                 name={`meeting-date-${idx}`}
@@ -1641,7 +1641,7 @@ width={800}
                                                 label="Date"
                                                 labelFont={15}
                                             />
-                                        </div>
+                                </div> 
                                         <div className='meeting-input-div'>
                                             <TextField
                                                 label="Notes"
@@ -1681,7 +1681,7 @@ width={800}
                                             )}
                                             <label className="description-files-label">Attach files</label>
                                             <input
-                                                type="file"
+                                            type="file"
                                                 name={`note-files-${idx}`}
                                                 multiple
                                                 onChange={(e) => handleNoteFilesChange(idx, e)}
@@ -1735,21 +1735,21 @@ width={800}
                                                         );
                                                     })}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    )} 
+                                </div>
+                            </div>
                                     {idx==meetings.length-1&&(
                                         <div className='meeting-add-div'>
                                             <button className='meeting-add-btn' onClick={() => {
                                                 setMeetings([...meetings, { haveDate: false, havePersons: false, haveNotes: true, attachmentFiles: [], noteFiles: [] }]);
                                             }}><FontAwesomeIcon icon={faAdd}/>Add New Notes</button>
-                                        </div>  
+                        </div>
                                     )}
-                                </div>
-                            </div>
+                    </div>  
+                </div>
                         </>
                     ))}
-                </div>
+            </div>
             )},
     ];
 
@@ -1757,7 +1757,7 @@ width={800}
         <div className="new-staff">
             <div className="new-staff-header">
                 <h1>{isEditMode ? 'Edit Incident' : 'Create New Incident'}</h1>
-            </div>
+                </div>
             <form
                 className="new-staff-form"
                 onSubmit={(e) => { e.preventDefault(); handleSave(); }}
@@ -1770,7 +1770,7 @@ width={800}
                     <button type="submit" className="btn-submit" disabled={loading}>
                         {loading ? 'Saving...' : 'Save'}
                     </button>
-                </div>
+            </div>
             </form>
         </div>
     );
@@ -1778,7 +1778,7 @@ width={800}
     return (
         <Layout showFilter={false} showNew={false} showPagination={false} showViewType={false}>
             {formContent}
-        </Layout>
+        </Layout>  
     );
 }
 export default New

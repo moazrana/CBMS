@@ -6,6 +6,7 @@ import { Permission, PermissionSchema } from '../users/schemas/permission.schema
 import { Location, LocationSchema } from '../location/location.schema';
 import { Period, PeriodSchema } from '../period/period.schema';
 import { Class, ClassSchema } from '../class/class.schema';
+import { YearGroup, YearGroupSchema } from '../year-group/year-group.schema';
 import { ClassModule } from '../class/class.module';
 import { RolesSeeder } from './roles.seeder';
 import { UsersSeeder } from './users.seeder';
@@ -29,6 +30,7 @@ import { StaffPermissionsSeedCommand } from './staff-permissions-seed.command';
 import { StudentPermissionsSeedCommand } from './student-permissions-seed.command';
 import { ClassPermissionsSeedCommand } from './class-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
+import { YearGroupSeeder } from './year-group.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { TeacherSeeder } from './teacher.seeder';
 import { StudentSeeder } from './student.seeder';
@@ -49,6 +51,7 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
       { name: Location.name, schema: LocationSchema },
       { name: Period.name, schema: PeriodSchema },
       { name: Class.name, schema: ClassSchema },
+      { name: YearGroup.name, schema: YearGroupSchema },
     ]),
     ClassModule,
   ],
@@ -71,6 +74,7 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
     StudentPermissionsSeedCommand,
     ClassPermissionsSeedCommand,
     LocationSeeder,
+    YearGroupSeeder,
     PeriodSeeder,
     SeederService, 
     RolesSeeder, 

@@ -45,6 +45,12 @@ export class ClassController {
     return this.classService.findAll(sortField, sortOrder, searchTerm, pageNum, perPageNum);
   }
 
+  @Get('student/:studentId')
+  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
+  findByStudent(@Param('studentId') studentId: string) {
+    return this.classService.findByStudent(studentId);
+  }
+
   @Get(':id')
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
   findOne(@Param('id') id: string) {
@@ -73,11 +79,5 @@ export class ClassController {
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
   removeStudent(@Param('id') id: string, @Param('studentId') studentId: string) {
     return this.classService.removeStudent(id, studentId);
-  }
-
-  @Get('student/:studentId')
-  // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  findByStudent(@Param('studentId') studentId: string) {
-    return this.classService.findByStudent(studentId);
   }
 } 

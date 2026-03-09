@@ -54,7 +54,7 @@ interface TimeTableProps {
   onTimeSlotButtonPress?: () => void;
 }
 const TimeTable = ({ propEvents, onTimeSlotButtonPress }: TimeTableProps) => {
-  const [events] = useState<Event[]>(propEvents);
+  const events = propEvents ?? [];
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Day filter: add a class to Sundays so we can hide them via CSS

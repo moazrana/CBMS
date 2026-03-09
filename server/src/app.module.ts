@@ -15,6 +15,8 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { LocationModule } from './location/location.module';
 import { PeriodModule } from './period/period.module';
 import { ClassModule } from './class/class.module';
+import { ScheduleModule } from './schedule/schedule.module';
+import { YearGroupModule } from './year-group/year-group.module';
 import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { StudentsModule } from './students/students.module';
@@ -56,6 +58,8 @@ import { EngagementModule } from './engagement/engagement.module';
     LocationModule,
     PeriodModule,
     ClassModule,
+    ScheduleModule,
+    YearGroupModule,
     StaffModule,
     AttendanceModule,
     StudentsModule,

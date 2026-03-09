@@ -11,6 +11,7 @@ import { StaffPermissionsSeeder } from './staff-permissions.seeder';
 import { StudentPermissionsSeeder } from './student-permissions.seeder';
 import { ClassPermissionsSeeder } from './class-permissions.seeder';
 import { LocationSeeder } from './location.seeder';
+import { YearGroupSeeder } from './year-group.seeder';
 import { PeriodSeeder } from './period.seeder';
 import { StudentSeeder } from './student.seeder';
 import { StaffSeeder } from './staff.seeder';
@@ -30,6 +31,7 @@ export class SeederService {
     private readonly rolesSeeder: RolesSeeder,
     private readonly usersSeeder: UsersSeeder,
     private readonly locationSeeder: LocationSeeder,
+    private readonly yearGroupSeeder: YearGroupSeeder,
     private readonly periodSeeder: PeriodSeeder,
     private readonly studentSeeder: StudentSeeder,
     private readonly staffSeeder: StaffSeeder,
@@ -51,6 +53,7 @@ export class SeederService {
     await this.rolesSeeder.seed();
     await this.usersSeeder.seed();
     await this.locationSeeder.seed();
+    await this.yearGroupSeeder.seed();
     await this.periodSeeder.seed();
     await this.studentSeeder.seed();
     await this.staffSeeder.seed();

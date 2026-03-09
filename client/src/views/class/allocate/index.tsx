@@ -54,7 +54,8 @@ const AllocateStudents = () => {
   const [filterLocation, setFilterLocation] = useState<string>('');
   const [filterYearGroup, setFilterYearGroup] = useState<string>('');
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(true);
-  
+  const [yearGroupOptions, setYearGroupOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: 'All Year Groups' }]);
+
   // Refs for autosave
   const classStudentsRef = useRef<string[]>([]);
   const isInitialMount = useRef(true);
@@ -110,29 +111,32 @@ const AllocateStudents = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch year groups for filter dropdown
+  useEffect(() => {
+    let cancelled = false;
+    const fetchYearGroups = async () => {
+      try {
+        const list = await executeRequest('get', '/year-groups');
+        if (!cancelled && Array.isArray(list)) {
+          setYearGroupOptions([
+            { value: '', label: 'All Year Groups' },
+            ...list.map((yg: { _id: string; name: string }) => ({ value: yg.name, label: yg.name })),
+          ]);
+        }
+      } catch {
+        if (!cancelled) setYearGroupOptions([{ value: '', label: 'All Year Groups' }]);
+      }
+    };
+    fetchYearGroups();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Filter options
   const locationOptions = [
     { value: '', label: 'All Locations' },
     { value: 'Warrington', label: 'Warrington' },
     { value: 'Bury', label: 'Bury' },
-  ];
-
-  const yearGroupOptions = [
-    { value: '', label: 'All Year Groups' },
-    { value: 'Reception', label: 'Reception' },
-    { value: 'Year 1', label: 'Year 1' },
-    { value: 'Year 2', label: 'Year 2' },
-    { value: 'Year 3', label: 'Year 3' },
-    { value: 'Year 4', label: 'Year 4' },
-    { value: 'Year 5', label: 'Year 5' },
-    { value: 'Year 6', label: 'Year 6' },
-    { value: 'Year 7', label: 'Year 7' },
-    { value: 'Year 8', label: 'Year 8' },
-    { value: 'Year 9', label: 'Year 9' },
-    { value: 'Year 10', label: 'Year 10' },
-    { value: 'Year 11', label: 'Year 11' },
-    { value: 'Year 12', label: 'Year 12' },
-    { value: 'Year 13', label: 'Year 13' },
   ];
 
   // Base available students: all students minus students already in class

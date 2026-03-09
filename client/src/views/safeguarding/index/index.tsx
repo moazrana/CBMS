@@ -205,13 +205,25 @@ const Index=()=>{
         }
         getUsers('Student')
         getUsers('Staff')
+        const fetchYearGroups = async () => {
+            try {
+                const list = await executeRequest('get', '/year-groups');
+                if (Array.isArray(list)) {
+                    setYearGroups(list.map((yg: { _id: string; name: string }) => ({ value: yg.name, label: yg.name })));
+                } else {
+                    setYearGroups([]);
+                }
+            } catch {
+                setYearGroups([]);
+            }
+        };
+        fetchYearGroups()
         setNegativeSafeguards([])
         setPoitiveSafeguards([])
         setSafeguardingSafeguards([])
         setVictims([])
         setHouses([])
         setKeyStages([])
-        setYearGroups([])
         setForms([])
         setSubjects([])
         setClasses([])
