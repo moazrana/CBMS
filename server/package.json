@@ -34,6 +34,7 @@
     "seed:class-permissions": "nest start --entryFile cli -- seed:class-permissions",
     "seed:engagement-permissions": "nest start --entryFile cli -- seed:engagement-permissions",
     "seed:report-permissions": "nest start --entryFile cli -- seed:report-permissions",
+    "seed:year-groups": "nest start --entryFile cli -- seed:year-groups",
     "seed:student": "nest start --entryFile cli -- student-seed",
     "seed:staff": "nest start --entryFile cli -- staff-seed",
     "delete:users": "nest start --entryFile cli -- delete:users",

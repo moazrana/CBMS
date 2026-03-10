@@ -10,30 +10,7 @@ export class YearGroupSeeder {
   ) {}
 
   async seed() {
-    const names = [
-      'Reception',
-      'Year 1',
-      'Year 2',
-      'Year 3',
-      'Year 4',
-      'Year 5',
-      'Year 6',
-      'Year 7',
-      'Year 8',
-      'Year 9',
-      'Year 10',
-      'Year 11',
-      'Year 12',
-      'Year 13',
-      'All',
-      '7',
-      '8',
-      '9',
-      '10',
-      '11',
-      '12',
-      '13',
-    ];
+    const names = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6', 'Year 7', 'Year 8', 'Year 9', 'Year 10'];
     for (const name of names) {
       const exists = await this.yearGroupModel.findOne({ name });
       if (!exists) {

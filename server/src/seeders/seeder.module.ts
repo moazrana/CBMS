@@ -35,6 +35,7 @@ import { ReportPermissionsSeeder } from './report-permissions.seeder';
 import { ReportPermissionsSeedCommand } from './report-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
 import { YearGroupSeeder } from './year-group.seeder';
+import { YearGroupSeedCommand } from './year-group-seed.command';
 import { PeriodSeeder } from './period.seeder';
 import { TeacherSeeder } from './teacher.seeder';
 import { StudentSeeder } from './student.seeder';
@@ -87,6 +88,7 @@ import { DeleteSafeguardingAdvancePermissionsSeedCommand } from './delete-safegu
     ReportPermissionsSeedCommand,
     LocationSeeder,
     YearGroupSeeder,
+    YearGroupSeedCommand,
     PeriodSeeder,
     SeederService, 
     RolesSeeder, 
