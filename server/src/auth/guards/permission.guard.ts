@@ -33,10 +33,16 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('User has no role assigned');
     }
 
+    // roleId: when role is populated it's an object with _id; otherwise it's an ObjectId
+    const roleId =
+      user.role && typeof user.role === 'object' && '_id' in user.role
+        ? String((user.role as { _id: unknown })._id)
+        : String(user.role);
+
     // Check if user has all required permissions
     for (const permission of requiredPermissions) {
       const hasPermission = await this.rolePermissionService.hasPermission(
-        user.role.toString(),
+        roleId,
         permission
       );
       if (!hasPermission) {

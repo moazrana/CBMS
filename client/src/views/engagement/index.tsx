@@ -14,6 +14,7 @@ import Class from '../../assets/safeguarding/class.svg';
 import Subject from '../../assets/safeguarding/subject.svg';
 import { DropdownOption } from '../../types/DropDownOption';
 import { useApiRequest } from '../../hooks/useApiRequest';
+import { usePermissions } from '../../hooks/usePermissions';
 import api from '../../services/api';
 
 interface StudentData {
@@ -93,6 +94,12 @@ interface MarkedEngagementRecord {
 
 const Engagement: React.FC = () => {
   const { executeRequest } = useApiRequest();
+  const { checkPermission } = usePermissions();
+  const canCreateEngagement = checkPermission('create_engagement');
+  const canUpdateEngagement = checkPermission('update_engagement');
+  const canViewMarkedEngagement = checkPermission('read_marked_engagement');
+  const canEditEngagement = canCreateEngagement || canUpdateEngagement;
+
   const today = new Date().toISOString().split('T')[0];
   const [activeTab, setActiveTab] = useState<'mark' | 'marked'>('mark');
   const [engagementDate, setEngagementDate] = useState<string>(today);
@@ -568,7 +575,7 @@ const Engagement: React.FC = () => {
 
   // Auto-save function for single session
   const autoSaveEngagement = useCallback(async (studentId: string) => {
-    if (!filterClassRef.current) {
+    if (!canEditEngagement || !filterClassRef.current) {
       return;
     }
 
@@ -642,11 +649,11 @@ const Engagement: React.FC = () => {
     } catch (error) {
       console.error('Error auto-saving engagement:', error);
     }
-  }, [executeRequest, engagementDate]);
+  }, [executeRequest, engagementDate, canEditEngagement]);
 
   // Auto-save function for all sessions
   const autoSaveAllSessionsEngagement = useCallback(async (studentId: string, sessionValue: string) => {
-    if (!filterClassRef.current) {
+    if (!canEditEngagement || !filterClassRef.current) {
       return;
     }
 
@@ -733,7 +740,7 @@ const Engagement: React.FC = () => {
     } catch (error) {
       console.error('Error auto-saving all sessions engagement:', error);
     }
-  }, [executeRequest, engagementDate]);
+  }, [executeRequest, engagementDate, canEditEngagement]);
 
   // Handle engagement data changes with auto-save
   const handleAttendanceChange = useCallback((studentId: string, present: boolean) => {
@@ -928,7 +935,7 @@ const Engagement: React.FC = () => {
   }, [autoSaveEngagement, filterClass]);
 
   const handleSubmitStudent = useCallback(async (studentId: string) => {
-    if (!filterClass || !engagementDate) return;
+    if (!canCreateEngagement || !filterClass || !engagementDate) return;
     try {
       await api.post('/engagements/submit', {
         classId: filterClass,
@@ -952,7 +959,7 @@ const Engagement: React.FC = () => {
     } catch (err) {
       console.error('Failed to submit engagement:', err);
     }
-  }, [filterClass, engagementDate]);
+  }, [filterClass, engagementDate, canCreateEngagement]);
 
   // Handlers for all-sessions row
   const handleAllSessionsAttendanceChange = useCallback((studentId: string, sessionValue: string, present: boolean) => {
@@ -1105,7 +1112,7 @@ const Engagement: React.FC = () => {
 
   // Fetch recent marked engagements when "Marked Engagements" tab is active (no class filter)
   useEffect(() => {
-    if (activeTab !== 'marked') return;
+    if (activeTab !== 'marked' || !canViewMarkedEngagement) return;
     let cancelled = false;
     setMarkedEngagementsLoading(true);
     api.get<MarkedEngagementRecord[]>('/engagements?perPage=500&sort=createdAt&order=DESC&marked=true')
@@ -1120,11 +1127,11 @@ const Engagement: React.FC = () => {
         if (!cancelled) setMarkedEngagementsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [activeTab]);
+  }, [activeTab, canViewMarkedEngagement]);
 
   // Fetch universal list when class is selected in Marked Engagements tab (students + their engagements)
   useEffect(() => {
-    if (activeTab !== 'marked' || !markedFilterClassId) {
+    if (activeTab !== 'marked' || !markedFilterClassId || !canViewMarkedEngagement) {
       setUniversalListStudents([]);
       setUniversalListData({});
       setUniversalListExpanded(new Set());
@@ -1193,7 +1200,7 @@ const Engagement: React.FC = () => {
         if (!cancelled) setUniversalListLoading(false);
       });
     return () => { cancelled = true; };
-  }, [activeTab, markedFilterClassId, markedFilterDate, sessionOptions]);
+  }, [activeTab, markedFilterClassId, markedFilterDate, sessionOptions, canViewMarkedEngagement]);
 
   const toggleUniversalListExpansion = useCallback((studentId: string) => {
     setUniversalListExpanded((prev) => {
@@ -1459,6 +1466,7 @@ const Engagement: React.FC = () => {
   }, []);
 
   const handleMarkedListAttendanceChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, present: boolean) => {
+    if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
     const group = markedEngagements.filter((e) => {
       const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
@@ -1490,9 +1498,10 @@ const Engagement: React.FC = () => {
     } catch (e) {
       console.error('Failed to update engagement', e);
     }
-  }, [markedEngagements]);
+  }, [markedEngagements, canUpdateEngagement]);
 
   const handleMarkedListAbsenceTypeChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, value: 'authorized' | 'unauthorized') => {
+    if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
     const group = markedEngagements.filter((e) => {
       const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
@@ -1523,9 +1532,10 @@ const Engagement: React.FC = () => {
     } catch (e) {
       console.error('Failed to update engagement', e);
     }
-  }, [markedEngagements]);
+  }, [markedEngagements, canUpdateEngagement]);
 
   const handleMarkedListBehaviourChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, value: string) => {
+    if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
     const group = markedEngagements.filter((e) => {
       const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
@@ -1554,9 +1564,10 @@ const Engagement: React.FC = () => {
     } catch (e) {
       console.error('Failed to update engagement', e);
     }
-  }, [markedEngagements]);
+  }, [markedEngagements, canUpdateEngagement]);
 
   const handleMarkedListCommentChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, value: string) => {
+    if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
     const group = markedEngagements.filter((e) => {
       const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
@@ -1586,9 +1597,10 @@ const Engagement: React.FC = () => {
     } catch (e) {
       console.error('Failed to update engagement', e);
     }
-  }, [markedEngagements]);
+  }, [markedEngagements, canUpdateEngagement]);
 
   const handleMarkedListWorkUndertakenChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, value: string) => {
+    if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
     const group = markedEngagements.filter((e) => {
       const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
@@ -1618,7 +1630,7 @@ const Engagement: React.FC = () => {
     } catch (e) {
       console.error('Failed to update engagement', e);
     }
-  }, [markedEngagements]);
+  }, [markedEngagements, canUpdateEngagement]);
 
   // Editable expanded view for universal list (marked engagements tab when class selected)
   const renderUniversalListExpandedContent = useCallback((studentId: string) => {
@@ -1999,6 +2011,7 @@ const Engagement: React.FC = () => {
             onChange={(e) => handleSessionChange(studentId, e.target.value)}
             options={sessionOptions}
             placeholder="Select Session"
+            disabled={!canEditEngagement}
           />
         );
       },
@@ -2021,6 +2034,7 @@ const Engagement: React.FC = () => {
                   name={`attendance-${studentId}`}
                   checked={attendance}
                   onChange={() => handleAttendanceChange(studentId, true)}
+                  disabled={!canEditEngagement}
                 />
                 Present
               </label>
@@ -2030,6 +2044,7 @@ const Engagement: React.FC = () => {
                   name={`attendance-${studentId}`}
                   checked={!attendance}
                   onChange={() => handleAttendanceChange(studentId, false)}
+                  disabled={!canEditEngagement}
                 />
                 Absent
               </label>
@@ -2042,6 +2057,7 @@ const Engagement: React.FC = () => {
                     name={`absenceType-${studentId}`}
                     checked={absenceType === 'authorized'}
                     onChange={() => handleAbsenceTypeChange(studentId, 'authorized')}
+                    disabled={!canEditEngagement}
                   />
                   Authorized
                 </label>
@@ -2051,6 +2067,7 @@ const Engagement: React.FC = () => {
                     name={`absenceType-${studentId}`}
                     checked={absenceType === 'unauthorized'}
                     onChange={() => handleAbsenceTypeChange(studentId, 'unauthorized')}
+                    disabled={!canEditEngagement}
                   />
                   Unauthorized
                 </label>
@@ -2075,6 +2092,7 @@ const Engagement: React.FC = () => {
             options={behaviorSelectOptions}
             placeholder="Select Behavior"
             name={`behaviour-${studentId}`}
+            disabled={!canEditEngagement}
           />
         );
       },
@@ -2095,6 +2113,7 @@ const Engagement: React.FC = () => {
             placeholder="Comment..."
             className="engagement-comment-textarea"
             rows={3}
+            disabled={!canEditEngagement}
           />
         );
       },
@@ -2115,6 +2134,7 @@ const Engagement: React.FC = () => {
             placeholder="Work undertaken..."
             className="engagement-comment-textarea"
             rows={3}
+            disabled={!canEditEngagement}
           />
         );
       },
@@ -2132,15 +2152,15 @@ const Engagement: React.FC = () => {
             type="button"
             className="engagement-submit-btn"
             onClick={() => handleSubmitStudent(studentId)}
-            disabled={submitted}
-            title={submitted ? 'Already submitted' : 'Submit this student’s engagements to Marked Engagements'}
+            disabled={submitted || !canCreateEngagement}
+            title={submitted ? 'Already submitted' : !canCreateEngagement ? 'No permission to submit' : 'Submit this student’s engagements to Marked Engagements'}
           >
             {submitted ? 'Submitted' : 'Submit'}
           </button>
         );
       },
     },
-  ], [behaviorSelectOptions, handleAbsenceTypeChange, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionOptions, toggleRowExpansion]);
+  ], [behaviorSelectOptions, canCreateEngagement, canEditEngagement, handleAbsenceTypeChange, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionOptions, toggleRowExpansion]);
 
   // Editable expanded content for initial marked list (one row per session)
   const renderMarkedListExpandedContent = useCallback((rowData: {
@@ -2178,6 +2198,7 @@ const Engagement: React.FC = () => {
                         name={`marked-list-att-${studentId}-${sessionOpt.value}`}
                         checked={present}
                         onChange={() => handleMarkedListAttendanceChange(studentId, classId, engagementDateStr, sessionOpt.value, true)}
+                        disabled={!canUpdateEngagement}
                       />
                       Present
                     </label>
@@ -2187,6 +2208,7 @@ const Engagement: React.FC = () => {
                         name={`marked-list-att-${studentId}-${sessionOpt.value}`}
                         checked={!present}
                         onChange={() => handleMarkedListAttendanceChange(studentId, classId, engagementDateStr, sessionOpt.value, false)}
+                        disabled={!canUpdateEngagement}
                       />
                       Absent
                     </label>
@@ -2199,6 +2221,7 @@ const Engagement: React.FC = () => {
                           name={`marked-list-abs-${studentId}-${sessionOpt.value}`}
                           checked={absenceType === 'authorized'}
                           onChange={() => handleMarkedListAbsenceTypeChange(studentId, classId, engagementDateStr, sessionOpt.value, 'authorized')}
+                          disabled={!canUpdateEngagement}
                         />
                         Authorized
                       </label>
@@ -2208,6 +2231,7 @@ const Engagement: React.FC = () => {
                           name={`marked-list-abs-${studentId}-${sessionOpt.value}`}
                           checked={absenceType === 'unauthorized'}
                           onChange={() => handleMarkedListAbsenceTypeChange(studentId, classId, engagementDateStr, sessionOpt.value, 'unauthorized')}
+                          disabled={!canUpdateEngagement}
                         />
                         Unauthorized
                       </label>
@@ -2227,6 +2251,7 @@ const Engagement: React.FC = () => {
                           value={behaviourOpt.value}
                           checked={currentBehaviour === behaviourOpt.value}
                           onChange={(e) => handleMarkedListBehaviourChange(studentId, classId, engagementDateStr, sessionOpt.value, e.target.value)}
+                          disabled={!canUpdateEngagement}
                         />
                         <span className="radio-dot" style={{ backgroundColor: color }} />
                         {behaviourOpt.label}
@@ -2243,6 +2268,7 @@ const Engagement: React.FC = () => {
                   className="engagement-comment-textarea"
                   placeholder="Comment"
                   rows={2}
+                  disabled={!canUpdateEngagement}
                 />
               </div>
               <div className="engagement-expanded-col work-undertaken-col">
@@ -2253,6 +2279,7 @@ const Engagement: React.FC = () => {
                   className="engagement-comment-textarea"
                   placeholder="Work undertaken"
                   rows={2}
+                  disabled={!canUpdateEngagement}
                 />
               </div>
             </div>
@@ -2260,7 +2287,7 @@ const Engagement: React.FC = () => {
         })}
       </div>
     );
-  }, [sessionOptions, behaviourOptions, handleMarkedListAttendanceChange, handleMarkedListAbsenceTypeChange, handleMarkedListBehaviourChange, handleMarkedListCommentChange, handleMarkedListWorkUndertakenChange]);
+  }, [sessionOptions, behaviourOptions, canUpdateEngagement, handleMarkedListAttendanceChange, handleMarkedListAbsenceTypeChange, handleMarkedListBehaviourChange, handleMarkedListCommentChange, handleMarkedListWorkUndertakenChange]);
 
   // Marked engagements table: columns and data (grouped by student+date+class, with expand)
   const markedEngagementsColumns = useMemo(() => [
@@ -2611,8 +2638,15 @@ const Engagement: React.FC = () => {
 
   const tabs = [
     { id: 'mark', label: 'Mark Engagement', content: markEngagementContent },
-    { id: 'marked', label: 'Marked Engagements', content: markedEngagementsContent },
+    ...(canViewMarkedEngagement ? [{ id: 'marked', label: 'Marked Engagements', content: markedEngagementsContent }] : []),
   ];
+
+  // When user cannot view marked engagements, ensure we're not on the Marked tab
+  useEffect(() => {
+    if (!canViewMarkedEngagement && activeTab === 'marked') {
+      setActiveTab('mark');
+    }
+  }, [canViewMarkedEngagement, activeTab]);
 
   return (
     <Layout>

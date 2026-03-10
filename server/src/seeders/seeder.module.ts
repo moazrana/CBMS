@@ -22,6 +22,7 @@ import { TimetablePermissionsSeeder } from './timetable-permissions.seeder';
 import { StaffPermissionsSeeder } from './staff-permissions.seeder';
 import { StudentPermissionsSeeder } from './student-permissions.seeder';
 import { ClassPermissionsSeeder } from './class-permissions.seeder';
+import { EngagementPermissionsSeeder } from './engagement-permissions.seeder';
 import { SafeguardingPermissionsSeedCommand } from './safeguarding-permissions-seed.command';
 import { IncidentsPermissionsSeedCommand } from './incidents-permissions-seed.command';
 import { AttendancePermissionsSeedCommand } from './attendance-permissions-seed.command';
@@ -29,6 +30,9 @@ import { TimetablePermissionsSeedCommand } from './timetable-permissions-seed.co
 import { StaffPermissionsSeedCommand } from './staff-permissions-seed.command';
 import { StudentPermissionsSeedCommand } from './student-permissions-seed.command';
 import { ClassPermissionsSeedCommand } from './class-permissions-seed.command';
+import { EngagementPermissionsSeedCommand } from './engagement-permissions-seed.command';
+import { ReportPermissionsSeeder } from './report-permissions.seeder';
+import { ReportPermissionsSeedCommand } from './report-permissions-seed.command';
 import { LocationSeeder } from './location.seeder';
 import { YearGroupSeeder } from './year-group.seeder';
 import { PeriodSeeder } from './period.seeder';
@@ -40,6 +44,10 @@ import { StudentSeedCommand } from './student-seed.command';
 import { StaffSeedCommand } from './staff-seed.command';
 import { DeleteUsersSeeder } from './delete-users.seeder';
 import { DeleteUsersSeedCommand } from './delete-users-seed.command';
+import { DeleteIncidentsAdvancePermissionsSeeder } from './delete-incidents-advance-permissions.seeder';
+import { DeleteIncidentsAdvancePermissionsSeedCommand } from './delete-incidents-advance-permissions-seed.command';
+import { DeleteSafeguardingAdvancePermissionsSeeder } from './delete-safeguarding-advance-permissions.seeder';
+import { DeleteSafeguardingAdvancePermissionsSeedCommand } from './delete-safeguarding-advance-permissions-seed.command';
 
 @Module({
   imports: [
@@ -66,6 +74,7 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
     StaffPermissionsSeeder,
     StudentPermissionsSeeder,
     ClassPermissionsSeeder,
+    EngagementPermissionsSeeder,
     SafeguardingPermissionsSeedCommand,
     IncidentsPermissionsSeedCommand,
     AttendancePermissionsSeedCommand,
@@ -73,6 +82,9 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
     StaffPermissionsSeedCommand,
     StudentPermissionsSeedCommand,
     ClassPermissionsSeedCommand,
+    EngagementPermissionsSeedCommand,
+    ReportPermissionsSeeder,
+    ReportPermissionsSeedCommand,
     LocationSeeder,
     YearGroupSeeder,
     PeriodSeeder,
@@ -87,7 +99,11 @@ import { DeleteUsersSeedCommand } from './delete-users-seed.command';
     StudentSeedCommand, 
     StaffSeedCommand,
     DeleteUsersSeeder,
-    DeleteUsersSeedCommand
+    DeleteUsersSeedCommand,
+    DeleteIncidentsAdvancePermissionsSeeder,
+    DeleteIncidentsAdvancePermissionsSeedCommand,
+    DeleteSafeguardingAdvancePermissionsSeeder,
+    DeleteSafeguardingAdvancePermissionsSeedCommand,
   ],
   exports: [SeederService, TeacherSeeder, StudentSeeder, StaffSeeder, ClassSeeder, TimetablePermissionsSeeder, DeleteUsersSeeder],
 })

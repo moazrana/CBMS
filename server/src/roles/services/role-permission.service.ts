@@ -73,9 +73,12 @@ export class RolePermissionService {
       .exec();
   }
 
-  async checkRole(roleId: any, requiredRole: string): Promise<boolean> {
-    console.log('Roll: ',roleId.name)
-    const role = await this.roleModel.findById(roleId).exec();
+  async checkRole(roleIdOrDoc: string | { _id?: unknown; name?: string }, requiredRole: string): Promise<boolean> {
+    const id =
+      typeof roleIdOrDoc === 'object' && roleIdOrDoc !== null && '_id' in roleIdOrDoc
+        ? String((roleIdOrDoc as { _id: unknown })._id)
+        : String(roleIdOrDoc);
+    const role = await this.roleModel.findById(id).exec();
     return role ? role.name === requiredRole : false;
   }
 } 

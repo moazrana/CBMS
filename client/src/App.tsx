@@ -26,6 +26,7 @@ import EditClass from './views/class/edit';
 import AllocateStudents from './views/class/allocate';
 import Engagement from './views/engagement';
 import Reports from './views/reports';
+import { PermissionGuard } from './components/PermissionGuard';
 import TestPage from './views/test';
 
 function App() {
@@ -64,8 +65,30 @@ function App() {
               <Route path="/classes/add" element={<EditClass/>}/>
               <Route path="/classes/edit/:id" element={<EditClass/>}/>
               <Route path="/classes/:id/allocate" element={<AllocateStudents/>}/>
-              <Route path="/engagement" element={<Engagement/>}/>
-              <Route path="/reports" element={<Reports/>}/>
+              <Route path="/engagement" element={
+                <PermissionGuard
+                  permission="read_engagement"
+                  fallback={
+                    <div style={{ padding: '2rem', textAlign: 'center' }}>
+                      <p>You don&apos;t have permission to view Engagement.</p>
+                    </div>
+                  }
+                >
+                  <Engagement />
+                </PermissionGuard>
+              }/>
+              <Route path="/reports" element={
+                <PermissionGuard
+                  permission="read_reports"
+                  fallback={
+                    <div style={{ padding: '2rem', textAlign: 'center' }}>
+                      <p>You don&apos;t have permission to view Reports.</p>
+                    </div>
+                  }
+                >
+                  <Reports />
+                </PermissionGuard>
+              }/>
               <Route path="/test" element={<TestPage/>}/>
               <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>

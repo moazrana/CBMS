@@ -1,11 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import { Role, CreateRoleDto } from '../../../services/roleService';
 import permissionService, { Permission } from '../../../services/permissionService';
 import Input from '../../../components/input/Input';
 import TextField from '../../../components/textField/TextField';
 import Layout from '../../../layouts/layout';
+import Popup from '../../../components/Popup/Popup';
 import './RoleManagement.css';
+
+const ACTIONS = ['read', 'create', 'update', 'delete'] as const;
+type Action = typeof ACTIONS[number];
+
+function groupPermissionsByModule(permissions: Permission[]): Map<string, Record<Action, Permission | undefined>> {
+  const map = new Map<string, Record<Action, Permission | undefined>>();
+  for (const p of permissions) {
+    const action = (p.action || '').toLowerCase() as Action;
+    if (!ACTIONS.includes(action)) continue;
+    if (!map.has(p.module)) {
+      map.set(p.module, { read: undefined, create: undefined, update: undefined, delete: undefined });
+    }
+    const row = map.get(p.module)!;
+    row[action] = p;
+  }
+  return map;
+}
+
+function getAdvancePermissionsByModule(permissions: Permission[]): Map<string, Permission[]> {
+  const map = new Map<string, Permission[]>();
+  const crud = new Set(ACTIONS);
+  for (const p of permissions) {
+    const action = (p.action || '').toLowerCase();
+    if (crud.has(action as Action)) continue;
+    const list = map.get(p.module) || [];
+    list.push(p);
+    map.set(p.module, list);
+  }
+  return map;
+}
 
 const RoleManagement: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -17,105 +48,90 @@ const RoleManagement: React.FC = () => {
     permissions: [] as Permission[],
     isDefault: false,
   });
-  // const [setError] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [buttonText, setButtonText] = useState('Create New Role');
-  
+  const [advancePopupModule, setAdvancePopupModule] = useState<string | null>(null);
+
   const { executeRequest } = useApiRequest<Role[]>();
+
+  const permissionsByModule = useMemo(() => groupPermissionsByModule(permissions), [permissions]);
+  const advancePermissionsByModule = useMemo(() => getAdvancePermissionsByModule(permissions), [permissions]);
+  const moduleNames = useMemo(() => Array.from(permissionsByModule.keys()).sort(), [permissionsByModule]);
 
   useEffect(() => {
     checkPage();
   }, []);
+
   useEffect(() => {
     fetchPermissions();
-  }, [isEditing,isCreating]);
-  
+  }, [isEditing, isCreating]);
+
   const checkPage = async () => {
     const url = window.location.href;
-    if(url.includes('add')){
-      console.log('is creating ')
+    if (url.includes('add')) {
       setIsCreating(true);
-    }
-    else if(url.includes('edit')){
-      console.log('is editing ')
+    } else if (url.includes('edit')) {
       setIsEditing(true);
       setButtonText('Update Role');
-      // setIsCreating(false); 
-      // fetchRole();
     }
-  }
-  
+  };
+
   const fetchPermissions = async () => {
     try {
       setLoading(true);
       const data = await permissionService.getAllPermissions();
       setPermissions(data);
-     
-      
     } catch (error) {
       console.error('Error fetching permissions:', error);
     } finally {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
-    console.log('using effect permissions: ', permissions);
-    if(isEditing){
-      if(permissions.length > 0){
-        if(isEditing){
-          fetchRole()
-        }
-      }
+    if (isEditing && permissions.length > 0) {
+      fetchRole();
     }
-  }, [permissions]);
-  
+  }, [permissions, isEditing]);
+
   const fetchRole = async () => {
     const url = window.location.href;
     const id = url.split('/').pop();
-    
     const res = await executeRequest('get', `/roles/${id}`);
     setSelectedRole(res);
-    
     setFormData({
       name: res.name,
-      description: res.description,
-      permissions: res.permissions,
-      isDefault: res.isDefault,
+      description: res.description || '',
+      permissions: res.permissions || [],
+      isDefault: res.isDefault ?? false,
     });
-    
   };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log(formData);
     e.preventDefault();
-    // setError(null);
-    console.log(isCreating);
     try {
       if (isCreating) {
-        console.log('here')
         const res = await executeRequest('post', '/roles', formData);
-        if(res){
+        if (res) {
           window.location.href = '/roles';
         }
         setIsCreating(false);
       } else if (selectedRole && isEditing) {
         const res = await executeRequest('patch', `/roles/${selectedRole._id}`, formData);
-        if(res){
+        if (res) {
           window.location.href = '/roles';
         }
-        console.log('res: ', res);
         setIsEditing(false);
       }
-      
       setFormData({
         name: '',
         description: '',
@@ -123,23 +139,24 @@ const RoleManagement: React.FC = () => {
         isDefault: false,
       });
     } catch (error) {
-      console.log('error: ', error);
-      // setError(error.message || 'An error occurred');
+      console.error('Error saving role:', error);
     }
   };
 
-  const handlePermissionChange = (permissionId: string) => {
-    console.log('permissionId: ', permissionId);
-    const permission = permissions.find(p => p._id === permissionId);
-    if (!permission) return;
-    
-    setFormData(prev => ({
+  const isPermissionGranted = (permission: Permission) =>
+    formData.permissions.some((p) => (p as Permission)._id === permission._id || p.name === permission.name);
+
+  const handlePermissionChange = (permission: Permission) => {
+    const permissionId = (permission as Permission)._id;
+    const isGranted = formData.permissions.some(
+      (p) => (p as Permission)._id === permissionId || p.name === permission.name,
+    );
+    setFormData((prev) => ({
       ...prev,
-      permissions: prev.permissions.some(p => p._id === permissionId)
-        ? prev.permissions.filter(p => p._id !== permissionId)
-        : [...prev.permissions, permission]
+      permissions: isGranted
+        ? prev.permissions.filter((p) => (p as Permission)._id !== permissionId && p.name !== permission.name)
+        : [...prev.permissions, permission],
     }));
-    console.log('pers: ', formData.permissions);
   };
 
   if (loading) return <div>Loading permissions...</div>;
@@ -150,13 +167,14 @@ const RoleManagement: React.FC = () => {
         <div className="role-management-header">
           <h1>Role Management</h1>
         </div>
+
         <div className="role-form">
           <div className="form-group">
             <Input
               label="Role Name"
-              name="name" 
+              name="name"
               value={formData.name}
-              onChange={handleInputChange}            
+              onChange={handleInputChange}
               placeholder="Enter role name"
             />
           </div>
@@ -170,6 +188,7 @@ const RoleManagement: React.FC = () => {
             />
           </div>
         </div>
+
         <div className="role-management-content">
           <h2>Permissions</h2>
           <div className="permissions-table-container">
@@ -177,31 +196,56 @@ const RoleManagement: React.FC = () => {
               <thead>
                 <tr>
                   <th>Module</th>
-                  <th>Permission</th>
-                  <th>Description</th>
-                  <th>Grant</th>
+                  <th>Read</th>
+                  <th>Create</th>
+                  <th>Update</th>
+                  <th>Delete</th>
+                  <th className="permissions-table-advance-col">Advance</th>
                 </tr>
               </thead>
               <tbody>
-                {permissions.map(permission => (
-                  <tr key={permission._id}>
-                    <td>{permission.module}</td>
-                    <td>{permission.name}</td>
-                    <td>{permission.description}</td>
-                    <td>
-                      <input
-                        id={permission.name}
-                        type="checkbox"
-                        checked={formData.permissions.some(p => p.name === permission.name)}
-                        onChange={() => handlePermissionChange(permission._id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {moduleNames.map((moduleName) => {
+                  const row = permissionsByModule.get(moduleName)!;
+                  const advancePerms = advancePermissionsByModule.get(moduleName) || [];
+                  return (
+                    <tr key={moduleName}>
+                      <td className="permissions-table-module">{moduleName}</td>
+                      {ACTIONS.map((action) => {
+                        const permission = row[action];
+                        if (!permission) {
+                          return <td key={action} className="permissions-table-cell-empty" />;
+                        }
+                        return (
+                          <td key={action} className="permissions-table-cell">
+                            <input
+                              type="checkbox"
+                              title={permission.description}
+                              checked={isPermissionGranted(permission)}
+                              onChange={() => handlePermissionChange(permission)}
+                              aria-label={permission.description}
+                            />
+                          </td>
+                        );
+                      })}
+                      <td className="permissions-table-advance-cell">
+                        {advancePerms.length > 0 ? (
+                          <button
+                            type="button"
+                            className="advance-permissions-btn"
+                            onClick={() => setAdvancePopupModule(moduleName)}
+                          >
+                            Advance
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
+
         <div className="role-form-actions">
           <button
             className="submit-button"
@@ -211,9 +255,36 @@ const RoleManagement: React.FC = () => {
             {buttonText}
           </button>
         </div>
+
+        <Popup
+          isOpen={advancePopupModule !== null}
+          onClose={() => setAdvancePopupModule(null)}
+          onConfirm={() => setAdvancePopupModule(null)}
+          title={advancePopupModule ? `Advance permissions – ${advancePopupModule}` : 'Advance permissions'}
+          confirmText="Done"
+          cancelText="Close"
+          width="480px"
+        >
+          {advancePopupModule && (
+            <div className="advance-permissions-list">
+              {(advancePermissionsByModule.get(advancePopupModule) || []).map((permission) => (
+                <label key={permission._id} className="advance-permission-item">
+                  <input
+                    type="checkbox"
+                    title={permission.description}
+                    checked={isPermissionGranted(permission)}
+                    onChange={() => handlePermissionChange(permission)}
+                    aria-label={permission.description}
+                  />
+                  <span className="advance-permission-name">{permission.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </Popup>
       </div>
     </Layout>
   );
 };
 
-export default RoleManagement; 
+export default RoleManagement;

@@ -87,12 +87,14 @@ export default function Sidebar() {
             </div>
           </Link>
         </PermissionGuard>
-        <Link to="/engagement" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={studentBehavior} alt="logo" className='sidebar-icon' />
-            Engagement
-          </div>
-        </Link>
+        <PermissionGuard permission="read_engagement">
+          <Link to="/engagement" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={studentBehavior} alt="logo" className='sidebar-icon' />
+              Engagement
+            </div>
+          </Link>
+        </PermissionGuard>
         <hr />
         {/* ********************************************* */}
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>ACADEMIC & CLASS MANAGEMENT</h4>
@@ -104,12 +106,14 @@ export default function Sidebar() {
           </div>
         </Link>
 
-        <Link to="/reports" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
-          <div className='link'>
-            <img src={reports} alt="logo" className='sidebar-icon' />
-            Reports
-          </div>
-        </Link>
+        <PermissionGuard permission="read_reports">
+          <Link to="/reports" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+            <div className='link'>
+              <img src={reports} alt="logo" className='sidebar-icon' />
+              Reports
+            </div>
+          </Link>
+        </PermissionGuard>
         <hr />
         {/* ********************************************* */}
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>USER & STAFF MANAGEMENT</h4>

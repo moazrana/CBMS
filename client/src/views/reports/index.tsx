@@ -9,6 +9,7 @@ import Popup from '../../components/Popup/Popup';
 import TextField from '../../components/textField/TextField';
 import DateInput from '../../components/dateInput/DateInput';
 import { useApiRequest } from '../../hooks/useApiRequest';
+import { usePermissions } from '../../hooks/usePermissions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronRight, faCheck, faDownload, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { IncidentReportPopup, downloadIncidentReportPdf, formatParentGuardian, formatExternalContact, type ReportType } from './IncidentReportPopup';
@@ -127,9 +128,9 @@ function formatStaff(
 
 type ReportPopupState = { open: boolean; incident: IncidentRecord | null; studentName: string; studentId?: string; reportType?: ReportType };
 
-type ReportsListTabProps = { reportType: ReportType };
+type ReportsListTabProps = { reportType: ReportType; canDownload: boolean };
 
-const ReportsListTab: React.FC<ReportsListTabProps> = ({ reportType }) => {
+const ReportsListTab: React.FC<ReportsListTabProps> = ({ reportType, canDownload }) => {
   const { executeRequest } = useApiRequest();
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -229,66 +230,70 @@ const ReportsListTab: React.FC<ReportsListTabProps> = ({ reportType }) => {
           );
         },
       },
-      {
-        header: '',
-        accessor: 'download',
-        sortable: false,
-        type: 'template' as const,
-        template: (row: Record<string, unknown>) => {
-          const incident = row.incident as IncidentRecord | undefined;
-          const involvedNames = (row.involvedNames as string) || '';
-          const involvedStudentIds = (row.involvedStudentIds as string[]) || [];
-          const involvedNamesList = (row.involvedNamesList as string[]) || [];
-          return (
-            <button
-              type="button"
-              className="reports-page__download-row-btn"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (!incident) return;
-                const parentNames: string[] = [];
-                const parentNotes: string[] = [];
-                const externalNames: string[] = [];
-                const externalNotes: string[] = [];
-                if (involvedStudentIds.length > 0 && executeRequest) {
-                  try {
-                    for (let i = 0; i < involvedStudentIds.length; i++) {
-                      const id = involvedStudentIds[i];
-                      const name = involvedNamesList[i] || `Student ${i + 1}`;
-                      const student = await executeRequest('get', `/students/${id}`, undefined, { silent: true }) as { parents?: Parameters<typeof formatParentGuardian>[0]; emergencyContacts?: Parameters<typeof formatExternalContact>[0] } | null;
-                      if (student) {
-                        const pg = formatParentGuardian(student.parents);
-                        const ext = formatExternalContact(student.emergencyContacts);
-                        parentNames.push(`--- ${name} ---\n${pg.name || '—'}`);
-                        parentNotes.push(`--- ${name} ---\n${pg.notes || '—'}`);
-                        externalNames.push(`--- ${name} ---\n${ext.name || '—'}`);
-                        externalNotes.push(`--- ${name} ---\n${ext.notes || '—'}`);
+      ...(canDownload
+        ? [
+            {
+              header: '',
+              accessor: 'download',
+              sortable: false,
+              type: 'template' as const,
+              template: (row: Record<string, unknown>) => {
+                const incident = row.incident as IncidentRecord | undefined;
+                const involvedNames = (row.involvedNames as string) || '';
+                const involvedStudentIds = (row.involvedStudentIds as string[]) || [];
+                const involvedNamesList = (row.involvedNamesList as string[]) || [];
+                return (
+                  <button
+                    type="button"
+                    className="reports-page__download-row-btn"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!incident) return;
+                      const parentNames: string[] = [];
+                      const parentNotes: string[] = [];
+                      const externalNames: string[] = [];
+                      const externalNotes: string[] = [];
+                      if (involvedStudentIds.length > 0 && executeRequest) {
+                        try {
+                          for (let i = 0; i < involvedStudentIds.length; i++) {
+                            const id = involvedStudentIds[i];
+                            const name = involvedNamesList[i] || `Student ${i + 1}`;
+                            const student = await executeRequest('get', `/students/${id}`, undefined, { silent: true }) as { parents?: Parameters<typeof formatParentGuardian>[0]; emergencyContacts?: Parameters<typeof formatExternalContact>[0] } | null;
+                            if (student) {
+                              const pg = formatParentGuardian(student.parents);
+                              const ext = formatExternalContact(student.emergencyContacts);
+                              parentNames.push(`--- ${name} ---\n${pg.name || '—'}`);
+                              parentNotes.push(`--- ${name} ---\n${pg.notes || '—'}`);
+                              externalNames.push(`--- ${name} ---\n${ext.name || '—'}`);
+                              externalNotes.push(`--- ${name} ---\n${ext.notes || '—'}`);
+                            }
+                          }
+                        } catch {
+                          // proceed with empty contacts
+                        }
                       }
-                    }
-                  } catch {
-                    // proceed with empty contacts
-                  }
-                }
-                const contactOverrides = parentNames.length
-                  ? {
-                      parentGuardianName: parentNames.join('\n\n'),
-                      parentGuardianNotes: parentNotes.join('\n\n'),
-                      externalContactName: externalNames.join('\n\n'),
-                      externalContactNotes: externalNotes.join('\n\n'),
-                    }
-                  : undefined;
-                downloadIncidentReportPdf(incident, involvedNames, contactOverrides, reportType);
-              }}
-              title={reportType === 'safeguarding' ? 'Download safeguarding report' : 'Download incident report (all involved students)'}
-              aria-label="Download report"
-            >
-              <FontAwesomeIcon icon={faDownload} />
-            </button>
-          );
-        },
-      },
+                      const contactOverrides = parentNames.length
+                        ? {
+                            parentGuardianName: parentNames.join('\n\n'),
+                            parentGuardianNotes: parentNotes.join('\n\n'),
+                            externalContactName: externalNames.join('\n\n'),
+                            externalContactNotes: externalNotes.join('\n\n'),
+                          }
+                        : undefined;
+                      downloadIncidentReportPdf(incident, involvedNames, contactOverrides, reportType);
+                    }}
+                    title={reportType === 'safeguarding' ? 'Download safeguarding report' : 'Download incident report (all involved students)'}
+                    aria-label="Download report"
+                  >
+                    <FontAwesomeIcon icon={faDownload} />
+                  </button>
+                );
+              },
+            },
+          ]
+        : []),
     ],
-    [expandedId, executeRequest, reportType]
+    [expandedId, executeRequest, reportType, canDownload]
   );
 
   const tableData = useMemo(() => {
@@ -523,7 +528,9 @@ const SESSION_ORDER: Record<string, number> = {
   session3: 5,
 };
 
-const WeeklyReportTab: React.FC = () => {
+type WeeklyReportTabProps = { canDownload: boolean };
+
+const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
   const { executeRequest } = useApiRequest();
   const [weekStartDate, setWeekStartDate] = useState<string>(() => getMondayOfWeek(new Date().toISOString().split('T')[0]));
   const [location, setLocation] = useState<string>('');
@@ -1000,31 +1007,35 @@ const WeeklyReportTab: React.FC = () => {
             <FontAwesomeIcon icon={faTimes} style={{ color: '#ef4444' }} title="No EHCP" />
           ),
       },
-      {
-        header: '',
-        accessor: 'download',
-        sortable: false,
-        type: 'template' as const,
-        template: (row: Record<string, unknown>) => (
-          <button
-            type="button"
-            className="reports-page__download-row-btn"
-            onClick={() => {
-              if (!row._id) return;
-              setWeeklyReportStudentName((row.studentName as string) ?? '');
-              setWeeklyReportStudentId((row._id as string) ?? null);
-              setWeeklyReportNotes('');
-              setWeeklyReportPopupOpen(true);
-            }}
-            title="Download weekly report"
-            aria-label="Download report"
-          >
-            <FontAwesomeIcon icon={faDownload} />
-          </button>
-        ),
-      },
+      ...(canDownload
+        ? [
+            {
+              header: '',
+              accessor: 'download',
+              sortable: false,
+              type: 'template' as const,
+              template: (row: Record<string, unknown>) => (
+                <button
+                  type="button"
+                  className="reports-page__download-row-btn"
+                  onClick={() => {
+                    if (!row._id) return;
+                    setWeeklyReportStudentName((row.studentName as string) ?? '');
+                    setWeeklyReportStudentId((row._id as string) ?? null);
+                    setWeeklyReportNotes('');
+                    setWeeklyReportPopupOpen(true);
+                  }}
+                  title="Download weekly report"
+                  aria-label="Download report"
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                </button>
+              ),
+            },
+          ]
+        : []),
     ],
-    []
+    [canDownload]
   );
 
   return (
@@ -1074,13 +1085,52 @@ const WeeklyReportTab: React.FC = () => {
 };
 
 const Reports: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('incidents');
+  const { checkPermission } = usePermissions();
+  const canReadIncidentReport = checkPermission('read_incident_report');
+  const canReadSafeguardReport = checkPermission('read_safeguard_report');
+  const canReadWeeklyReport = checkPermission('read_weekly_report');
+  const canDownloadIncidentReport = checkPermission('download_incident_report');
+  const canDownloadSafeguardReport = checkPermission('download_safeguard_report');
+  const canDownloadWeeklyReport = checkPermission('download_weekly_report');
+
+  const allowedTabIds = useMemo(() => {
+    const ids: string[] = [];
+    if (canReadIncidentReport) ids.push('incidents');
+    if (canReadSafeguardReport) ids.push('safeguarding');
+    if (canReadWeeklyReport) ids.push('weekly');
+    return ids;
+  }, [canReadIncidentReport, canReadSafeguardReport, canReadWeeklyReport]);
+
+  const firstTabId = allowedTabIds[0] ?? 'incidents';
+  const [activeTab, setActiveTab] = useState(firstTabId);
+
+  useEffect(() => {
+    if (allowedTabIds.length > 0 && !allowedTabIds.includes(activeTab)) {
+      setActiveTab(allowedTabIds[0]);
+    }
+  }, [activeTab, allowedTabIds]);
 
   const tabs = [
-    { id: 'incidents', label: 'Incidents', content: <ReportsListTab reportType="incident" /> },
-    { id: 'safeguarding', label: 'Safeguarding', content: <ReportsListTab reportType="safeguarding" /> },
-    { id: 'weekly', label: 'Weekly reports', content: <WeeklyReportTab /> },
+    ...(canReadIncidentReport
+      ? [{ id: 'incidents', label: 'Incidents', content: <ReportsListTab reportType="incident" canDownload={canDownloadIncidentReport} /> }]
+      : []),
+    ...(canReadSafeguardReport
+      ? [{ id: 'safeguarding', label: 'Safeguarding', content: <ReportsListTab reportType="safeguarding" canDownload={canDownloadSafeguardReport} /> }]
+      : []),
+    ...(canReadWeeklyReport
+      ? [{ id: 'weekly', label: 'Weekly reports', content: <WeeklyReportTab canDownload={canDownloadWeeklyReport} /> }]
+      : []),
   ];
+
+  if (tabs.length === 0) {
+    return (
+      <Layout>
+        <div className="reports-page">
+          <p className="reports-page__incidents-empty">You don&apos;t have permission to view any report tabs.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

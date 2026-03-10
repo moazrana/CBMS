@@ -87,6 +87,8 @@ const Index = () => {
     const [filterClass, setFilterClass] = useState<string>("");
     const [filterSite, setFilterSite] = useState<string>("");
     const [filterSubject, setFilterSubject] = useState<string>("");
+    const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+    const [filterDateTo, setFilterDateTo] = useState<string>("");
     const [classIdsForFilterStudent, setClassIdsForFilterStudent] = useState<string[]>([]);
     const [addSlotShown, setAddSlotShown] = useState<boolean>(false);
     
@@ -332,6 +334,7 @@ const Index = () => {
                         value={filterStudent}
                         onChange={(v) => setFilterStudent(String(v))}
                         options={studentOptions}
+                        disabled={!!filterClass}
                         onSearch={async (term) => {
                             try {
                                 const res = await executeRequest("get", `/students?search=${encodeURIComponent(term)}&perPage=100`);
@@ -376,6 +379,7 @@ const Index = () => {
                         value={filterClass}
                         onChange={(v) => setFilterClass(String(v))}
                         options={classOptions}
+                        disabled={!!filterStudent}
                         onSearch={async (term) => {
                             try {
                                 const res = await executeRequest("get", `/classes?search=${encodeURIComponent(term)}&perPage=100`);
@@ -413,7 +417,26 @@ const Index = () => {
                         icon={Subject}
                     />
                 </div>
-                <div className="input-div" />
+                <div className="input-div">
+                    <DateInput
+                        label="Date from"
+                        name="filterDateFrom"
+                        value={filterDateFrom}
+                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                        placeholder="Select date"
+                        icon={Calendar}
+                    />
+                </div>
+                <div className="input-div">
+                    <DateInput
+                        label="Date to"
+                        name="filterDateTo"
+                        value={filterDateTo}
+                        onChange={(e) => setFilterDateTo(e.target.value)}
+                        placeholder="Select date"
+                        icon={Calendar}
+                    />
+                </div>
             </div>
         </>
     );
@@ -614,7 +637,9 @@ const Index = () => {
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
             weekEnd.setHours(23, 59, 59, 999);
-            for (const s of filtered) {
+            const rangeStart = filterDateFrom ? new Date(filterDateFrom + "T00:00:00").getTime() : 0;
+        const rangeEnd = filterDateTo ? new Date(filterDateTo + "T23:59:59").getTime() : 0;
+        for (const s of filtered) {
                 const cls = s.class;
                 if (!cls || typeof cls !== "object") continue;
                 const from = cls.fromDate ? new Date(cls.fromDate).getTime() : 0;
@@ -623,11 +648,13 @@ const Index = () => {
                 if (weekEnd.getTime() < from || weekStart.getTime() > to) continue;
                 const dayIdx = DAY_ORDER.indexOf(s.day);
                 if (dayIdx < 0) continue;
+                const eventDate = new Date(weekStart);
+                eventDate.setDate(eventDate.getDate() + dayIdx);
+                if (rangeStart && eventDate.getTime() < rangeStart) continue;
+                if (rangeEnd && eventDate.getTime() > rangeEnd) continue;
                 const period = s.period && typeof s.period === "object" ? s.period : { name: "Session", startTime: "09:00", endTime: "10:00" };
                 const [startH, startM] = parseTime(period.startTime);
                 const [endH, endM] = parseTime(period.endTime);
-                const eventDate = new Date(weekStart);
-                eventDate.setDate(eventDate.getDate() + dayIdx);
                 const start = new Date(eventDate);
                 start.setHours(startH, startM, 0, 0);
                 const end = new Date(eventDate);
@@ -649,7 +676,7 @@ const Index = () => {
             }
         }
         return events;
-    }, [timetableSchedules, filterClass, filterStaff, classIdsForFilterStudent, filterSite, filterSubject]);
+    }, [timetableSchedules, filterClass, filterStaff, classIdsForFilterStudent, filterSite, filterSubject, filterDateFrom, filterDateTo]);
 
     const [pdfGenerating, setPdfGenerating] = useState(false);
     const handlePrintTimetablePdf = async () => {
@@ -662,6 +689,21 @@ const Index = () => {
                 useCORS: true,
                 logging: false,
                 backgroundColor: "#ffffff",
+                onclone: (_, clonedEl) => {
+                    const el = clonedEl as HTMLElement;
+                    el.style.backgroundColor = "#ffffff";
+                    el.style.color = "#000000";
+                    [el, ...Array.from(el.querySelectorAll("*"))].forEach((n) => {
+                        const node = n as HTMLElement;
+                        node.style.color = "#000000";
+                        node.style.backgroundColor = "#ffffff";
+                        node.style.borderColor = "#000000";
+                        if (node.tagName === "svg" || node.closest?.("svg")) {
+                            node.style.fill = "#000000";
+                            node.style.stroke = "#000000";
+                        }
+                    });
+                },
             });
             const imgData = canvas.toDataURL("image/png", 1.0);
             const pdf = new jsPDF({
@@ -671,12 +713,37 @@ const Index = () => {
             });
             const pageW = pdf.internal.pageSize.getWidth();
             const pageH = pdf.internal.pageSize.getHeight();
+            const margin = 8;
+            let y = margin;
+            pdf.setDrawColor(0, 0, 0);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(10);
+            const todayStr = new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+            pdf.text(`Printed: ${todayStr}`, margin, y);
+            y += 6;
+            if (filterStudent) {
+                const studentName = studentOptions.find((o) => o.value === filterStudent)?.label ?? "—";
+                const firstClassId = classIdsForFilterStudent[0];
+                const schedule = timetableSchedules.find((s) => (s.class && typeof s.class === "object" && (s.class as { _id: string })._id === firstClassId));
+                const cls = schedule?.class && typeof schedule.class === "object" ? schedule.class as { location?: string; subject?: string; yeargroup?: string } : null;
+                const location = schedule?.location ?? cls?.location ?? "—";
+                const subject = cls?.subject ?? "—";
+                const classLabel = cls ? [cls.subject, cls.yeargroup].filter(Boolean).join(" - ") || "—" : "—";
+                pdf.text(`Student: ${studentName}`, margin, y);
+                y += 5;
+                pdf.text(`Location: ${location}  |  Class: ${classLabel}  |  Subject: ${subject}`, margin, y);
+                y += 5;
+                pdf.text(`Date from: ${filterDateFrom || "—"}  |  Date to: ${filterDateTo || "—"}`, margin, y);
+                y += 5;
+            }
+            y += 4;
             const imgW = canvas.width;
             const imgH = canvas.height;
-            const ratio = Math.min(pageW / imgW, pageH / imgH) * 0.95;
+            const availableH = pageH - y - margin;
+            const ratio = Math.min((pageW - 2 * margin) / imgW, availableH / imgH) * 0.98;
             const w = imgW * ratio;
             const h = imgH * ratio;
-            pdf.addImage(imgData, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
+            pdf.addImage(imgData, "PNG", (pageW - w) / 2, y, w, h);
             pdf.save("timetable.pdf");
         } catch (err) {
             console.error(err);
