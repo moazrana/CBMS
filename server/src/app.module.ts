@@ -21,6 +21,7 @@ import { StaffModule } from './staff/staff.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { StudentsModule } from './students/students.module';
 import { EngagementModule } from './engagement/engagement.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 // import { AppController } from './app.controller';
 // import { AppService } from './app.service';
 
@@ -64,6 +65,7 @@ import { EngagementModule } from './engagement/engagement.module';
     AttendanceModule,
     StudentsModule,
     EngagementModule,
+    AuditLogModule,
   ],
   providers: [
     // MailService

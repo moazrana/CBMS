@@ -20,6 +20,10 @@ export class Class {
   @Prop({ required: true, trim: true })
   yeargroup: string;
 
+  /** Days of the week this class takes place (e.g. ['Monday', 'Wednesday']). Used for timetable: class is scheduled for every session on these days. */
+  @Prop({ type: [String], default: [] })
+  daysOfWeek: string[];
+
   @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'Student', default: [] })
   students: MongooseSchema.Types.ObjectId[];
 

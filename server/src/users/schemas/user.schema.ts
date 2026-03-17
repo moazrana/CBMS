@@ -189,7 +189,7 @@ const RightToWorkSchema = {
   type: {
     type: String,
     enum: ['visa', 'passport', 'shareCode'],
-    required: true,
+    required: false,
   },
   verifiedDate: {
     type: Date,

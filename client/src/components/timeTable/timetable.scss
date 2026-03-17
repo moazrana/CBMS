@@ -5,7 +5,25 @@
     height: 100%;
     background: var(--main-bg);
     overflow: hidden;
-    
+
+    /* Month view: ensure grid is visible and use theme text color */
+    .rbc-month-view {
+        min-height: 400px;
+        flex: 1;
+        color: var(--main-text);
+    }
+    .rbc-month-view .rbc-header,
+    .rbc-month-view .rbc-date-cell,
+    .rbc-month-view .rbc-row-content,
+    .rbc-month-view .rbc-event-content,
+    .rbc-month-view .rbc-event,
+    .rbc-month-view .event-container {
+        color: var(--main-text);
+    }
+    .rbc-month-row {
+        min-height: 80px;
+    }
+
     // Customize time background color
     .rbc-time-view {
         .rbc-time-content {
@@ -107,13 +125,42 @@
     }
     .event-container{
         background-color: #27ae60;
-        color: black;
+        color: var(--main-text);
         padding: 6px;
         margin-top: 5px;
     }
+    /* Custom toolbar: month name (in month view) + Month/Week buttons */
     .rbc-btn-group {
         display: none;
     }
+    .tt-custom-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .tt-custom-toolbar .tt-month-name {
+        // flex: 1;
+        min-width: 10%;
+        color: var(--main-text);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    .tt-custom-toolbar .rbc-btn-group {
+        display: inline-block;
+    }
+    .tt-custom-toolbar .rbc-btn-group button {
+        color: var(--main-text);
+        background: var(--hover-bg);
+        border: 1px solid var(--border-color, #ccc);
+    }
+    .tt-custom-toolbar .rbc-btn-group button:hover,
+    .tt-custom-toolbar .rbc-btn-group button.rbc-active {
+        background: var(--sidebar-heading);
+    }
+    .rbc-toolbar-label { display: none; }
     .gutter-header { 
         padding: 8px 10px; 
         line-height: 1.2;
@@ -121,7 +168,6 @@
     }
     .gutter-month { font-weight: 700; font-size: x-large;}
     .gutter-range { font-size: large; opacity: .8; }
-    .rbc-toolbar-label{display:none}
     .rbc-day-bg{
         border: none;
     }
@@ -149,6 +195,8 @@
         z-index: 10; /* Add this */
         position: relative; /* Add this */
     }
-    
+    .rbc-off-range-bg {
+        background: #7d7d7d;    
+    }
     
 }

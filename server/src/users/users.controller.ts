@@ -4,6 +4,7 @@ import {
   Post, 
   Body, 
   Param, 
+  Patch,
   UseGuards, 
   UseInterceptors, 
   UploadedFile, 
@@ -18,6 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -28,18 +30,33 @@ import { DocumentType } from './schemas/document.schema';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { HasPermission } from '../auth/decorators/has-permission.decorator';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @SetMetadata('roles', [UserRole.ADMIN])
-  async create(@Body() createUserDto: CreateUserDto): Promise<User> {
-    return this.usersService.create(createUserDto);
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @Request() req: { user?: { _id: string } },
+  ): Promise<User> {
+    const created = await this.usersService.create(createUserDto);
+    if (req?.user?._id) {
+      await this.auditLogService.logRoleAssignment({
+        targetUserRecordId: String(created._id),
+        roleName: createUserDto.role,
+        performedBy: req.user._id,
+      });
+    }
+    return created;
   }
 
   @Get()
@@ -79,6 +96,53 @@ export class UsersController {
   async findOne(@Param('id') id: string): Promise<User> {
     // console.log('tha pe')
     return this.usersService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @HasPermission('update_user')
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Request() req: { user?: { _id: string } },
+  ): Promise<User> {
+    const before = await this.usersService.findOne(id);
+    const updated = await this.usersService.update(id, updateUserDto);
+    if (req?.user?._id) {
+      const changedFields: string[] = [];
+      if (typeof updateUserDto?.name === 'string' && updateUserDto.name !== (before as any)?.name) {
+        changedFields.push('name');
+      }
+      if (typeof updateUserDto?.email === 'string' && updateUserDto.email !== (before as any)?.email) {
+        changedFields.push('email');
+      }
+      if (typeof updateUserDto?.role === 'string' && updateUserDto.role.trim()) {
+        const beforeRoleName =
+          (before as any)?.role && typeof (before as any).role === 'object' && 'name' in (before as any).role
+            ? String((before as any).role.name)
+            : String((before as any)?.role ?? '');
+        if (beforeRoleName !== updateUserDto.role) {
+          changedFields.push('role');
+        }
+      }
+      if (typeof updateUserDto?.password === 'string' && updateUserDto.password.trim()) {
+        changedFields.push('password');
+      }
+      if (typeof updateUserDto?.pin === 'string' && updateUserDto.pin.trim()) {
+        changedFields.push('pin');
+      }
+
+      await this.auditLogService.logRecordEdit({
+        action: 'update',
+        module: 'users',
+        recordId: id,
+        performedBy: req.user._id,
+        details: {
+          updatedFields: changedFields,
+        },
+      });
+    }
+    return updated;
   }
 
   @Post('certificates/upload')

@@ -2807,7 +2807,7 @@ const EditStudent = () => {
   const TimeTableTab = () => {
     const [pdfGenerating, setPdfGenerating] = useState(false);
     const handlePrintTimetablePdf = async () => {
-      const el = document.getElementById('time-table-div');
+      const el = document.getElementById('student-time-table-div');
       if (!el) return;
       setPdfGenerating(true);
       try {
@@ -2835,20 +2835,21 @@ const EditStudent = () => {
     };
     return (
       <div className="tab-content">
-        <div className="timetable-tab-wrapper timetable-tab-with-print">
+        <div className="student-timetable-wrapper">
           {!id ? (
             <div className="empty-state">
               <p>Save the student first to view their timetable.</p>
             </div>
           ) : (
             <>
-              <TimeTableComponent
-                onTimeSlotButtonPress={() => {}}
-                propEvents={studentTimetableEvents}
-              />
+              <div id="student-time-table-div" className="student-timetable-card">
+                <TimeTableComponent
+                  propEvents={studentTimetableEvents}
+                />
+              </div>
               <button
                 type="button"
-                className="tt-print-pdf-btn"
+                className="tt-print-pdf-btn student-tt-print-btn"
                 onClick={handlePrintTimetablePdf}
                 disabled={pdfGenerating}
                 title="Download timetable as PDF"

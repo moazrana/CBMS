@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Request,
   NotFoundException,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
@@ -17,16 +18,30 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/role.schema';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Controller('students')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
-  async createStudent(@Body() createStudentDto: CreateStudentDto) {
-    return this.studentsService.create(createStudentDto);
+  async createStudent(
+    @Body() createStudentDto: CreateStudentDto,
+    @Request() req: { user?: { _id: string } },
+  ) {
+    const created = await this.studentsService.create(createStudentDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'create',
+      module: 'students',
+      recordId: String(created._id),
+      performedBy: req?.user?._id,
+    });
+    return created;
   }
 
   @Get()
@@ -72,13 +87,31 @@ export class StudentsController {
   async updateStudent(
     @Param('id') id: string,
     @Body() updateStudentDto: UpdateStudentDto,
+    @Request() req: { user?: { _id: string } },
   ) {
-    return this.studentsService.update(id, updateStudentDto);
+    const updated = await this.studentsService.update(id, updateStudentDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'update',
+      module: 'students',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return updated;
   }
 
   @Delete(':id')
-  async removeStudent(@Param('id') id: string) {
-    return this.studentsService.remove(id);
+  async removeStudent(
+    @Param('id') id: string,
+    @Request() req: { user?: { _id: string } },
+  ) {
+    const result = await this.studentsService.remove(id);
+    await this.auditLogService.logRecordEdit({
+      action: 'delete',
+      module: 'students',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return result;
   }
 
   @Delete(':id/hard')

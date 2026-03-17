@@ -13,7 +13,6 @@ import studentBehavior from '../../assets/sidebar/studentBehavior.svg';
 import classes from '../../assets/sidebar/classes.svg';
 import reports from '../../assets/sidebar/reports.svg';
 import users from '../../assets/sidebar/users.svg';
-import compliance from '../../assets/sidebar/compliance.svg';
 import settings from '../../assets/sidebar/settings.svg';
 import timeTable from '../../assets/sidebar/timeTable.svg';
 import staff from '../../assets/dashboard/teachers.svg';
@@ -116,6 +115,7 @@ export default function Sidebar() {
         </PermissionGuard>
         <hr />
         {/* ********************************************* */}
+        <PermissionGuard permission="read_user">
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>USER & STAFF MANAGEMENT</h4>
         <Link to="/users" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
@@ -123,13 +123,13 @@ export default function Sidebar() {
             Users
           </div>
         </Link>
-        
-        <Link to="/compliance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
+        </PermissionGuard>
+        {/* <Link to="/compliance" className="sidebar-text sidebar-link" style={{ color: 'var(--sidebar-text)' }}>
           <div className='link'>
             <img src={compliance} alt="logo" className='sidebar-icon' />
             Compliance
           </div>
-        </Link>
+        </Link> */}
         <hr />
         {/* ********************************************* */}
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>CONFIGURATIONS</h4>

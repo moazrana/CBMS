@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UploadedFile, UploadedFiles, UseInterceptors, Res, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UploadedFile, UploadedFiles, UseInterceptors, Res, Request, NotFoundException } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { IncidentsService } from './incidents.service';
 import { Incident } from './schemas/incident.schema';
 import { parseIncidentBody } from './parse-incident-body';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import * as fs from 'fs';
 
 const incidentsUploadDir = join(__dirname, '../../uploads/incidents');
@@ -26,7 +27,10 @@ const multerOpts = {
 
 @Controller('incidents')
 export class IncidentsController {
-  constructor(private readonly incidentsService: IncidentsService) {}
+  constructor(
+    private readonly incidentsService: IncidentsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
   @UseInterceptors(
@@ -49,6 +53,7 @@ export class IncidentsController {
       restrainFiles?: Express.Multer.File[];
       noteFiles?: Express.Multer.File[];
     },
+    @Request() req?: { user?: { _id: string } },
   ) {
     const data = parseIncidentBody(body);
 
@@ -108,7 +113,13 @@ export class IncidentsController {
       });
     }
 
-    return this.incidentsService.create(data);
+    const created = await this.incidentsService.create(data);
+    await this.auditLogService.logIncidentSubmission({
+      recordId: String(created._id),
+      performedBy: req?.user?._id,
+      isUpdate: false,
+    });
+    return created;
   }
 
   @Get()
@@ -206,9 +217,51 @@ export class IncidentsController {
       restrainFiles?: Express.Multer.File[];
       noteFiles?: Express.Multer.File[];
     },
+    @Request() req?: { user?: { _id: string } },
   ) {
     const data = parseIncidentBody(body) as Partial<Incident>;
     const existing = await this.incidentsService.findOne(id);
+
+    const deepNormalize = (v: any): any => {
+      if (v === undefined) return undefined;
+      if (v === null) return null;
+      if (v instanceof Date) return v.toISOString();
+      if (Array.isArray(v)) return v.map(deepNormalize);
+      if (typeof v === 'object') {
+        // Mongoose ObjectId
+        if ((v as any)?._bsontype === 'ObjectId' && typeof (v as any).toString === 'function') {
+          return String(v);
+        }
+        // populated doc / subdoc
+        if ('_id' in v && (typeof (v as any)._id === 'string' || (v as any)._id?._bsontype === 'ObjectId')) {
+          return String((v as any)._id);
+        }
+        const out: Record<string, any> = {};
+        for (const [k, val] of Object.entries(v)) {
+          // ignore mongoose internals
+          if (k === '__v') continue;
+          out[k] = deepNormalize(val);
+        }
+        return out;
+      }
+      return v;
+    };
+
+    const computeChanges = (beforeDoc: any, patch: Record<string, any>) => {
+      const beforeRaw = typeof beforeDoc?.toObject === 'function' ? beforeDoc.toObject() : beforeDoc;
+      const before = deepNormalize(beforeRaw);
+      const changes: Record<string, { from: unknown; to: unknown }> = {};
+      for (const key of Object.keys(patch)) {
+        const toVal = patch[key];
+        if (toVal === undefined) continue;
+        const fromVal = (beforeRaw as any)?.[key];
+        const fromNorm = deepNormalize(fromVal);
+        const toNorm = deepNormalize(toVal);
+        const same = JSON.stringify(fromNorm) === JSON.stringify(toNorm);
+        if (!same) changes[key] = { from: fromNorm, to: toNorm };
+      }
+      return changes;
+    };
 
     if (files?.file?.[0]) {
       const file = files.file[0];
@@ -269,7 +322,14 @@ export class IncidentsController {
       });
     }
 
-    return this.incidentsService.update(id, data);
+    const updated = await this.incidentsService.update(id, data);
+    await this.auditLogService.logIncidentSubmission({
+      recordId: id,
+      performedBy: req?.user?._id,
+      isUpdate: true,
+      changes: computeChanges(existing as any, data as any),
+    });
+    return updated;
   }
 
   @Delete(':id')

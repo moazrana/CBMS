@@ -88,11 +88,36 @@ const UserList = () => {
   const onAdd = async () => {
     await fetchRoles();
     console.log('adding: ');
+    setEditingUserId(null);
+    setIsEditMode(false);
+    setUserData({
+      name: '',
+      email: '',
+      role: '',
+      password: '',
+      pin: '',
+    });
     setIsPopupOpen(true);
   }
   const handleEdit = (row: Record<string, any>) => {
     const user = row as User;
     console.log('editing: ', user);
+    fetchRoles().then(() => {
+      const roleName =
+        user.role && typeof user.role === 'object' && 'name' in user.role
+          ? (user.role as any).name
+          : String(user.role ?? '');
+      setEditingUserId(user._id);
+      setIsEditMode(true);
+      setUserData({
+        name: user.name ?? '',
+        email: user.email ?? '',
+        role: roleName,
+        password: '',
+        pin: '',
+      });
+      setIsPopupOpen(true);
+    });
   };
   React.useEffect(() => {
     fetchUsers();
@@ -107,18 +132,35 @@ const UserList = () => {
     { header: 'Updated', accessor: 'updatedAt', sortable: true, type: 'date' as const }
   ];
   const [isPopupOpen, setIsPopupOpen] = React.useState(false);
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [editingUserId, setEditingUserId] = React.useState<string | null>(null);
   const handleSubmit = async () => {
     try {
       console.log('form submitted', userData);
       
       // Validate required fields
-      if (!userData.name || !userData.email || !userData.role || !userData.password || !userData.pin) {
+      if (!userData.name || !userData.email || !userData.role || (!isEditMode && (!userData.password || !userData.pin))) {
         alert('Please fill in all fields');
         return;
       }
 
-      // Call the create user API
-      await executeRequest('post', '/users', userData);
+      if (isEditMode) {
+        if (!editingUserId) {
+          alert('No user selected to edit');
+          return;
+        }
+        const payload: Partial<UserData> = {
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+        };
+        if (userData.password?.trim()) payload.password = userData.password;
+        if (userData.pin?.trim()) payload.pin = userData.pin;
+        await executeRequest('patch', `/users/${editingUserId}`, payload as any);
+      } else {
+        // Call the create user API
+        await executeRequest('post', '/users', userData);
+      }
       
       // Reset form and close popup
       setUserData({
@@ -128,15 +170,17 @@ const UserList = () => {
         password: '',
         pin: ''
       });
+      setEditingUserId(null);
+      setIsEditMode(false);
       setIsPopupOpen(false);
       
       // Refresh the users list
       await fetchUsers();
       
-      alert('User created successfully!');
+      alert(isEditMode ? 'User updated successfully!' : 'User created successfully!');
     } catch (error) {
-      console.error('Error creating user:', error);
-      alert('Failed to create user. Please try again.');
+      console.error('Error saving user:', error);
+      alert(isEditMode ? 'Failed to update user. Please try again.' : 'Failed to create user. Please try again.');
     }
   }
   const [userData,setUserData]=useState<UserData>({
@@ -181,9 +225,9 @@ const UserList = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={() => setIsPopupOpen(false)}
-        title="Add User"
+        title={isEditMode ? 'Edit User' : 'Add User'}
         width="600px"
-        confirmText='Add User'
+        confirmText={isEditMode ? 'Save' : 'Add User'}
         cancelText='Cancel'
         onConfirm={() => handleSubmit()}
         >
@@ -199,8 +243,8 @@ const UserList = () => {
                 options={roles}
                 placeholder='Select Role'
               />
-              <Input type='password' label='Password' name='password' value={userData.password} onChange={(e) => setUserData({...userData, password: e.target.value})} />
-              <Input type='password' label='Pin' name='pin' value={userData.pin} onChange={(e) => setUserData({...userData, pin: e.target.value})} />
+              <Input type='password' label={isEditMode ? 'Password (optional)' : 'Password'} name='password' value={userData.password} onChange={(e) => setUserData({...userData, password: e.target.value})} />
+              <Input type='password' label={isEditMode ? 'Pin (optional)' : 'Pin'} name='pin' value={userData.pin} onChange={(e) => setUserData({...userData, pin: e.target.value})} />
           </form>
       </Popup>
     </>

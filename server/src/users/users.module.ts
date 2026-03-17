@@ -7,6 +7,7 @@ import { Role, RoleSchema } from './schemas/role.schema';
 import { RolePermissionService } from './services/role-permission.service';
 import { Permission, PermissionSchema } from './schemas/permission.schema';
 import { RolesModule } from '../roles/roles.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { RolesModule } from '../roles/roles.module';
       { name: Role.name, schema: RoleSchema },
       { name: Permission.name, schema: PermissionSchema },
     ]),
-    forwardRef(() => RolesModule)
+    forwardRef(() => RolesModule),
+    AuditLogModule,
   ],
   controllers: [UsersController],
   providers: [

@@ -1292,7 +1292,7 @@ width={800}
                                     <input type="checkbox" checked={socialCare.includes('Others')} onChange={() => handleCheckbox('Others', socialCare, setSocialCare)} />
                                     <span className="checkmark"></span>
                                     Others
-                                </label>
+                                </label> 
                             </div>
                         </div>
                         {socialCare.includes('Others') && (

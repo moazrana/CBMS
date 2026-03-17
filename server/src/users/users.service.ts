@@ -5,6 +5,7 @@ import { User, UserDocument, CertificateStatus } from './schemas/user.schema';
 import { UserDocument as UserDocumentType, DocumentStatus, DocumentType } from './schemas/document.schema';
 import { Role } from './schemas/role.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -43,6 +44,46 @@ export class UsersService {
     });
 
     return createdUser.save();
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.userModel.findOne({ _id: id, deletedAt: null }).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (updateUserDto.email && updateUserDto.email !== user.email) {
+      const existingUser = await this.userModel
+        .findOne({ email: updateUserDto.email, _id: { $ne: user._id } })
+        .lean()
+        .exec();
+      if (existingUser) {
+        throw new ConflictException('Email already exists');
+      }
+      user.email = updateUserDto.email;
+    }
+
+    if (typeof updateUserDto.name === 'string') {
+      user.name = updateUserDto.name;
+    }
+
+    if (typeof updateUserDto.role === 'string' && updateUserDto.role.trim()) {
+      const role = await this.roleModel.findOne({ name: updateUserDto.role }).exec();
+      if (!role) {
+        throw new NotFoundException(`Role '${updateUserDto.role}' not found`);
+      }
+      user.role = role._id as any;
+    }
+
+    if (typeof updateUserDto.password === 'string' && updateUserDto.password.trim()) {
+      user.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    if (typeof updateUserDto.pin === 'string' && updateUserDto.pin.trim()) {
+      user.pin = await bcrypt.hash(updateUserDto.pin, 10);
+    }
+
+    return user.save();
   }
 
   async findAll(sort: string, order: string, search: string, page: number, perPage: number): Promise<Partial<User>[]> {

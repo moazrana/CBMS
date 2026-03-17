@@ -18,6 +18,11 @@ export class CreateClassDto {
 
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
+  daysOfWeek?: string[];
+
+  @IsOptional()
+  @IsArray()
   @IsMongoId({ each: true })
   students?: string[];
 

@@ -11,25 +11,16 @@ import Popup from "../../../components/Popup/Popup";
 import Subject from "../../../assets/safeguarding/subject.svg";
 import YearGroup from "../../../assets/safeguarding/yearGroup.svg";
 import Calendar from "../../../assets/safeguarding/calendar.svg";
-import Period from "../../../assets/safeguarding/period.svg";
 import Location from "../../../assets/safeguarding/location.svg";
 import Teacher from "../../../assets/dashboard/teachers.svg";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faPrint } from "@fortawesome/free-solid-svg-icons";
+import { faPrint } from "@fortawesome/free-solid-svg-icons";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { DropdownOption } from "../../../types/DropDownOption";
 import DateInput from "../../../components/dateInput/DateInput";
 import SearchableSelect from "../../../components/SearchableSelect/SearchableSelect";
 import { useApiRequest } from "../../../hooks/useApiRequest";
-
-const DAY_OPTIONS: DropdownOption[] = [
-  { value: "Monday", label: "Monday" },
-  { value: "Tuesday", label: "Tuesday" },
-  { value: "Wednesday", label: "Wednesday" },
-  { value: "Thursday", label: "Thursday" },
-  { value: "Friday", label: "Friday" },
-];
 
 const LOCATION_OPTIONS: DropdownOption[] = [
   { label: "Warrington", value: "Warrington" },
@@ -57,6 +48,7 @@ interface ClassData {
   yeargroup?: string;
   fromDate?: string | Date;
   toDate?: string | Date;
+  daysOfWeek?: string[];
 }
 
 /** Schedule from GET /schedules/timetable (with class and period populated) */
@@ -106,14 +98,9 @@ const Index = () => {
     const [timetableSchedules, setTimetableSchedules] = useState<TimetableSchedule[]>([]);
     const { executeRequest } = useApiRequest();
 
-    interface Slot{
-        day:string,
-        period:string,
-        location:string,
-        staff:string,
-        teacher:string
-    }
-    const [slots,setSlots] = useState<Slot[]>([{day:'',period:'',location:'',staff:'',teacher:''}]);
+    const [allocationLocation, setAllocationLocation] = useState<string>("");
+    const [allocationStaff, setAllocationStaff] = useState<string>("");
+    const [allocationTeacher, setAllocationTeacher] = useState<string>("");
     const addPopup = () => {
         return (
             <>
@@ -130,29 +117,31 @@ const Index = () => {
                             alert("Please select a class.");
                             return;
                         }
-                        const validSlots = slots.filter(
-                            (s) =>
-                                s.day?.trim() &&
-                                s.period?.trim() &&
-                                s.location?.trim() &&
-                                s.staff?.trim() &&
-                                s.teacher?.trim()
-                        );
+                        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+                        if (!allocationLocation?.trim() || !allocationStaff?.trim() || !allocationTeacher?.trim()) {
+                            alert("Please select Location, Staff and Teacher.");
+                            return;
+                        }
                         try {
-                            // await executeRequest("delete", `/schedules/class/${selectedClass}`);
-                            if (validSlots.length > 0) {
-                                const schedules = validSlots.map((s) => ({
-                                    class: selectedClass,
-                                    day: s.day.trim(),
-                                    period: s.period.trim(),
-                                    location: s.location.trim(),
-                                    staff: s.staff.trim(),
-                                    teacher: s.teacher.trim(),
-                                }));
+                            await executeRequest("delete", `/schedules/class/${selectedClass}`);
+                            const schedules: { class: string; day: string; period: string; location: string; staff: string; teacher: string }[] = [];
+                            for (const day of daysOfWeek) {
+                                for (const period of periodOptions) {
+                                    schedules.push({
+                                        class: selectedClass,
+                                        day,
+                                        period: period.value,
+                                        location: allocationLocation.trim(),
+                                        staff: allocationStaff.trim(),
+                                        teacher: allocationTeacher.trim(),
+                                    });
+                                }
+                            }
+                            if (schedules.length > 0) {
                                 await executeRequest("post", "/schedules", { schedules });
                             }
                             setAddSlotShown(false);
-                            alert("Schedule saved successfully.");
+                            alert("Schedule saved successfully. Class is scheduled for every session Monday–Friday.");
                         } catch (err) {
                             console.error(err);
                             alert("Failed to save schedule. Please try again.");
@@ -224,105 +213,50 @@ const Index = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="popup-body-item-header">
-                                <p className="popup-body-item-header-text">Schedule Slot.</p>
-                            </div>
-                        {slots.map((slot, idx) => (
-                            <div className="slot-div" key={idx}>
-                                <div className="inputs-div">
-                                    <Select
-                                        label="Day"
-                                        name="day"
-                                        value={slot.day}
-                                        onChange={(e) => setSlots(prev => prev.map((s, i) => i === idx ? { ...s, day: e.target.value } : s))}
-                                        options={DAY_OPTIONS}
-                                        placeholder="Select Day"
-                                        icon={Calendar}
-                                    />
-                                    <Select
-                                        label="Period"
-                                        name="period"
-                                        value={slot.period}
-                                        onChange={(e) => setSlots(prev => prev.map((s, i) => i === idx ? { ...s, period: e.target.value } : s))}
-                                        options={periodOptions}
-                                        placeholder="Select Period"
-                                        icon={Period}
-                                    />
-                                    <Select
-                                        label="Location"
-                                        name="location"
-                                        value={slot.location}
-                                        onChange={(e) => setSlots(prev => prev.map((s, i) => i === idx ? { ...s, location: e.target.value } : s))}
-                                        options={LOCATION_OPTIONS}
-                                        placeholder="Select Location"
-                                        icon={Location}
-                                    />
-                                    <Select
-                                        label="Staff"
-                                        name="staff"
-                                        value={slot.staff}
-                                        onChange={(e) => setSlots(prev => prev.map((s, i) => i === idx ? { ...s, staff: e.target.value } : s))}
-                                        options={slotStaffOptions}
-                                        placeholder="Select Staff"
-                                        icon={Staff}
-                                    />
-                                </div>
-                                <div className="inputs-div">
-                                    <div className="input-div">
-                                        <Select
-                                            label="Teacher"
-                                            name="teacher"
-                                            value={slot.teacher}
-                                            onChange={(e) => setSlots(prev => prev.map((s, i) => i === idx ? { ...s, teacher: e.target.value } : s))}
-                                            options={slotStaffOptions}
-                                            placeholder="Select Teacher"
-                                            icon={Teacher}
-                                        />
+                            {selectedClass && (
+                                <>
+                                    <div className="popup-body-item-header">
+                                        <p className="popup-body-item-header-text">Schedule (all sessions, Mon–Fri)</p>
                                     </div>
-                                    {idx === slots.length - 1 && (    
-                                        <div className="input-div btns-div-tt">
-                                            <button
-                                                type="button"
-                                                className="add-slot-btn"
-                                                onClick={() => {
-                                                    setSlots(prev => [
-                                                        ...prev,
-                                                        {
-                                                            day: "",
-                                                            period: "",
-                                                            location: "",
-                                                            staff: "",
-                                                            teacher: ""
-                                                        }
-                                                    ]);
-                                                }}
-                                            >
-                                                +
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="remove-slot-btn"
-                                                onClick={() => {
-                                                    setSlots(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
-                                                }}
-                                            >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                            </button>
+                                    <div className="popup-body-item-body">
+                                        <p className="tt-days-info">Class will be scheduled for <strong>every session</strong> Monday–Friday.</p>
+                                        <div className="inputs-div">
+                                            <Select
+                                                label="Location"
+                                                name="allocationLocation"
+                                                value={allocationLocation}
+                                                onChange={(e) => setAllocationLocation(e.target.value)}
+                                                options={LOCATION_OPTIONS}
+                                                placeholder="Select Location"
+                                                icon={Location}
+                                            />
+                                            <Select
+                                                label="Staff"
+                                                name="allocationStaff"
+                                                value={allocationStaff}
+                                                onChange={(e) => setAllocationStaff(e.target.value)}
+                                                options={slotStaffOptions}
+                                                placeholder="Select Staff"
+                                                icon={Staff}
+                                            />
+                                            <Select
+                                                label="Teacher"
+                                                name="allocationTeacher"
+                                                value={allocationTeacher}
+                                                onChange={(e) => setAllocationTeacher(e.target.value)}
+                                                options={slotStaffOptions}
+                                                placeholder="Select Teacher"
+                                                icon={Teacher}
+                                            />
                                         </div>
-                                        
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </Popup>
         </>
         )
-    }
-    const showAddSlot = () => {
-        console.log("showAddSlot");
-        setAddSlotShown(true);
     }
     const filterContent = (
         <>
@@ -522,11 +456,13 @@ const Index = () => {
         });
     }, [filteredClassOptions]);
 
-    // Load existing schedules when a class is selected in the popup
+    // Load existing schedules when a class is selected: set location, staff, teacher from first schedule if any
     useEffect(() => {
         if (!addSlotShown || !selectedClass?.trim()) {
             if (!addSlotShown) return;
-            setSlots([{ day: "", period: "", location: "", staff: "", teacher: "" }]);
+            setAllocationLocation("");
+            setAllocationStaff("");
+            setAllocationTeacher("");
             return;
         }
         let cancelled = false;
@@ -540,21 +476,21 @@ const Index = () => {
                         ? String((x as { _id: string })._id)
                         : String(x ?? "");
                 if (arr.length === 0) {
-                    setSlots([{ day: "", period: "", location: "", staff: "", teacher: "" }]);
+                    setAllocationLocation("");
+                    setAllocationStaff("");
+                    setAllocationTeacher("");
                 } else {
-                    setSlots(
-                        arr.map((s: { day?: string; period?: unknown; location?: string; staff?: unknown; teacher?: unknown }) => ({
-                            day: s.day ?? "",
-                            period: toId(s.period),
-                            location: s.location ?? "",
-                            staff: toId(s.staff),
-                            teacher: toId(s.teacher),
-                        }))
-                    );
+                    const first = arr[0] as { location?: string; staff?: unknown; teacher?: unknown };
+                    setAllocationLocation(first.location ?? "");
+                    setAllocationStaff(toId(first.staff));
+                    setAllocationTeacher(toId(first.teacher));
                 }
             } catch {
-                if (!cancelled)
-                    setSlots([{ day: "", period: "", location: "", staff: "", teacher: "" }]);
+                if (!cancelled) {
+                    setAllocationLocation("");
+                    setAllocationStaff("");
+                    setAllocationTeacher("");
+                }
             }
         };
         loadSchedules();
@@ -611,10 +547,36 @@ const Index = () => {
     // Apply filters to schedules, then build calendar events (only for class plan dates: fromDate–toDate, by day and session)
     const timetableEvents = useMemo((): CalendarEvent[] => {
         const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        // Map period name to [startTime, endTime] when DB has no startTime/endTime (matches calendar slots in timeTable.tsx)
+        const PERIOD_NAME_TO_TIME: Record<string, [string, string]> = {
+            "Breakfast Club": ["09:30", "10:00"],
+            "Breakfast Club (AM Reg)": ["10:00", "10:15"],
+            "Achieve Training": ["10:15", "11:15"],
+            "Stanley House": ["11:30", "12:30"],
+            "Break": ["11:15", "11:30"],
+            "Lunch": ["12:30", "13:00"],
+            "Session 1": ["10:15", "11:15"],
+            "Session 2": ["11:30", "12:30"],
+            "Session 3": ["13:00", "14:00"],
+            "Session 3 - 13.00 - 14.00": ["13:00", "14:00"],
+        };
         const parseTime = (s: string | undefined): [number, number] => {
-            if (!s || typeof s !== "string") return [9, 0];
-            const [h, m] = s.trim().split(/[:\s]/).map(Number);
+            if (!s || typeof s !== "string") return [9, 30];
+            const [h, m] = s.trim().split(/[:\s.]/).map(Number);
             return [isNaN(h) ? 9 : h, isNaN(m) ? 0 : m];
+        };
+        const getPeriodTimes = (period: { name?: string; startTime?: string; endTime?: string }): [number, number, number, number] => {
+            const hasTimes = period.startTime != null && period.startTime !== "" && period.endTime != null && period.endTime !== "";
+            if (hasTimes) {
+                const [startH, startM] = parseTime(period.startTime);
+                const [endH, endM] = parseTime(period.endTime);
+                return [startH, startM, endH, endM];
+            }
+            const name = (period.name || "").trim();
+            const mapped = PERIOD_NAME_TO_TIME[name] ?? (name.includes("13") && name.includes("14") ? ["13:00", "14:00"] : ["10:15", "11:15"]);
+            const [startH, startM] = parseTime(mapped[0]);
+            const [endH, endM] = parseTime(mapped[1]);
+            return [startH, startM, endH, endM];
         };
         const classId = (c: unknown) => (c && typeof c === "object" && "_id" in c ? String((c as { _id: string })._id) : "");
         const staffId = (x: unknown) => (x && typeof x === "object" && "_id" in x ? String((x as { _id: string })._id) : "");
@@ -652,9 +614,8 @@ const Index = () => {
                 eventDate.setDate(eventDate.getDate() + dayIdx);
                 if (rangeStart && eventDate.getTime() < rangeStart) continue;
                 if (rangeEnd && eventDate.getTime() > rangeEnd) continue;
-                const period = s.period && typeof s.period === "object" ? s.period : { name: "Session", startTime: "09:00", endTime: "10:00" };
-                const [startH, startM] = parseTime(period.startTime);
-                const [endH, endM] = parseTime(period.endTime);
+                const period = s.period && typeof s.period === "object" ? s.period : { name: "Session", startTime: "10:15", endTime: "11:15" };
+                const [startH, startM, endH, endM] = getPeriodTimes(period);
                 const start = new Date(eventDate);
                 start.setHours(startH, startM, 0, 0);
                 const end = new Date(eventDate);
@@ -679,11 +640,65 @@ const Index = () => {
     }, [timetableSchedules, filterClass, filterStaff, classIdsForFilterStudent, filterSite, filterSubject, filterDateFrom, filterDateTo]);
 
     const [pdfGenerating, setPdfGenerating] = useState(false);
+    const [calendarView, setCalendarView] = useState<"week" | "month">("week");
+
+    // When filter date range spans multiple weeks, build week segments for stacked calendars
+    const weekSegments = useMemo(() => {
+        if (!filterDateFrom || !filterDateTo) return [];
+        const from = new Date(filterDateFrom + "T00:00:00");
+        const to = new Date(filterDateTo + "T23:59:59");
+        if (isNaN(from.getTime()) || isNaN(to.getTime()) || to < from) return [];
+        const startOfWeek = (d: Date) => {
+            const x = new Date(d);
+            x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+            x.setHours(0, 0, 0, 0);
+            return x;
+        };
+        const segments: { label: string; displayDate: Date }[] = [];
+        let weekStart = startOfWeek(from);
+        let index = 1;
+        while (weekStart.getTime() <= to.getTime()) {
+            const displayDate = new Date(weekStart);
+            segments.push({
+                label: `${index} week`,
+                displayDate,
+            });
+            weekStart = new Date(weekStart);
+            weekStart.setDate(weekStart.getDate() + 7);
+            index += 1;
+        }
+        return segments;
+    }, [filterDateFrom, filterDateTo]);
+    const loadLogoAsDataUrl = (): Promise<string | null> =>
+        new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                try {
+                    const c = document.createElement("canvas");
+                    c.width = img.naturalWidth;
+                    c.height = img.naturalHeight;
+                    const ctx = c.getContext("2d");
+                    if (!ctx) {
+                        resolve(null);
+                        return;
+                    }
+                    ctx.drawImage(img, 0, 0);
+                    resolve(c.toDataURL("image/png"));
+                } catch {
+                    resolve(null);
+                }
+            };
+            img.onerror = () => resolve(null);
+            img.src = "/logo.svg";
+        });
+
     const handlePrintTimetablePdf = async () => {
         const el = document.getElementById("time-table-div");
         if (!el) return;
         setPdfGenerating(true);
         try {
+            const logoDataUrl = await loadLogoAsDataUrl();
             const canvas = await html2canvas(el, {
                 scale: 2,
                 useCORS: true,
@@ -714,10 +729,14 @@ const Index = () => {
             const pageW = pdf.internal.pageSize.getWidth();
             const pageH = pdf.internal.pageSize.getHeight();
             const margin = 8;
+            const logoSize = 18;
             let y = margin;
             pdf.setDrawColor(0, 0, 0);
             pdf.setTextColor(0, 0, 0);
             pdf.setFontSize(10);
+            if (logoDataUrl) {
+                pdf.addImage(logoDataUrl, "PNG", pageW - margin - logoSize, margin, logoSize, logoSize);
+            }
             const todayStr = new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
             pdf.text(`Printed: ${todayStr}`, margin, y);
             y += 6;
@@ -739,11 +758,28 @@ const Index = () => {
             y += 4;
             const imgW = canvas.width;
             const imgH = canvas.height;
-            const availableH = pageH - y - margin;
-            const ratio = Math.min((pageW - 2 * margin) / imgW, availableH / imgH) * 0.98;
+            const maxW = pageW - 2 * margin;
+            const maxH = pageH - y - margin;
+            const ratio = Math.min(maxW / imgW, maxH / imgH) * 0.98;
             const w = imgW * ratio;
             const h = imgH * ratio;
-            pdf.addImage(imgData, "PNG", (pageW - w) / 2, y, w, h);
+
+            // Add first page
+            let posY = y;
+            let heightLeft = h;
+            pdf.addImage(imgData, "PNG", (pageW - w) / 2, posY, w, h);
+            heightLeft -= (pageH - y - margin);
+
+            // Additional pages if the timetable is taller than one page
+            while (heightLeft > 0) {
+                pdf.addPage();
+                if (logoDataUrl) {
+                    pdf.addImage(logoDataUrl, "PNG", pageW - margin - logoSize, margin, logoSize, logoSize);
+                }
+                posY = margin;
+                pdf.addImage(imgData, "PNG", (pageW - w) / 2, posY, w, h);
+                heightLeft -= (pageH - 2 * margin);
+            }
             pdf.save("timetable.pdf");
         } catch (err) {
             console.error(err);
@@ -769,10 +805,35 @@ const Index = () => {
                 <div className="tt-table-div">
                     <div className="tt-table-header">
                         <div className="tt-table-header-item tt-table-header-with-print">
-                            <TimeTableComponent
-                                onTimeSlotButtonPress={showAddSlot}
-                                propEvents={timetableEvents}
-                            />
+                            <div id="time-table-div">
+                                {weekSegments.length > 1 ? (
+                                    <div className="tt-stacked-weeks">
+                                        {weekSegments.map((seg, idx) => (
+                                            <div key={`${seg.label}-${idx}`} className="tt-week-block">
+                                                <div className="tt-week-title">
+                                                    {calendarView === "month"
+                                                        ? `${idx + 1} month`
+                                                        : `${idx + 1} week`}
+                                                </div>
+                                                <TimeTableComponent
+                                                    propEvents={timetableEvents}
+                                                    initialView="week"
+                                                    displayDate={seg.displayDate}
+                                                    view={calendarView}
+                                                    onViewChange={setCalendarView}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <TimeTableComponent
+                                        propEvents={timetableEvents}
+                                        initialView={calendarView}
+                                        view={calendarView}
+                                        onViewChange={setCalendarView}
+                                    />
+                                )}
+                            </div>
                             <button
                                 type="button"
                                 className="tt-print-pdf-btn"

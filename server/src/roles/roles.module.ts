@@ -7,6 +7,8 @@ import { Role, RoleSchema } from './schemas/role.schema';
 import { Permission, PermissionSchema } from '../permissions/schemas/permission.schema';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -14,7 +16,8 @@ import { UsersModule } from '../users/users.module';
       { name: Permission.name, schema: PermissionSchema }
     ]),
     forwardRef(() => AuthModule),
-    forwardRef(() => UsersModule)
+    forwardRef(() => UsersModule),
+    AuditLogModule,
   ],
   controllers: [RolesController],
   providers: [RolesService, RolePermissionService],

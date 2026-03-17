@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
 import { UsersService } from '../users/users.service';
@@ -17,6 +18,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/role.schema';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Controller('staff')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,11 +27,22 @@ export class StaffController {
   constructor(
     private readonly staffService: StaffService,
     private readonly usersService: UsersService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Post()
-  async createStaff(@Body() createStaffDto: CreateStaffDto) {
-    return this.staffService.create(createStaffDto);
+  async createStaff(
+    @Body() createStaffDto: CreateStaffDto,
+    @Request() req: { user?: { _id: string } },
+  ) {
+    const created = await this.staffService.create(createStaffDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'create',
+      module: 'staff',
+      recordId: String(created._id),
+      performedBy: req?.user?._id,
+    });
+    return created;
   }
 
   @Get()
@@ -49,9 +62,19 @@ export class StaffController {
   }
   
   @Patch(':id')
-  async updateStaff(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
-    // console.log('updateStaffDto', updateStaffDto);
-    return this.staffService.update(id, updateStaffDto);
+  async updateStaff(
+    @Param('id') id: string,
+    @Body() updateStaffDto: UpdateStaffDto,
+    @Request() req: { user?: { _id: string } },
+  ) {
+    const updated = await this.staffService.update(id, updateStaffDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'update',
+      module: 'staff',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return updated;
   }
 
   @Get(':id')
@@ -61,8 +84,18 @@ export class StaffController {
 
 
   @Delete(':id')
-  async removeStaff(@Param('id') id: string) {
-    return this.staffService.remove(id);
+  async removeStaff(
+    @Param('id') id: string,
+    @Request() req: { user?: { _id: string } },
+  ) {
+    const result = await this.staffService.remove(id);
+    await this.auditLogService.logRecordEdit({
+      action: 'delete',
+      module: 'staff',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return result;
   }
 
   @Get(':staffId/students')

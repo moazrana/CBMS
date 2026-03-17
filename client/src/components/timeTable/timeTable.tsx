@@ -49,13 +49,41 @@ type Event = {
 //       }
 //     ]
 // }];
+type CalendarView = 'month' | 'week';
+
 interface TimeTableProps {
   propEvents: Event[];
-  onTimeSlotButtonPress?: () => void;
+  /** Optional initial view for this calendar instance */
+  initialView?: CalendarView;
+  /** Optional date to centre this calendar instance on */
+  displayDate?: Date;
+  /** Optional controlled view (shared across multiple calendars) */
+  view?: CalendarView;
+  /** Optional callback when view changes */
+  onViewChange?: (view: CalendarView) => void;
 }
-const TimeTable = ({ propEvents, onTimeSlotButtonPress }: TimeTableProps) => {
+const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onViewChange }: TimeTableProps) => {
   const events = propEvents ?? [];
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(displayDate ?? new Date());
+  const [internalView, setInternalView] = useState<CalendarView>(initialView);
+
+  const effectiveView: CalendarView = view ?? internalView;
+
+  // Keep internal date/view in sync when props change (for stacked calendars)
+  React.useEffect(() => {
+    if (displayDate) {
+      setCurrentDate(displayDate);
+    }
+  }, [displayDate]);
+
+  React.useEffect(() => {
+    setInternalView(initialView);
+  }, [initialView]);
+
+  const handleViewChange = (newView: CalendarView) => {
+    setInternalView(newView);
+    if (onViewChange) onViewChange(newView);
+  };
 
   // Day filter: add a class to Sundays so we can hide them via CSS
   const dayPropGetter = (date: Date) => {
@@ -131,15 +159,17 @@ const TimeTable = ({ propEvents, onTimeSlotButtonPress }: TimeTableProps) => {
   });
 
   return (
-    <div id="time-table-div">
+    <div className={effectiveView === "month" ? "tt-view-month" : ""}>
       <Calendar
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
         style={{ height: "100%", width: "100%" }}
-        defaultView="week"
-        views={["week"]}
+        view={effectiveView}
+        onView={(newView) => handleViewChange(newView as CalendarView)}
+        defaultView={initialView}
+        views={["month", "week"]}
         popup
         min={new Date(2025, 8, 10, 9, 30, 0)}
         max={new Date(2025, 8, 10, 14, 0, 0)}
@@ -151,6 +181,23 @@ const TimeTable = ({ propEvents, onTimeSlotButtonPress }: TimeTableProps) => {
         date={currentDate}
         onNavigate={(d) => setCurrentDate(d)}
         components={{
+          toolbar: () => (
+            <div className="rbc-toolbar tt-custom-toolbar">
+              {effectiveView === "month" && (
+                <div className="tt-month-name">
+                  {moment(currentDate).format("MMMM YYYY")}
+                </div>
+              )}
+              <span className="rbc-btn-group">
+                <button type="button" onClick={() => handleViewChange("month")} className={effectiveView === "month" ? "rbc-active" : ""}>
+                  Month
+                </button>
+                <button type="button" onClick={() => handleViewChange("week")} className={effectiveView === "week" ? "rbc-active" : ""}>
+                  Week
+                </button>
+              </span>
+            </div>
+          ),
           timeGutterHeader: () => (
             <div className="gutter-header">
               <div className="gutter-month">Time Table</div>
@@ -172,10 +219,6 @@ const TimeTable = ({ propEvents, onTimeSlotButtonPress }: TimeTableProps) => {
             return (
               <div className={`rbc-time-slot duration-${duration}`}>
                 <div className="time-range">{timeRange}</div>
-
-                <button className="time-slot-button" onClick={onTimeSlotButtonPress}>
-                  +
-                </button>
                 <div className="time-slot-label">{label}</div>
                 {children}
               </div>

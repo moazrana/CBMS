@@ -5,6 +5,7 @@ import { StudentsService } from './students.service';
 import { Student, StudentSchema } from './schemas/student.schema';
 import { RolesModule } from '../roles/roles.module';
 import { UsersModule } from '../users/users.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from '../users/users.module';
     ]),
     RolesModule,
     UsersModule,
+    AuditLogModule,
   ],
   controllers: [StudentsController],
   providers: [StudentsService],

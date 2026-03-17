@@ -1,4 +1,4 @@
-import { IsString, IsMongoId } from 'class-validator';
+import { IsString, IsMongoId, IsOptional } from 'class-validator';
 
 export class CreateScheduleDto {
   @IsMongoId()
@@ -13,9 +13,11 @@ export class CreateScheduleDto {
   @IsString()
   location: string;
 
+  @IsOptional()
   @IsMongoId()
-  staff: string;
+  staff?: string;
 
+  @IsOptional()
   @IsMongoId()
-  teacher: string;
+  teacher?: string;
 }

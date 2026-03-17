@@ -15,6 +15,47 @@
     position: relative;
 }
 
+.tt-stacked-weeks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.tt-week-block {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    background: var(--card-bg);
+}
+
+.tt-week-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--main-text);
+}
+
+.tt-add-allocations-btn {
+    position: absolute;
+    top: 8px;
+    right: 180px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--sidebar-heading, #2c3e50);
+    color: var(--main-text, #fff);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+
+    &:hover {
+        filter: brightness(1.1);
+    }
+}
+
 .tt-print-pdf-btn {
     position: absolute;
     top: 8px;
@@ -104,4 +145,13 @@
     justify-content: space-between;
     align-items:center;
     width:7%;
+}
+.tt-no-days-message {
+    color: var(--main-text);
+    margin: 0.5rem 0;
+}
+.tt-days-info {
+    color: var(--main-text);
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
 }

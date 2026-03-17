@@ -241,48 +241,65 @@
         }
       }
 
-      /* Time table tab: keep calendar inside layout */
-      .timetable-tab-wrapper {
-        max-width: 100%;
-        overflow: auto;
-        min-height: 400px;
-        max-height: 70vh;
-
-        #time-table-div {
-          max-width: 100%;
-          min-height: 400px;
-          height: 60vh;
-        }
-      }
-
-      .timetable-tab-with-print {
+      /* Time table tab: student timetable styled like main timetable but smaller */
+      .student-timetable-wrapper {
         position: relative;
-      }
+        margin-top: 1.5rem;
 
-      .tt-print-pdf-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 10;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        background: var(--sidebar-heading, #2c3e50);
-        color: var(--main-text, #fff);
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-
-        &:hover:not(:disabled) {
-          filter: brightness(1.1);
+        .empty-state {
+          padding: 2rem;
+          text-align: center;
+          color: var(--secondary-text);
         }
 
-        &:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
+        .student-timetable-card {
+          border-radius: 8px;
+          border: 1px solid var(--border-color);
+          background: var(--card-bg);
+          padding: 8px;
+          max-height: 480px;
+          min-height: 320px;
+          overflow: hidden;
+          color: var(--main-text);
+
+          #time-table-div {
+            transform: scale(0.85);
+            transform-origin: top left;
+            width: 118%;
+            height: 118%;
+          }
+
+          .custom-event,
+          .event-container {
+            color: var(--main-text) !important;
+          }
+        }
+
+        .student-tt-print-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          z-index: 10;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          background: var(--sidebar-heading, #2c3e50);
+          color: var(--main-text, #fff);
+          border: none;
+          border-radius: 6px;
+          font-size: 13px;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+          &:hover:not(:disabled) {
+            filter: brightness(1.1);
+          }
+
+          &:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+          }
         }
       }
     }

@@ -4,11 +4,17 @@ import { Model, Types, Schema as MongooseSchema } from 'mongoose';
 import { Class, ClassDocument } from './class.schema';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { ScheduleService } from '../schedule/schedule.service';
+import { PeriodService } from '../period/period.service';
+
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 @Injectable()
 export class ClassService {
   constructor(
     @InjectModel(Class.name) private classModel: Model<ClassDocument>,
+    private readonly scheduleService: ScheduleService,
+    private readonly periodService: PeriodService,
   ) {}
 
   private async isDuplicate(
@@ -42,7 +48,29 @@ export class ClassService {
 
     try {
       const createdClass = new this.classModel(createClassDto);
-      return await createdClass.save();
+      const saved = await createdClass.save();
+
+      // Create schedules for this class: every weekday, every session (period), from fromDate to toDate
+      const periods = await this.periodService.findAll();
+      if (periods.length > 0) {
+        const schedules = [];
+        for (const day of WEEKDAYS) {
+          for (const period of periods) {
+            schedules.push({
+              class: String(saved._id),
+              day,
+              period: String(period._id),
+              location: (saved.location || '').trim(),
+              // staff and teacher left unset; can be assigned later via timetable allocations
+            });
+          }
+        }
+        if (schedules.length > 0) {
+          await this.scheduleService.createMany(schedules);
+        }
+      }
+
+      return saved;
     } catch (error: any) {
       if (error.code === 11000) {
         throw new BadRequestException(

@@ -3053,7 +3053,6 @@ const EditStaff = () => {
           ) : (
             <>
               <TimeTableComponent
-                onTimeSlotButtonPress={() => {}}
                 propEvents={staffTimetableEvents}
               />
               <button

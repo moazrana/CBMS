@@ -8,10 +8,12 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { ClassService } from './class.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 // import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 // import { RolesGuard } from '../auth/guards/roles.guard';
 // import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,12 +22,25 @@ import { UpdateClassDto } from './dto/update-class.dto';
 @Controller('classes')
 // @UseGuards(JwtAuthGuard, RolesGuard) // Temporarily commented out for seeding
 export class ClassController {
-  constructor(private readonly classService: ClassService) {}
+  constructor(
+    private readonly classService: ClassService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Post()
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  create(@Body() createClassDto: CreateClassDto) {
-    return this.classService.create(createClassDto);
+  async create(
+    @Body() createClassDto: CreateClassDto,
+    @Request() req?: { user?: { _id: string } },
+  ) {
+    const created = await this.classService.create(createClassDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'create',
+      module: 'class',
+      recordId: String((created as any)._id),
+      performedBy: req?.user?._id,
+    });
+    return created;
   }
 
   @Get()
@@ -59,14 +74,35 @@ export class ClassController {
 
   @Patch(':id')
   // @Roles(UserRole.ADMIN, UserRole.USER) // Temporarily commented out for seeding
-  update(@Param('id') id: string, @Body() updateClassDto: UpdateClassDto) {
-    return this.classService.update(id, updateClassDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateClassDto: UpdateClassDto,
+    @Request() req?: { user?: { _id: string } },
+  ) {
+    const updated = await this.classService.update(id, updateClassDto);
+    await this.auditLogService.logRecordEdit({
+      action: 'update',
+      module: 'class',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return updated;
   }
 
   @Delete(':id')
   // @Roles(UserRole.ADMIN) // Temporarily commented out for seeding
-  remove(@Param('id') id: string) {
-    return this.classService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @Request() req?: { user?: { _id: string } },
+  ) {
+    const result = await this.classService.remove(id);
+    await this.auditLogService.logRecordEdit({
+      action: 'delete',
+      module: 'class',
+      recordId: id,
+      performedBy: req?.user?._id,
+    });
+    return result;
   }
 
   @Post(':id/students/:studentId')

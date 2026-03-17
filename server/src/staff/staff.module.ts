@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { StaffService } from './staff.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { RolesModule } from '../roles/roles.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { RolesModule } from '../roles/roles.module';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
     ]),
+    AuditLogModule,
   ],
   controllers: [StaffController],
   providers: [StaffService],

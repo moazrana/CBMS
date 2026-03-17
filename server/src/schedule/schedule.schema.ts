@@ -15,11 +15,11 @@ export class Schedule extends Document {
   @Prop({ required: true, trim: true })
   location: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  staff: MongooseSchema.Types.ObjectId;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  staff?: MongooseSchema.Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  teacher: MongooseSchema.Types.ObjectId;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  teacher?: MongooseSchema.Types.ObjectId;
 }
 
 export type ScheduleDocument = Schedule & Document;
