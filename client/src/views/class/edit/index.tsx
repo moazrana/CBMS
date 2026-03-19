@@ -7,12 +7,15 @@ import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import './index.scss';
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const;
+
 interface ClassData {
   location: string;
   fromDate: string;
   toDate: string;
   subject: string;
   yeargroup: string;
+  daysOfWeek: string[];
   notes?: string;
 }
 
@@ -28,10 +31,11 @@ const EditClass = () => {
     toDate: '',
     subject: '',
     yeargroup: '',
+    daysOfWeek: [...DAYS_OF_WEEK],
     notes: '',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ClassData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ClassData, string>> & { daysOfWeek?: string }>({});
   const [hasFetched, setHasFetched] = useState(false);
   const [yearGroupOptions, setYearGroupOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -90,12 +94,15 @@ const EditClass = () => {
       try {
         const response = await executeRequest('get', `/classes/${id}`);
         if (response) {
+          const rawDays = Array.isArray(response.daysOfWeek) ? response.daysOfWeek : [];
+          const daysOfWeek = rawDays.length > 0 ? rawDays : [...DAYS_OF_WEEK];
           setClassData({
             location: response.location || '',
             fromDate: response.fromDate ? new Date(response.fromDate).toISOString().split('T')[0] : '',
             toDate: response.toDate ? new Date(response.toDate).toISOString().split('T')[0] : '',
             subject: response.subject || '',
             yeargroup: response.yeargroup || '',
+            daysOfWeek,
             notes: response.notes || '',
           });
           setHasFetched(true);
@@ -111,7 +118,7 @@ const EditClass = () => {
   }, [id, isEditMode]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof ClassData, string>> = {};
+    const newErrors: Partial<Record<keyof ClassData, string>> & { daysOfWeek?: string } = {};
 
     if (!classData.location.trim()) {
       newErrors.location = 'Location is required';
@@ -141,6 +148,10 @@ const EditClass = () => {
       newErrors.yeargroup = 'Year group is required';
     }
 
+    if (!classData.daysOfWeek?.length) {
+      newErrors.daysOfWeek = 'Select at least one day';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -159,12 +170,12 @@ const EditClass = () => {
         toDate: classData.toDate,
         subject: classData.subject,
         yeargroup: classData.yeargroup,
+        daysOfWeek: classData.daysOfWeek,
         notes: classData.notes || '',
       };
 
       if (isEditMode && id) {
         await executeRequest('patch', `/classes/${id}`, submitData);
-        alert('Class updated successfully');
       } else {
         await executeRequest('post', '/classes', submitData);
         alert('Class created successfully');
@@ -212,6 +223,7 @@ const EditClass = () => {
         toDate: currentData.toDate,
         subject: currentData.subject,
         yeargroup: currentData.yeargroup,
+        daysOfWeek: currentData.daysOfWeek,
         notes: currentData.notes || '',
       };
 
@@ -313,6 +325,32 @@ const EditClass = () => {
                 required
                 error={errors.yeargroup}
               />
+            </div>
+
+            <div className="form-row form-row-days">
+              <div className="days-of-week-field">
+                <label className="days-of-week-label">Days scheduled *</label>
+                <p className="days-of-week-hint">Select the weekdays this class will run.</p>
+                {errors.daysOfWeek && <span className="days-of-week-error">{errors.daysOfWeek}</span>}
+                <div className="days-of-week-checkboxes">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <label key={day} className="day-checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={classData.daysOfWeek.includes(day)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...classData.daysOfWeek, day]
+                            : classData.daysOfWeek.filter((d) => d !== day);
+                          setClassData({ ...classData, daysOfWeek: next });
+                        }}
+                        onBlur={handleAutosave}
+                      />
+                      <span>{day}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="form-row">

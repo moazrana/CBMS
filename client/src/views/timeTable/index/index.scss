@@ -1,10 +1,29 @@
-.tt-main-div{
-    margin-left:var(--standard-padding);
+.tt-main-div {
+    margin-left: var(--standard-padding);
 }
-.tt-filter-div{
-    margin-bottom:var(--standard-padding);
+
+.tt-filter-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: var(--standard-padding);
 }
-.tt-table-div{
+
+.tt-filter-div {
+    width: 90%;
+    flex-shrink: 0;
+}
+
+.tt-filter-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.tt-table-div {
     margin-bottom:var(--standard-padding);
 }
 .tt-table-header{
@@ -57,10 +76,7 @@
 }
 
 .tt-print-pdf-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 10;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -81,6 +97,27 @@
         opacity: 0.7;
         cursor: not-allowed;
     }
+}
+
+.tt-view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--hover-bg);
+}
+
+.tt-view-btn {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--main-text);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tt-view-btn.active {
+    background: var(--sidebar-heading);
 }
 .inputs-div-tt{
     height:fit-content;

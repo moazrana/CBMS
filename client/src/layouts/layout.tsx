@@ -90,7 +90,7 @@ export default function Layout({
                           />
                         </button>
                       )}
-                      {showPagination&&(
+                      {/* {showPagination&&(
                         <>
                         <div className='pagination-div'>
                           <button className='head-btn circle' onClick={() => window.history.back()}>
@@ -101,7 +101,7 @@ export default function Layout({
                           </button>
                         </div>
                         </>
-                      )}
+                      )} */}
                     </div>
                   {/* </div> */}
                   {openFilters&&(

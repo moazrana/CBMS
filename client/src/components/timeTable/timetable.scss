@@ -1,14 +1,14 @@
 #time-table-div {
     width: 100%;
     max-width: 100%;
-    min-height: 300px;
+    min-height: 200px;
     height: 100%;
     background: var(--main-bg);
     overflow: hidden;
 
     /* Month view: ensure grid is visible and use theme text color */
     .rbc-month-view {
-        min-height: 400px;
+        min-height: 280px;
         flex: 1;
         color: var(--main-text);
     }
@@ -21,7 +21,47 @@
         color: var(--main-text);
     }
     .rbc-month-row {
-        min-height: 80px;
+        min-height: 52px;
+    }
+    /* Month view: remove grey background for off-range days */
+    .rbc-off-range-bg {
+        background: transparent;
+    }
+
+    /* Month view: hide Saturdays/Sundays completely (Mon–Fri only) */
+    .rbc-month-view {
+        /* Hide weekend headers (header row has class rbc-row rbc-month-header) */
+        .rbc-row.rbc-month-header .rbc-header:nth-child(6),
+        .rbc-row.rbc-month-header .rbc-header:nth-child(7) {
+            display: none !important;
+        }
+
+        /* Hide weekend background cells */
+        .rbc-row-bg .rbc-day-bg:nth-child(6),
+        .rbc-row-bg .rbc-day-bg:nth-child(7) {
+            display: none !important;
+        }
+
+        /* Hide weekend date cells (inside .rbc-row under .rbc-row-content) */
+        .rbc-row-content .rbc-row .rbc-date-cell:nth-child(6),
+        .rbc-row-content .rbc-row .rbc-date-cell:nth-child(7) {
+            display: none !important;
+        }
+
+        /* Hide weekend event row segments (inside .rbc-row under .rbc-row-content) */
+        .rbc-row-content .rbc-row .rbc-row-segment:nth-child(6),
+        .rbc-row-content .rbc-row .rbc-row-segment:nth-child(7) {
+            display: none !important;
+        }
+
+        /* Reflow remaining 5 columns to full width */
+        .rbc-row.rbc-month-header .rbc-header,
+        .rbc-row-bg .rbc-day-bg,
+        .rbc-row-content .rbc-row .rbc-date-cell,
+        .rbc-row-content .rbc-row .rbc-row-segment {
+            flex: 0 0 20% !important;
+            max-width: 20% !important;
+        }
     }
 
     // Customize time background color
@@ -30,13 +70,12 @@
             .rbc-time-slot {
                 // background-color: var(--hover-bg);
                 color:var(--main-text);
-                width: 168px; // Set width for time slots
-                height: 300px; // Set height for time slots
+                width: 168px;
+                height: 110px; // Shrunk session box height
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                
             }
         }
     }
@@ -52,33 +91,33 @@
     // Style for time range display
     .time-range {
         width: 100%;
-        height: 300px;
+        height: 110px;
         color: var(--main-text);
         font-size: 11px;
         font-weight: 500;
         text-align: center;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
     }
-    
+
     // Style for custom time slot labels
     .time-slot-label {
         width: 100%;
-        height: 20px;
-        // background-color: #007bff;
+        height: 16px;
         color: var(--main-text);
-        font-size: 12px;
+        font-size: 13px;
         font-weight: bold;
         text-align: center;
-        padding: 2px;
+        padding: 1px 2px;
         border-radius: 4px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
-    
-    // Alternative: Change the time labels background
+
+    // Time header (week view)
     .rbc-time-header {
+        height: 3rem;
         .rbc-time-header-content {
-            color:var(--main-text);
-            width: 150px; // Match time slot width
+            color: var(--main-text);
+            width: 150px;
         }
     }
     
@@ -123,11 +162,12 @@
       .rbc-timeslot-group{
         min-height: auto;
     }
-    .event-container{
+    .event-container {
         background-color: #27ae60;
         color: var(--main-text);
-        padding: 6px;
-        margin-top: 5px;
+        padding: 4px 6px;
+        margin-top: 2px;
+        font-size: 0.85rem;
     }
     /* Custom toolbar: month name (in month view) + Month/Week buttons */
     .rbc-btn-group {
@@ -137,16 +177,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
     }
     .tt-custom-toolbar .tt-month-name {
-        // flex: 1;
         min-width: 10%;
         color: var(--main-text);
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 0.95rem;
     }
     .tt-custom-toolbar .rbc-btn-group {
         display: inline-block;
@@ -161,29 +200,29 @@
         background: var(--sidebar-heading);
     }
     .rbc-toolbar-label { display: none; }
-    .gutter-header { 
-        padding: 8px 10px; 
-        line-height: 1.2;
-        color:var(--main-text);
+    .gutter-header {
+        padding: 4px 8px;
+        line-height: 1.15;
+        color: var(--main-text);
     }
-    .gutter-month { font-weight: 700; font-size: x-large;}
-    .gutter-range { font-size: large; opacity: .8; }
+    .gutter-month { font-weight: 700; font-size: 1rem; }
+    .gutter-range { font-size: 0.875rem; opacity: .8; }
     .rbc-day-bg{
         border: none;
     }
-    .rbc-header{
+    .rbc-header {
         border: none;
         overflow: visible;
-        font-size: xx-large;
+        font-size: 1.25rem;
     }
     .day-header {
-        display: flex; 
+        display: flex;
         flex-direction: column;
         align-items: center;
-        line-height: 1.1;
+        line-height: 1.05;
     }
-    .day-header-date { font-weight: 700; }
-    .day-header-day { font-size: x-large; opacity: .85; }
+    .day-header-date { font-weight: 700; font-size: 0.9rem; }
+    .day-header-day { font-size: 0.85rem; opacity: .85; }
     .time-slot-button{
         background-color: var(--sidebar-heading);
         color:var(--main-text);
@@ -195,8 +234,6 @@
         z-index: 10; /* Add this */
         position: relative; /* Add this */
     }
-    .rbc-off-range-bg {
-        background: #7d7d7d;    
-    }
+    /* Keep month view clean (no off-range shading) */
     
 }

@@ -270,6 +270,7 @@ const Index = () => {
                         options={studentOptions}
                         disabled={!!filterClass}
                         onSearch={async (term) => {
+                            if (term.trim() === "" && studentOptions.length > 0) return;
                             try {
                                 const res = await executeRequest("get", `/students?search=${encodeURIComponent(term)}&perPage=100`);
                                 const list = Array.isArray(res) ? res : [];
@@ -294,6 +295,7 @@ const Index = () => {
                         onChange={(v) => setFilterStaff(String(v))}
                         options={staffOptions}
                         onSearch={async (term) => {
+                            if (term.trim() === "" && staffOptions.length > 0) return;
                             try {
                                 const res = await executeRequest("get", `/staff?search=${encodeURIComponent(term)}&perPage=100`);
                                 const list = Array.isArray(res) ? res : [];
@@ -315,6 +317,7 @@ const Index = () => {
                         options={classOptions}
                         disabled={!!filterStudent}
                         onSearch={async (term) => {
+                            if (term.trim() === "" && classOptions.length > 0) return;
                             try {
                                 const res = await executeRequest("get", `/classes?search=${encodeURIComponent(term)}&perPage=100`);
                                 const list = Array.isArray(res) ? res : [];
@@ -795,12 +798,42 @@ const Index = () => {
             showPagination={true}
         >
             <div className="tt-main-div">
-                <div className="tt-filter-div">
-                    <FilterSec 
-                        secName="Time Table Filter"
-                        content={filterContent}
-                        retractable={true}
-                    />
+                <div className="tt-filter-row">
+                    <div className="tt-filter-div">
+                        <FilterSec 
+                            secName="Time Table Filter"
+                            content={filterContent}
+                            retractable={true}
+                        />
+                    </div>
+                    <div className="tt-filter-actions">
+                        <button
+                            type="button"
+                            className="tt-print-pdf-btn"
+                            onClick={handlePrintTimetablePdf}
+                            disabled={pdfGenerating}
+                            title="Download timetable as PDF"
+                        >
+                            <FontAwesomeIcon icon={faPrint} />
+                            {pdfGenerating ? " Generating…" : " Print / PDF"}
+                        </button>
+                        <div className="tt-view-toggle" role="group" aria-label="Timetable view">
+                            <button
+                                type="button"
+                                className={calendarView === "month" ? "tt-view-btn active" : "tt-view-btn"}
+                                onClick={() => setCalendarView("month")}
+                            >
+                                Month
+                            </button>
+                            <button
+                                type="button"
+                                className={calendarView === "week" ? "tt-view-btn active" : "tt-view-btn"}
+                                onClick={() => setCalendarView("week")}
+                            >
+                                Week
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div className="tt-table-div">
                     <div className="tt-table-header">
@@ -821,6 +854,7 @@ const Index = () => {
                                                     displayDate={seg.displayDate}
                                                     view={calendarView}
                                                     onViewChange={setCalendarView}
+                                                    hideViewToggle={true}
                                                 />
                                             </div>
                                         ))}
@@ -831,19 +865,10 @@ const Index = () => {
                                         initialView={calendarView}
                                         view={calendarView}
                                         onViewChange={setCalendarView}
+                                        hideViewToggle={true}
                                     />
                                 )}
                             </div>
-                            <button
-                                type="button"
-                                className="tt-print-pdf-btn"
-                                onClick={handlePrintTimetablePdf}
-                                disabled={pdfGenerating}
-                                title="Download timetable as PDF"
-                            >
-                                <FontAwesomeIcon icon={faPrint} />
-                                {pdfGenerating ? " Generating…" : " Print / PDF"}
-                            </button>
                         </div>
                     </div>
                 </div>

@@ -55,7 +55,8 @@ const FilterSec: React.FC<SecProps> = ({
                         }}
                     />
                 )}
-                <div>
+                {onActionClick && (
+                  <div>
                     <button
                         type="button"
                         className="seach-btn"
@@ -64,7 +65,8 @@ const FilterSec: React.FC<SecProps> = ({
                     >
                         <FontAwesomeIcon icon={icon} />
                     </button>
-                </div>
+                  </div>
+                )}
             </div>
         </div>
     );

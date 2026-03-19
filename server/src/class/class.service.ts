@@ -50,11 +50,14 @@ export class ClassService {
       const createdClass = new this.classModel(createClassDto);
       const saved = await createdClass.save();
 
-      // Create schedules for this class: every weekday, every session (period), from fromDate to toDate
+      // Create schedules for this class: only on selected days (or all weekdays if none selected), every session
+      const daysToSchedule = Array.isArray(saved.daysOfWeek) && saved.daysOfWeek.length > 0
+        ? saved.daysOfWeek.filter((d) => WEEKDAYS.includes(d))
+        : WEEKDAYS;
       const periods = await this.periodService.findAll();
-      if (periods.length > 0) {
+      if (periods.length > 0 && daysToSchedule.length > 0) {
         const schedules = [];
-        for (const day of WEEKDAYS) {
+        for (const day of daysToSchedule) {
           for (const period of periods) {
             schedules.push({
               class: String(saved._id),
@@ -140,6 +143,34 @@ export class ClassService {
       if (!updatedClass) {
         throw new NotFoundException(`Class with ID ${id} not found`);
       }
+
+      // If schedule days (daysOfWeek) were updated, replace schedules: delete existing and create for new days
+      if (updateClassDto.daysOfWeek !== undefined) {
+        await this.scheduleService.removeByClass(id);
+        const daysToSchedule =
+          Array.isArray(updatedClass.daysOfWeek) && updatedClass.daysOfWeek.length > 0
+            ? updatedClass.daysOfWeek.filter((d) => WEEKDAYS.includes(d))
+            : WEEKDAYS;
+        const periods = await this.periodService.findAll();
+        if (periods.length > 0 && daysToSchedule.length > 0) {
+          const schedules = [];
+          const location = (updatedClass.location || '').toString().trim();
+          for (const day of daysToSchedule) {
+            for (const period of periods) {
+              schedules.push({
+                class: id,
+                day,
+                period: String(period._id),
+                location,
+              });
+            }
+          }
+          if (schedules.length > 0) {
+            await this.scheduleService.createMany(schedules);
+          }
+        }
+      }
+
       return updatedClass;
     } catch (error: any) {
       if (error.code === 11000) {

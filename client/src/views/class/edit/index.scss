@@ -62,6 +62,49 @@
         }
       }
 
+      .form-row-days {
+        grid-template-columns: 1fr;
+      }
+
+      .days-of-week-field {
+        .days-of-week-label {
+          display: block;
+          margin-bottom: 0.25rem;
+          font-weight: 500;
+          color: var(--main-text);
+          font-size: 0.875rem;
+        }
+        .days-of-week-hint {
+          margin: 0 0 0.75rem;
+          font-size: 0.8125rem;
+          color: var(--secondary-text);
+        }
+        .days-of-week-error {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-size: 0.875rem;
+          color: var(--error-color, #c00);
+        }
+        .days-of-week-checkboxes {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem 1.5rem;
+        }
+        .day-checkbox-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          font-size: 0.9375rem;
+          color: var(--main-text);
+          input[type="checkbox"] {
+            width: 1.125rem;
+            height: 1.125rem;
+            accent-color: var(--primary-color, #FF7C95);
+          }
+        }
+      }
+
       .textarea-container {
         grid-column: 1 / -1; // Span full width
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import { Calendar, Views, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./timetable.scss";
@@ -61,8 +61,10 @@ interface TimeTableProps {
   view?: CalendarView;
   /** Optional callback when view changes */
   onViewChange?: (view: CalendarView) => void;
+  /** Hide the month/week toggle buttons (use external toggle). */
+  hideViewToggle?: boolean;
 }
-const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onViewChange }: TimeTableProps) => {
+const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onViewChange, hideViewToggle = false }: TimeTableProps) => {
   const events = propEvents ?? [];
   const [currentDate, setCurrentDate] = useState<Date>(displayDate ?? new Date());
   const [internalView, setInternalView] = useState<CalendarView>(initialView);
@@ -84,6 +86,9 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
     setInternalView(newView);
     if (onViewChange) onViewChange(newView);
   };
+
+  // Under the hood, show Mon–Fri only for "week" by using react-big-calendar's work_week view.
+  const rbcView = effectiveView === 'week' ? Views.WORK_WEEK : Views.MONTH;
 
   // Day filter: add a class to Sundays so we can hide them via CSS
   const dayPropGetter = (date: Date) => {
@@ -133,7 +138,7 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
         fontSize: "12px",
         fontWeight: "500",
         height: "auto",
-        minHeight: "60px",
+        minHeight: "44px",
         marginBottom: "2px",
       }}
     >
@@ -155,7 +160,7 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
   );
 
   const eventPropGetter = () => ({
-    style: { minHeight: 56 } // or whatever fits your design
+    style: { minHeight: 40 }
   });
 
   return (
@@ -166,10 +171,10 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
         startAccessor="start"
         endAccessor="end"
         style={{ height: "100%", width: "100%" }}
-        view={effectiveView}
-        onView={(newView) => handleViewChange(newView as CalendarView)}
+        view={rbcView}
+        onView={(newView) => handleViewChange(String(newView) === 'month' ? 'month' : 'week')}
         defaultView={initialView}
-        views={["month", "week"]}
+        views={{ month: true, work_week: true }}
         popup
         min={new Date(2025, 8, 10, 9, 30, 0)}
         max={new Date(2025, 8, 10, 14, 0, 0)}
@@ -188,14 +193,16 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
                   {moment(currentDate).format("MMMM YYYY")}
                 </div>
               )}
-              <span className="rbc-btn-group">
-                <button type="button" onClick={() => handleViewChange("month")} className={effectiveView === "month" ? "rbc-active" : ""}>
-                  Month
-                </button>
-                <button type="button" onClick={() => handleViewChange("week")} className={effectiveView === "week" ? "rbc-active" : ""}>
-                  Week
-                </button>
-              </span>
+              {!hideViewToggle && (
+                <span className="rbc-btn-group">
+                  <button type="button" onClick={() => handleViewChange("month")} className={effectiveView === "month" ? "rbc-active" : ""}>
+                    Month
+                  </button>
+                  <button type="button" onClick={() => handleViewChange("week")} className={effectiveView === "week" ? "rbc-active" : ""}>
+                    Week
+                  </button>
+                </span>
+              )}
             </div>
           ),
           timeGutterHeader: () => (
@@ -225,7 +232,7 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
             );
           },
           event: EventComponent,
-          week: {
+          work_week: {
             header: ({ date }: { date: Date }) => (
               <div className="day-header">
                 <div className="day-header-date">{moment(date).format('DD')}</div>

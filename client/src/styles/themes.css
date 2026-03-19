@@ -20,7 +20,7 @@
   --status-color:#C0C0C099;
   --check-box-bg:#F5F5F5;
   --cancel-bg:#F6F6F6;
-  --standard-padding:30px;
+  --standard-padding:10px;
   --event-bg:transparent;
   --label-font-size:15px;
 }
@@ -47,7 +47,7 @@
   --status-color:#ffffff;
   --check-box-bg:#2A2640;
   --cancel-bg:#2A2640;
-  --standard-padding:30px;
+  --standard-padding:10px;
   --secondary-background:#201C37;
   --event-bg:transparent;
   --label-font-size:15px;
