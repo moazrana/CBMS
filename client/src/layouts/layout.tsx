@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from '../components/navbar/Navbar';
 import Sidebar from './../components/sidebar/Sidebar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronLeft, faChevronRight, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import './layout.scss';
 import { useNavigate } from 'react-router-dom';
 import ComponentsView from '../assets/layout/componentsView.svg'
@@ -28,7 +28,6 @@ type LayoutProps = {
 export default function Layout({
   children,
   showNew = false,
-  showPagination = false,
   showFilter = false,
   showViewType = false,
   createLink='',
