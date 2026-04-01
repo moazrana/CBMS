@@ -4,9 +4,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
+import SearchableSelect from '../../../components/SearchableSelect/SearchableSelect';
 import { useApiRequest } from '../../../hooks/useApiRequest';
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import StudentView, { StudentViewProps } from '../view/StudentView';
+import { DropdownOption } from '../../../types/DropDownOption';
 
 interface Student {
   _id: string;
@@ -46,6 +48,9 @@ const StudentList = () => {
   const [perPage, setPerPage] = React.useState(10);
   const [isViewOpen, setIsViewOpen] = React.useState(false);
   const [viewingStudent, setViewingStudent] = React.useState<Student | null>(null);
+  const [selectedStudentFilter, setSelectedStudentFilter] = React.useState<string>('');
+  const [studentFilterOptions, setStudentFilterOptions] = React.useState<DropdownOption[]>([]);
+  const [allStudents, setAllStudents] = React.useState<Student[]>([]);
 
   const fetchStudents = async () => {
     try {
@@ -111,8 +116,25 @@ const StudentList = () => {
 
   React.useEffect(() => {
     fetchStudents();
+    fetchAllStudentsForFilter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchAllStudentsForFilter = async () => {
+    try {
+      const response = await executeRequest('get', '/students?perPage=1000');
+      const list: Student[] = Array.isArray(response) ? response : [];
+      setAllStudents(list);
+      const options: DropdownOption[] = list.map((s) => {
+        const p = s.personalInfo ?? {};
+        const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+        return { value: s._id, label: name || s._id };
+      });
+      setStudentFilterOptions(options);
+    } catch (error) {
+      console.error('Error fetching students for filter:', error);
+    }
+  };
 
   // Format contact: student email/mobile, or first parent/emergency contact
   const getContact = (s: Student): string => {
@@ -161,6 +183,11 @@ const StudentList = () => {
     };
   });
 
+  // Filter by selected student
+  const filteredStudents = selectedStudentFilter
+    ? formattedStudents.filter((s) => s._id === selectedStudentFilter)
+    : formattedStudents;
+
   const columns = [
     { header: 'Student Name', accessor: 'studentName', sortable: true, type: 'string' as const },
     { header: 'Year Group', accessor: 'yearGroup', sortable: true, type: 'string' as const },
@@ -194,9 +221,48 @@ const StudentList = () => {
     <Layout>
       <div className="student-list">
         <div className="student-list-content">
+          <div style={{ marginBottom: '20px', padding: '0 20px' }}>
+            <SearchableSelect
+              label="Filter by Student"
+              name="student-filter"
+              value={selectedStudentFilter}
+              onChange={(v) => setSelectedStudentFilter(String(v))}
+              options={studentFilterOptions}
+              onSearch={(term) => {
+                const trimmed = term.trim().toLowerCase();
+                const base: DropdownOption[] = allStudents.map((s) => {
+                  const p = s.personalInfo ?? {};
+                  const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+                  return { value: s._id, label: name || s._id };
+                });
+
+                if (!trimmed) {
+                  setStudentFilterOptions(base);
+                  return;
+                }
+
+                const filtered = base.filter((o) => {
+                  const l = o.label.toLowerCase();
+                  return l.includes(trimmed) || String(o.value).includes(trimmed);
+                });
+
+                // Keep selected student visible
+                if (selectedStudentFilter) {
+                  const selected = base.find((o) => o.value === selectedStudentFilter);
+                  if (selected && !filtered.some((o) => o.value === selected.value)) {
+                    setStudentFilterOptions([selected, ...filtered]);
+                    return;
+                  }
+                }
+
+                setStudentFilterOptions(filtered);
+              }}
+              placeholder="Search student..."
+            />
+          </div>
           <DataTable
             columns={columns}
-            data={formattedStudents}
+            data={filteredStudents}
             title="All Students"
             onDelete={handleDelete}
             onSort={handleSort}
@@ -214,8 +280,8 @@ const StudentList = () => {
           setIsViewOpen(false);
           setViewingStudent(null);
         }}
-        title={viewingStudent?.personalInfo?.preferredName || 
-          `${viewingStudent?.personalInfo?.legalFirstName || ''} ${viewingStudent?.personalInfo?.lastName || ''}`.trim() || 
+        title={viewingStudent?.personalInfo?.preferredName ||
+          `${viewingStudent?.personalInfo?.legalFirstName || ''} ${viewingStudent?.personalInfo?.lastName || ''}`.trim() ||
           'Student Details'}
         message="Student Information"
         width="600px"

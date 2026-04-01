@@ -46,6 +46,36 @@ export class AttendanceService {
     return createdAttendance.save();
   }
 
+  async getDailyChartData(
+    startDate: string,
+    endDate: string,
+    studentId?: string,
+    classId?: string,
+  ): Promise<{ date: string; present: number; absent: number }[]> {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const match: Record<string, any> = { date: { $gte: start, $lte: end } };
+    if (studentId) match.student = new Types.ObjectId(studentId);
+    if (classId) match.class = new Types.ObjectId(classId);
+
+    const rows = await this.attendanceModel.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          present: { $sum: { $cond: [{ $eq: ['$session1', 'attended'] }, 1, 0] } },
+          absent:  { $sum: { $cond: [{ $eq: ['$session1', 'absent']   }, 1, 0] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return rows.map((r) => ({ date: r._id, present: r.present, absent: r.absent }));
+  }
+
   async findAll(): Promise<Attendance[]> {
     return this.attendanceModel
       .find()

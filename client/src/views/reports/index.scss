@@ -61,6 +61,10 @@
   &__weekly-filter-item {
     min-width: 160px;
 
+    .date-input-container {
+      margin-bottom: 0;
+    }
+
     .reports-page__weekly-week-range {
       margin: 0.25rem 0 0;
       font-size: 0.8125rem;

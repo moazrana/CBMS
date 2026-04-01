@@ -256,18 +256,11 @@
           border-radius: 8px;
           border: 1px solid var(--border-color);
           background: var(--card-bg);
-          padding: 8px;
-          max-height: 480px;
-          min-height: 320px;
+          padding: 0;
+          max-height: 440px;
+          min-height: 260px;
           overflow: hidden;
           color: var(--main-text);
-
-          #time-table-div {
-            transform: scale(0.85);
-            transform-origin: top left;
-            width: 118%;
-            height: 118%;
-          }
 
           .custom-event,
           .event-container {

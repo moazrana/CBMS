@@ -103,3 +103,38 @@
   color: #888;
   margin-top: -2px;
 }
+
+.navbar-profile {
+  position: relative;
+}
+
+.navbar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--main-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 140px;
+  z-index: 1100;
+  overflow: hidden;
+}
+
+.navbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: var(--main-text);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: var(--hover-bg);
+  }
+}

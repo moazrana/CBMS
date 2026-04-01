@@ -1,17 +1,38 @@
 import React from 'react';
 import './Navbar.scss'; // or .scss
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
+import { faMagnifyingGlass, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import bell from '../../assets/navbar/bell.svg';
 import gear from '../../assets/navbar/gear.svg';
 import sun from '../../assets/navbar/sun.svg';
 import moon from '../../assets/navbar/moon.svg';
-import { useAppSelector } from '../../store/hooks';
-import { selectUser } from '../../store/slices/authSlice';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { selectUser, logout } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 // import { RootState } from '../store/store';
 
 
 export default function Navbar() {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
+
   // Theme state and effect at top level
   const [theme, setTheme] = React.useState(
     document.documentElement.getAttribute('data-theme') || 'light'
@@ -87,15 +108,27 @@ export default function Navbar() {
         </label>
         </div>
         
-        <div className="navbar-profile">
-        <div className="navbar-divider"></div>
-          
-          <img src="/avatar.jpeg" alt="Avatar" className="navbar-avatar" />
+        <div className="navbar-profile" ref={menuRef}>
+          <div className="navbar-divider"></div>
+          <img
+            src="/avatar.jpeg"
+            alt="Avatar"
+            className="navbar-avatar"
+            onClick={() => setMenuOpen(prev => !prev)}
+            style={{ cursor: 'pointer' }}
+          />
           <div>
             <div className="navbar-name">{user?.name || 'Guest'}</div>
             <div className="navbar-role">{user?.role || 'Guest'}</div>
           </div>
-          
+          {menuOpen && (
+            <div className="navbar-dropdown">
+              <button className="navbar-dropdown-item" onClick={handleLogout}>
+                <FontAwesomeIcon icon={faRightFromBracket} />
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>

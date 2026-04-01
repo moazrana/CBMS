@@ -10,6 +10,8 @@ interface SecProps {
     year?: string;
     content: React.ReactNode;
     retractable?: boolean;
+    /** When true, collapse content initially (content hidden) */
+    defaultRetracted?: boolean;
     /** When set, the filter button shows this icon and calls onActionClick instead of default search */
     actionIcon?: IconDefinition;
     onActionClick?: () => void;
@@ -19,10 +21,11 @@ const FilterSec: React.FC<SecProps> = ({
     secName,
     content,
     retractable = false,
+    defaultRetracted = false,
     actionIcon,
     onActionClick,
 }) => {
-    const [retracted, setRetracted] = useState<boolean>(false);
+    const [retracted, setRetracted] = useState<boolean>(defaultRetracted);
     const icon = actionIcon ?? faMagnifyingGlass;
     return (
         <div className="filter-sec">
@@ -43,29 +46,30 @@ const FilterSec: React.FC<SecProps> = ({
                     </>
                 )}
                 {!retractable && (
-                    <img
-                        src={ThreeDots}
-                        alt="icon"
-                        style={{
-                            width: 19,
-                            height: 19,
-                            marginRight: 8,
-                            filter: `var(--nav-icon-filter)`,
-                            fill: 'var(--nav-icon-filter)'
-                        }}
-                    />
-                )}
-                {onActionClick && (
-                  <div>
-                    <button
-                        type="button"
-                        className="seach-btn"
-                        onClick={onActionClick}
-                        title={actionIcon ? 'Clear and show initial list' : undefined}
-                    >
-                        <FontAwesomeIcon icon={icon} />
-                    </button>
-                  </div>
+                    <>
+                        {onActionClick ? (
+                            <button
+                                type="button"
+                                className="seach-btn"
+                                onClick={onActionClick}
+                                title={actionIcon ? 'Clear and show initial list' : undefined}
+                            >
+                                <FontAwesomeIcon icon={icon} />
+                            </button>
+                        ) : (
+                            <img
+                                src={ThreeDots}
+                                alt="icon"
+                                style={{
+                                    width: 19,
+                                    height: 19,
+                                    marginRight: 8,
+                                    filter: `var(--nav-icon-filter)`,
+                                    fill: 'var(--nav-icon-filter)',
+                                }}
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </div>

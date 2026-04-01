@@ -5,6 +5,7 @@ import FilterSec from '../../components/FilterSec/FilterSec';
 import DataTable from '../../components/DataTable/DataTable';
 import { Tabs } from '../../components/Tabs/Tabs';
 import Select from '../../components/Select/Select';
+import SearchableSelect from '../../components/SearchableSelect/SearchableSelect';
 import BehaviorSelect from '../../components/BehaviorSelect/BehaviorSelect';
 import DateInput from '../../components/dateInput/DateInput';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -92,6 +93,8 @@ interface MarkedEngagementRecord {
   createdAt?: string;
 }
 
+const REAL_SESSIONS = ['breakfast club', 'session1', 'break', 'session2', 'lunch', 'session3'];
+
 const Engagement: React.FC = () => {
   const { executeRequest } = useApiRequest();
   const { checkPermission } = usePermissions();
@@ -115,6 +118,9 @@ const Engagement: React.FC = () => {
   ]);
   const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
   const [filterClass, setFilterClass] = useState<string>("");
+  const [filterStudent, setFilterStudent] = useState<string>("");
+  const [filterStudentOptions, setFilterStudentOptions] = useState<DropdownOption[]>([]);
+  const [allMarkStudents, setAllMarkStudents] = useState<StudentData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [engagementData, setEngagementData] = useState<Record<string, EngagementRow>>({});
   const [allSessionsEngagementData, setAllSessionsEngagementData] = useState<Record<string, StudentEngagementData>>({});
@@ -127,6 +133,9 @@ const Engagement: React.FC = () => {
   const [markedFilterClassId, setMarkedFilterClassId] = useState<string>('');
   const [markedClassOptions, setMarkedClassOptions] = useState<DropdownOption[]>([]);
   const [markedListExpanded, setMarkedListExpanded] = useState<Set<string>>(new Set());
+  const [markedFilterStudent, setMarkedFilterStudent] = useState<string>('');
+  const [markedStudentOptions, setMarkedStudentOptions] = useState<DropdownOption[]>([]);
+  const [markedAllStudents, setMarkedAllStudents] = useState<StudentData[]>([]);
   // Universal list: students in selected class with engagement status (green/red dot)
   const [universalListStudents, setUniversalListStudents] = useState<StudentData[]>([]);
   const [universalListData, setUniversalListData] = useState<Record<string, { sessions: Record<string, SessionEngagement>; isComplete: boolean }>>({});
@@ -138,6 +147,8 @@ const Engagement: React.FC = () => {
   const allSessionsEngagementDataRef = useRef<Record<string, StudentEngagementData>>({});
   const isInitialMount = useRef(true);
   const filterClassRef = useRef<string>("");
+  // Ref so autoSaveEngagement can call autoSaveAllSessionsEngagement without a forward-reference issue
+  const autoSaveAllSessionsEngagementRef = useRef<(studentId: string, sessionValue: string) => Promise<void>>(() => Promise.resolve());
   
   // Toggle row expansion
   const toggleRowExpansion = useCallback((studentId: string) => {
@@ -160,6 +171,12 @@ const Engagement: React.FC = () => {
     { value: 'lunch', label: 'Lunch' },
     { value: 'session3', label: 'Session 3' },
   ], []);
+
+  // Session options for the row dropdown — includes "All Day" as a shortcut
+  const sessionSelectOptions: DropdownOption[] = useMemo(() => [
+    { value: 'all day', label: 'All Day' },
+    ...sessionOptions,
+  ], [sessionOptions]);
 
   // Helper function to get behavior color
   const getBehaviourColor = (behaviour: string): string => {
@@ -208,7 +225,46 @@ const Engagement: React.FC = () => {
             />
           </div>
           <div className="input-div-engagement">
-            <Select 
+            <SearchableSelect
+              label="Student"
+              name="filterStudent"
+              value={filterStudent}
+              onChange={(v) => setFilterStudent(String(v))}
+              options={filterStudentOptions}
+              onSearch={(term) => {
+                const trimmed = term.trim().toLowerCase();
+                const base: DropdownOption[] = allMarkStudents.map((s) => {
+                  const p = s.personalInfo ?? {};
+                  const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+                  return { value: s._id, label: name || s._id };
+                });
+
+                if (!trimmed) {
+                  setFilterStudentOptions(base);
+                  return;
+                }
+
+                const filtered = base.filter((o) => {
+                  const l = o.label.toLowerCase();
+                  return l.includes(trimmed) || String(o.value).includes(trimmed);
+                });
+
+                // Keep selected student visible
+                if (filterStudent) {
+                  const selected = base.find((o) => o.value === filterStudent);
+                  if (selected && !filtered.some((o) => o.value === selected.value)) {
+                    setFilterStudentOptions([selected, ...filtered]);
+                    return;
+                  }
+                }
+
+                setFilterStudentOptions(filtered);
+              }}
+              placeholder="Search student..."
+            />
+          </div>
+          <div className="input-div-engagement">
+            <Select
               label="Location"
               name="location"
               value={location}
@@ -330,9 +386,102 @@ const Engagement: React.FC = () => {
     filterClassRef.current = filterClass;
   }, [filterClass]);
 
-  // Fetch students when a class is selected
+  // Fetch students when a student is selected or a class is selected
   useEffect(() => {
     const fetchClassStudents = async () => {
+      // If student is selected, fetch only that student
+      if (filterStudent) {
+        try {
+          const response = await executeRequest('get', `/students/${filterStudent}`);
+          const student = response as StudentData;
+          const studentsList = [student];
+          setStudents(studentsList);
+
+          // Initialize engagement data for the selected student
+          const initialEngagement: Record<string, EngagementRow> = {};
+          const initialAllSessions: Record<string, StudentEngagementData> = {};
+
+          const name = `${student.personalInfo?.legalFirstName || ''} ${student.personalInfo?.middleName || ''} ${student.personalInfo?.lastName || ''}`.trim();
+          initialEngagement[student._id] = {
+            studentId: student._id,
+            name,
+            session: sessionOptions[0]?.value || '',
+            attendance: false,
+            absenceType: undefined,
+            behaviour: 'Unmarked',
+            comment: '',
+            workUndertaken: '',
+          };
+
+          // Initialize all sessions for this student
+          const sessionsData: Record<string, SessionEngagement> = {};
+          sessionOptions.forEach(sessionOpt => {
+            sessionsData[sessionOpt.value] = {
+              attendance: false,
+              absenceType: undefined,
+              behaviour: 'Unmarked',
+              comment: '',
+              workUndertaken: '',
+            };
+          });
+
+          initialAllSessions[student._id] = {
+            studentId: student._id,
+            name,
+            sessions: sessionsData,
+          };
+
+          setEngagementData(initialEngagement);
+          engagementDataRef.current = initialEngagement;
+          setAllSessionsEngagementData(initialAllSessions);
+          allSessionsEngagementDataRef.current = initialAllSessions;
+          isInitialMount.current = true;
+
+          // Fetch existing engagements for this student
+          const fetchEngagementsForStudent = async () => {
+            try {
+              const response = await executeRequest('get', `/engagements?student=${filterStudent}&date=${engagementDate}`);
+              const engagements = Array.isArray(response) ? response : response.data || [];
+
+              // Update all sessions engagement data
+              setAllSessionsEngagementData(prev => {
+                const updated: Record<string, StudentEngagementData> = { ...prev };
+                engagements.forEach((eng: ExistingEngagement) => {
+                  const studentId = typeof eng.student === 'string'
+                    ? eng.student
+                    : (typeof eng.student === 'object' && eng.student !== null && '_id' in eng.student)
+                      ? (eng.student as { _id: string })._id
+                      : String(eng.student);
+                  if (updated[studentId] && updated[studentId].sessions[eng.session]) {
+                    updated[studentId].sessions[eng.session] = {
+                      attendance: eng.attendance,
+                      absenceType: eng.absenceType === 'authorized' || eng.absenceType === 'unauthorized' ? eng.absenceType : undefined,
+                      behaviour: eng.behaviour,
+                      comment: eng.comment || '',
+                      workUndertaken: eng.workUndertaken || '',
+                      engagementId: eng._id,
+                      submitted: eng.submitted,
+                    };
+                  }
+                });
+                allSessionsEngagementDataRef.current = updated;
+                return updated;
+              });
+            } catch (error) {
+              console.error('Error fetching engagements for student:', error);
+            }
+          };
+
+          fetchEngagementsForStudent();
+        } catch (error) {
+          console.error('Error fetching student:', error);
+          setStudents([]);
+          setEngagementData({});
+        }
+        return;
+      }
+
+      // Otherwise, fetch by class if class is selected
       if (!filterClass) {
         setStudents([]);
         setEngagementData({});
@@ -343,18 +492,18 @@ const Engagement: React.FC = () => {
       try {
         const response = await executeRequest('get', `/classes/${filterClass}`);
         const classData = response as ClassData;
-        
+
         // Always set students, even if empty array
         const studentsList = Array.isArray(classData.students) ? classData.students : [];
         setStudents(studentsList);
-        
+
         if (studentsList.length > 0) {
-          
+
           // Initialize engagement data for each student (for single session view)
           const initialEngagement: Record<string, EngagementRow> = {};
           // Initialize all sessions engagement data
           const initialAllSessions: Record<string, StudentEngagementData> = {};
-          
+
           studentsList.forEach((student: StudentData) => {
             const name = `${student.personalInfo?.legalFirstName || ''} ${student.personalInfo?.middleName || ''} ${student.personalInfo?.lastName || ''}`.trim();
             initialEngagement[student._id] = {
@@ -367,7 +516,7 @@ const Engagement: React.FC = () => {
               comment: '',
               workUndertaken: '',
             };
-            
+
             // Initialize all sessions for this student (all 6 to match Marked Engagements)
             const sessionsData: Record<string, SessionEngagement> = {};
             sessionOptions.forEach(sessionOpt => {
@@ -379,7 +528,7 @@ const Engagement: React.FC = () => {
                 workUndertaken: '',
               };
             });
-            
+
             initialAllSessions[student._id] = {
               studentId: student._id,
               name,
@@ -391,19 +540,19 @@ const Engagement: React.FC = () => {
           setAllSessionsEngagementData(initialAllSessions);
           allSessionsEngagementDataRef.current = initialAllSessions;
           isInitialMount.current = true;
-          
+
           // Fetch existing engagements for all students (same date as Marked Engagements logic)
           const fetchEngagementsForStudents = async () => {
             try {
               const response = await executeRequest('get', `/engagements/class/${filterClass}?date=${engagementDate}`);
               const engagements = response as ExistingEngagement[];
-              
+
               // Update all sessions engagement data
               setAllSessionsEngagementData(prev => {
                 const updated: Record<string, StudentEngagementData> = { ...prev };
                 engagements.forEach(eng => {
-                  const studentId = typeof eng.student === 'string' 
-                    ? eng.student 
+                  const studentId = typeof eng.student === 'string'
+                    ? eng.student
                     : (typeof eng.student === 'object' && eng.student !== null && '_id' in eng.student)
                       ? (eng.student as { _id: string })._id
                       : String(eng.student);
@@ -479,11 +628,16 @@ const Engagement: React.FC = () => {
 
     fetchClassStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterClass]);
+  }, [filterClass, filterStudent, engagementDate]);
 
-  // Fetch existing engagements when class is selected
+  // Fetch existing engagements when class or student is selected
   useEffect(() => {
     const fetchExistingEngagements = async () => {
+      if (filterStudent) {
+        // If student is selected, skip this - it's already handled in the main useEffect
+        return;
+      }
+
       if (!filterClass) {
         return;
       }
@@ -563,7 +717,7 @@ const Engagement: React.FC = () => {
       fetchExistingEngagements();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterClass, students.length, engagementDate]);
+  }, [filterClass, filterStudent, students.length, engagementDate]);
 
   // Helper function to get student full name
   const getStudentName = (student: StudentData): string => {
@@ -581,6 +735,14 @@ const Engagement: React.FC = () => {
 
     const currentEngagement = engagementDataRef.current[studentId];
     if (!currentEngagement || !currentEngagement.session) {
+      return;
+    }
+
+    // "All Day" is a UI-only shortcut — save to each real session individually
+    if (currentEngagement.session === 'all day') {
+      for (const sess of REAL_SESSIONS) {
+        await autoSaveAllSessionsEngagementRef.current(studentId, sess);
+      }
       return;
     }
 
@@ -742,6 +904,11 @@ const Engagement: React.FC = () => {
     }
   }, [executeRequest, engagementDate, canEditEngagement]);
 
+  // Keep the ref in sync so autoSaveEngagement can call it without a forward-reference issue
+  useEffect(() => {
+    autoSaveAllSessionsEngagementRef.current = autoSaveAllSessionsEngagement;
+  }, [autoSaveAllSessionsEngagement]);
+
   // Handle engagement data changes with auto-save
   const handleAttendanceChange = useCallback((studentId: string, present: boolean) => {
     setEngagementData(prev => ({
@@ -752,7 +919,7 @@ const Engagement: React.FC = () => {
         absenceType: present ? undefined : (prev[studentId].absenceType ?? 'unauthorized'),
       },
     }));
-    
+
     engagementDataRef.current[studentId] = {
       ...engagementDataRef.current[studentId],
       attendance: present,
@@ -760,33 +927,31 @@ const Engagement: React.FC = () => {
     };
 
     const currentSession = engagementDataRef.current[studentId]?.session;
-    if (currentSession) {
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+
+    if (sessionsToSync.length > 0) {
       setAllSessionsEngagementData(prev => {
         const student = prev[studentId];
-        if (!student?.sessions[currentSession]) return prev;
-        const next = {
-          ...prev,
-          [studentId]: {
-            ...student,
-            sessions: {
-              ...student.sessions,
-              [currentSession]: {
-                ...student.sessions[currentSession],
-                attendance: present,
-                absenceType: present ? undefined : (student.sessions[currentSession].absenceType ?? 'unauthorized'),
-              },
-            },
-          },
-        };
-        if (allSessionsEngagementDataRef.current[studentId]?.sessions[currentSession]) {
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].attendance = present;
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].absenceType = present ? undefined : (allSessionsEngagementDataRef.current[studentId].sessions[currentSession].absenceType ?? 'unauthorized');
-        }
-        return next;
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = {
+              ...updatedSessions[sess],
+              attendance: present,
+              absenceType: present ? undefined : (updatedSessions[sess].absenceType ?? 'unauthorized'),
+            };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].attendance = present;
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType = present ? undefined : (allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType ?? 'unauthorized');
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
       });
     }
-    
-    if (!isInitialMount.current && filterClass && engagementDataRef.current[studentId]?.session) {
+
+    if (!isInitialMount.current && filterClass && currentSession) {
       setTimeout(() => autoSaveEngagement(studentId), 500);
     }
   }, [autoSaveEngagement, filterClass]);
@@ -798,27 +963,24 @@ const Engagement: React.FC = () => {
     }));
     engagementDataRef.current[studentId] = { ...engagementDataRef.current[studentId], absenceType: value };
     const currentSession = engagementDataRef.current[studentId]?.session;
-    if (currentSession) {
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+    if (sessionsToSync.length > 0) {
       setAllSessionsEngagementData(prev => {
         const student = prev[studentId];
-        if (!student?.sessions[currentSession]) return prev;
-        const next = {
-          ...prev,
-          [studentId]: {
-            ...student,
-            sessions: {
-              ...student.sessions,
-              [currentSession]: { ...student.sessions[currentSession], absenceType: value },
-            },
-          },
-        };
-        if (allSessionsEngagementDataRef.current[studentId]?.sessions[currentSession]) {
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].absenceType = value;
-        }
-        return next;
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = { ...updatedSessions[sess], absenceType: value };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType = value;
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
       });
     }
-    if (!isInitialMount.current && filterClass && engagementDataRef.current[studentId]?.session) {
+    if (!isInitialMount.current && filterClass && currentSession) {
       setTimeout(() => autoSaveEngagement(studentId), 500);
     }
   }, [autoSaveEngagement, filterClass]);
@@ -841,29 +1003,26 @@ const Engagement: React.FC = () => {
 
     // Sync to expanded view (allSessions)
     const currentSession = engagementDataRef.current[studentId]?.session;
-    if (currentSession) {
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+    if (sessionsToSync.length > 0) {
       setAllSessionsEngagementData(prev => {
         const student = prev[studentId];
-        if (!student?.sessions[currentSession]) return prev;
-        const next = {
-          ...prev,
-          [studentId]: {
-            ...student,
-            sessions: {
-              ...student.sessions,
-              [currentSession]: { ...student.sessions[currentSession], behaviour: behaviourValue },
-            },
-          },
-        };
-        if (allSessionsEngagementDataRef.current[studentId]?.sessions[currentSession]) {
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].behaviour = behaviourValue;
-        }
-        return next;
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = { ...updatedSessions[sess], behaviour: behaviourValue };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].behaviour = behaviourValue;
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
       });
     }
-    
+
     // Auto-save after a short delay
-    if (!isInitialMount.current && filterClass && engagementDataRef.current[studentId]?.session) {
+    if (!isInitialMount.current && filterClass && currentSession) {
       setTimeout(() => {
         autoSaveEngagement(studentId);
       }, 500);
@@ -877,27 +1036,24 @@ const Engagement: React.FC = () => {
     }));
     engagementDataRef.current[studentId] = { ...engagementDataRef.current[studentId], comment: value };
     const currentSession = engagementDataRef.current[studentId]?.session;
-    if (currentSession) {
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+    if (sessionsToSync.length > 0) {
       setAllSessionsEngagementData(prev => {
         const student = prev[studentId];
-        if (!student?.sessions[currentSession]) return prev;
-        const next = {
-          ...prev,
-          [studentId]: {
-            ...student,
-            sessions: {
-              ...student.sessions,
-              [currentSession]: { ...student.sessions[currentSession], comment: value },
-            },
-          },
-        };
-        if (allSessionsEngagementDataRef.current[studentId]?.sessions[currentSession]) {
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].comment = value;
-        }
-        return next;
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = { ...updatedSessions[sess], comment: value };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].comment = value;
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
       });
     }
-    if (!isInitialMount.current && filterClass && engagementDataRef.current[studentId]?.session) {
+    if (!isInitialMount.current && filterClass && currentSession) {
       setTimeout(() => autoSaveEngagement(studentId), 1000);
     }
   }, [autoSaveEngagement, filterClass]);
@@ -909,27 +1065,24 @@ const Engagement: React.FC = () => {
     }));
     engagementDataRef.current[studentId] = { ...engagementDataRef.current[studentId], workUndertaken: value };
     const currentSession = engagementDataRef.current[studentId]?.session;
-    if (currentSession) {
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+    if (sessionsToSync.length > 0) {
       setAllSessionsEngagementData(prev => {
         const student = prev[studentId];
-        if (!student?.sessions[currentSession]) return prev;
-        const next = {
-          ...prev,
-          [studentId]: {
-            ...student,
-            sessions: {
-              ...student.sessions,
-              [currentSession]: { ...student.sessions[currentSession], workUndertaken: value },
-            },
-          },
-        };
-        if (allSessionsEngagementDataRef.current[studentId]?.sessions[currentSession]) {
-          allSessionsEngagementDataRef.current[studentId].sessions[currentSession].workUndertaken = value;
-        }
-        return next;
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = { ...updatedSessions[sess], workUndertaken: value };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].workUndertaken = value;
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
       });
     }
-    if (!isInitialMount.current && filterClass && engagementDataRef.current[studentId]?.session) {
+    if (!isInitialMount.current && filterClass && currentSession) {
       setTimeout(() => autoSaveEngagement(studentId), 1000);
     }
   }, [autoSaveEngagement, filterClass]);
@@ -1201,6 +1354,53 @@ const Engagement: React.FC = () => {
       });
     return () => { cancelled = true; };
   }, [activeTab, markedFilterClassId, markedFilterDate, sessionOptions, canViewMarkedEngagement]);
+
+  // Fetch all students for student filter dropdown when marked tab is active
+  useEffect(() => {
+    if (activeTab !== 'marked' || !canViewMarkedEngagement) return;
+    let cancelled = false;
+    const fetchStudents = async () => {
+      try {
+        const response = await api.get<StudentData[]>('/students?perPage=1000');
+        if (!cancelled && Array.isArray(response.data)) {
+          setMarkedAllStudents(response.data);
+          const options: DropdownOption[] = response.data.map((s) => {
+            const p = s.personalInfo ?? {};
+            const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+            return { value: s._id, label: name || s._id };
+          });
+          setMarkedStudentOptions(options);
+        }
+      } catch (error) {
+        console.error('Error fetching students for filter:', error);
+      }
+    };
+    fetchStudents();
+    return () => { cancelled = true; };
+  }, [activeTab, canViewMarkedEngagement]);
+
+  // Fetch all students for student filter dropdown in Mark Engagement tab
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStudents = async () => {
+      try {
+        const response = await api.get<StudentData[]>('/students?perPage=1000');
+        if (!cancelled && Array.isArray(response.data)) {
+          setAllMarkStudents(response.data);
+          const options: DropdownOption[] = response.data.map((s) => {
+            const p = s.personalInfo ?? {};
+            const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+            return { value: s._id, label: name || s._id };
+          });
+          setFilterStudentOptions(options);
+        }
+      } catch (error) {
+        console.error('Error fetching students for filter:', error);
+      }
+    };
+    fetchStudents();
+    return () => { cancelled = true; };
+  }, []);
 
   const toggleUniversalListExpansion = useCallback((studentId: string) => {
     setUniversalListExpanded((prev) => {
@@ -1898,6 +2098,14 @@ const Engagement: React.FC = () => {
 
   // Handler for session change in first row: load from allSessions so row and expanded stay in sync
   const handleSessionChange = useCallback((studentId: string, sessionValue: string) => {
+    // "All Day" has no server record of its own — reset the row to blank defaults
+    if (sessionValue === 'all day') {
+      const blank = { attendance: false, absenceType: undefined as 'authorized' | 'unauthorized' | undefined, behaviour: 'Unmarked', comment: '', workUndertaken: '', engagementId: undefined as string | undefined };
+      setEngagementData(prev => ({ ...prev, [studentId]: { ...prev[studentId], session: 'all day', ...blank } }));
+      engagementDataRef.current[studentId] = { ...engagementDataRef.current[studentId], session: 'all day', ...blank };
+      return;
+    }
+
     const sessionData = allSessionsEngagementDataRef.current[studentId]?.sessions[sessionValue];
     const fromAllSessions = sessionData
       ? {
@@ -2009,7 +2217,7 @@ const Engagement: React.FC = () => {
             name={`session-${studentId}`}
             value={currentSession}
             onChange={(e) => handleSessionChange(studentId, e.target.value)}
-            options={sessionOptions}
+            options={sessionSelectOptions}
             placeholder="Select Session"
             disabled={!canEditEngagement}
           />
@@ -2160,7 +2368,7 @@ const Engagement: React.FC = () => {
         );
       },
     },
-  ], [behaviorSelectOptions, canCreateEngagement, canEditEngagement, handleAbsenceTypeChange, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionOptions, toggleRowExpansion]);
+  ], [behaviorSelectOptions, canCreateEngagement, canEditEngagement, handleAbsenceTypeChange, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionSelectOptions, toggleRowExpansion]);
 
   // Editable expanded content for initial marked list (one row per session)
   const renderMarkedListExpandedContent = useCallback((rowData: {
@@ -2345,6 +2553,7 @@ const Engagement: React.FC = () => {
         : null;
       if (markedFilterLocation && classObj?.location !== markedFilterLocation) return false;
       if (markedFilterSubject && classObj?.subject !== markedFilterSubject) return false;
+      if (markedFilterStudent && studentIdFromEng(eng) !== markedFilterStudent) return false;
       return true;
     });
 
@@ -2538,6 +2747,45 @@ const Engagement: React.FC = () => {
 
   const markedFilterContent = (
     <div className="inputs-div-tt">
+      <div className="input-div-engagement">
+        <SearchableSelect
+          label="Student"
+          name="student"
+          value={markedFilterStudent}
+          onChange={(v) => setMarkedFilterStudent(String(v))}
+          options={markedStudentOptions}
+          onSearch={(term) => {
+            const trimmed = term.trim().toLowerCase();
+            const base: DropdownOption[] = markedAllStudents.map((s) => {
+              const p = s.personalInfo ?? {};
+              const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+              return { value: s._id, label: name || s._id };
+            });
+
+            if (!trimmed) {
+              setMarkedStudentOptions(base);
+              return;
+            }
+
+            const filtered = base.filter((o) => {
+              const l = o.label.toLowerCase();
+              return l.includes(trimmed) || String(o.value).includes(trimmed);
+            });
+
+            // Keep selected student visible
+            if (markedFilterStudent) {
+              const selected = base.find((o) => o.value === markedFilterStudent);
+              if (selected && !filtered.some((o) => o.value === selected.value)) {
+                setMarkedStudentOptions([selected, ...filtered]);
+                return;
+              }
+            }
+
+            setMarkedStudentOptions(filtered);
+          }}
+          placeholder="Search student..."
+        />
+      </div>
       <div className="input-div-engagement">
         <DateInput
           label="Date"

@@ -121,9 +121,9 @@
 }
 .inputs-div-tt{
     height:fit-content;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
 }
 .slot-div{
     border-top: 1px solid var(--border-color);

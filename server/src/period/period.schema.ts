@@ -6,10 +6,10 @@ export class Period extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: false })
+  @Prop({ required: true })
   startTime: string; // e.g., '08:00'
 
-  @Prop({ required: false })
+  @Prop({ required: true })
   endTime: string; // e.g., '09:00'
 }
 

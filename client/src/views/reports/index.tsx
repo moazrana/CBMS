@@ -5,6 +5,7 @@ import { Tabs } from '../../components/Tabs/Tabs';
 import DataTable from '../../components/DataTable/DataTable';
 import FilterSec from '../../components/FilterSec/FilterSec';
 import Select from '../../components/Select/Select';
+import SearchableSelect from '../../components/SearchableSelect/SearchableSelect';
 import Popup from '../../components/Popup/Popup';
 import TextField from '../../components/textField/TextField';
 import DateInput from '../../components/dateInput/DateInput';
@@ -528,6 +529,35 @@ const SESSION_ORDER: Record<string, number> = {
   session3: 5,
 };
 
+/** Get first day of month for a given date string. */
+function getFirstOfMonth(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  d.setDate(1);
+  return d.toISOString().split('T')[0];
+}
+
+/** Format month date as "January 2026" or "Mon 1st Jan 2026 – Wed 31st Jan 2026". */
+function formatMonthRange(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+/** Format date for "Report Generated: January 31st 2026". */
+function formatMonthReportGenerated(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const day = lastDay.getDate();
+  const ord = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+  const str = lastDay.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  return `${str} (1st – ${day}${ord})`;
+}
+
 type WeeklyReportTabProps = { canDownload: boolean };
 
 const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
@@ -537,9 +567,11 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
   const [subject, setSubject] = useState<string>('');
   const [filterClass, setFilterClass] = useState<string>('');
   const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
+  const [allStudents, setAllStudents] = useState<WeeklyReportStudent[]>([]);
   const [students, setStudents] = useState<WeeklyReportStudent[]>([]);
+  const [filterStudent, setFilterStudent] = useState<string>('');
+  const [studentOptions, setStudentOptions] = useState<DropdownOption[]>([]);
   const [classMeta, setClassMeta] = useState<{ subject: string; location: string }>({ subject: '', location: '' });
-  const [loading, setLoading] = useState(false);
   const [weeklyReportPopupOpen, setWeeklyReportPopupOpen] = useState(false);
   const [weeklyReportStudentName, setWeeklyReportStudentName] = useState('');
   const [weeklyReportStudentId, setWeeklyReportStudentId] = useState<string | null>(null);
@@ -550,6 +582,31 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
     setWeeklyReportStudentName('');
     setWeeklyReportStudentId(null);
     setWeeklyReportNotes('');
+  }, []);
+
+  useEffect(() => {
+    const fetchAllStudents = async () => {
+      try {
+        const response = await executeRequest('get', '/students?perPage=1000');
+        const list: WeeklyReportStudent[] = Array.isArray(response)
+          ? response
+          : Array.isArray((response as { data?: WeeklyReportStudent[] }).data)
+            ? (response as { data: WeeklyReportStudent[] }).data
+            : [];
+        setAllStudents(list);
+        setStudentOptions(
+          list.map((s) => {
+            const p = s.personalInfo ?? {};
+            const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+            return { value: s._id, label: name || s._id };
+          })
+        );
+      } catch {
+        setAllStudents([]);
+      }
+    };
+    fetchAllStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   type EngagementTableRow = {
@@ -880,10 +937,11 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
     if (!filterClass) {
       setStudents([]);
       setClassMeta({ subject: '', location: '' });
+      setFilterStudent('');
+      setStudentOptions([]);
       return;
     }
     let cancelled = false;
-    setLoading(true);
     const fetchClass = async () => {
       try {
         const response = await executeRequest('get', `/classes/${filterClass}`);
@@ -900,8 +958,6 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
           setStudents([]);
           setClassMeta({ subject: '', location: '' });
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
     fetchClass();
@@ -909,8 +965,67 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterClass]);
 
+  // Keep the student dropdown options in sync with the loaded class students.
+  useEffect(() => {
+    const source = (students ?? []).length > 0 ? students : allStudents;
+    const opts: DropdownOption[] = source.map((s) => {
+      const p = s.personalInfo ?? {};
+      const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+      return { value: s._id, label: name || s._id };
+    });
+
+    setStudentOptions(opts);
+
+    // If currently selected student isn't in the new list, clear it.
+    if (filterStudent && !opts.some((o) => o.value === filterStudent)) {
+      setFilterStudent('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- want to recalc when students/allStudents change
+  }, [students, allStudents]);
+
   const filterContent = (
     <div className="reports-page__weekly-filters">
+      <div className="reports-page__weekly-filter-item">
+        <SearchableSelect
+          label="Student"
+          name="student"
+          value={filterStudent}
+          onChange={(v) => setFilterStudent(String(v))}
+          options={studentOptions}
+          disabled={studentOptions.length === 0}
+          onSearch={(term) => {
+            const trimmed = term.trim().toLowerCase();
+            const source = (students ?? []).length > 0 ? students : allStudents;
+            const base: DropdownOption[] = source.map((s) => {
+              const p = s.personalInfo ?? {};
+              const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+              return { value: s._id, label: name || s._id };
+            });
+
+            if (!trimmed) {
+              setStudentOptions(base);
+              return;
+            }
+
+            const filtered = base.filter((o) => {
+              const l = o.label.toLowerCase();
+              return l.includes(trimmed) || String(o.value).includes(trimmed);
+            });
+
+            // Keep selected student visible.
+            if (filterStudent) {
+              const selected = base.find((o) => o.value === filterStudent);
+              if (selected && !filtered.some((o) => o.value === selected.value)) {
+                setStudentOptions([selected, ...filtered]);
+                return;
+              }
+            }
+
+            setStudentOptions(filtered);
+          }}
+          placeholder="Search student..."
+        />
+      </div>
       <div className="reports-page__weekly-filter-item">
         <DateInput
           label="Week (Mon–Fri)"
@@ -964,7 +1079,15 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
   const tableData = useMemo(() => {
     const sub = classMeta.subject;
     const loc = classMeta.location;
-    return students.map((s) => {
+    let visibleStudents: WeeklyReportStudent[];
+    if (filterStudent) {
+      // Student selected: search in class students first, fall back to all students
+      const source = students.length > 0 ? students : allStudents;
+      visibleStudents = source.filter((s) => s._id === filterStudent);
+    } else {
+      visibleStudents = students;
+    }
+    return visibleStudents.map((s) => {
       const p = s.personalInfo ?? {};
       const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim() || '—';
       const dob = p.dateOfBirth;
@@ -985,7 +1108,7 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
         hasEHCP: s.medical?.ehcp?.hasEHCP === true,
       };
     });
-  }, [students, classMeta]);
+  }, [students, allStudents, classMeta, filterStudent]);
 
   const columns = useMemo(
     () => [
@@ -1041,12 +1164,10 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
   return (
     <div className="reports-page__panel reports-page__weekly">
       <FilterSec secName="Students filter" content={filterContent} retractable />
-      {loading ? (
-        <p className="reports-page__incidents-loading">Loading…</p>
-      ) : !filterClass ? (
-        <p className="reports-page__incidents-empty">Select location, subject and class to view students.</p>
-      ) : !students.length ? (
-        <p className="reports-page__incidents-empty">No students in this class.</p>
+      {!filterClass && !filterStudent ? (
+        <p className="reports-page__incidents-empty">Select a student or choose a class to view students.</p>
+      ) : !tableData.length ? (
+        <p className="reports-page__incidents-empty">No student found.</p>
       ) : (
         <div className="reports-page__incidents-table-wrap">
           <DataTable
@@ -1084,22 +1205,645 @@ const WeeklyReportTab: React.FC<WeeklyReportTabProps> = ({ canDownload }) => {
   );
 };
 
+type MonthlyReportTabProps = { canDownload: boolean };
+
+const MonthlyReportTab: React.FC<MonthlyReportTabProps> = ({ canDownload }) => {
+  const { executeRequest } = useApiRequest();
+  const [monthStartDate, setMonthStartDate] = useState<string>(() => getFirstOfMonth(new Date().toISOString().split('T')[0]));
+  const [location, setLocation] = useState<string>('');
+  const [subject, setSubject] = useState<string>('');
+  const [filterClass, setFilterClass] = useState<string>('');
+  const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
+  const [allStudents, setAllStudents] = useState<WeeklyReportStudent[]>([]);
+  const [students, setStudents] = useState<WeeklyReportStudent[]>([]);
+  const [filterStudent, setFilterStudent] = useState<string>('');
+  const [studentOptions, setStudentOptions] = useState<DropdownOption[]>([]);
+  const [classMeta, setClassMeta] = useState<{ subject: string; location: string }>({ subject: '', location: '' });
+  const [monthlyReportPopupOpen, setMonthlyReportPopupOpen] = useState(false);
+  const [monthlyReportStudentName, setMonthlyReportStudentName] = useState('');
+  const [monthlyReportStudentId, setMonthlyReportStudentId] = useState<string | null>(null);
+  const [monthlyReportNotes, setMonthlyReportNotes] = useState('');
+
+  const closeMonthlyReportPopup = useCallback(() => {
+    setMonthlyReportPopupOpen(false);
+    setMonthlyReportStudentName('');
+    setMonthlyReportStudentId(null);
+    setMonthlyReportNotes('');
+  }, []);
+
+  useEffect(() => {
+    const fetchAllStudents = async () => {
+      try {
+        const response = await executeRequest('get', '/students?perPage=1000');
+        const list: WeeklyReportStudent[] = Array.isArray(response)
+          ? response
+          : Array.isArray((response as { data?: WeeklyReportStudent[] }).data)
+            ? (response as { data: WeeklyReportStudent[] }).data
+            : [];
+        setAllStudents(list);
+        setStudentOptions(
+          list.map((s) => {
+            const p = s.personalInfo ?? {};
+            const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+            return { value: s._id, label: name || s._id };
+          })
+        );
+      } catch {
+        setAllStudents([]);
+      }
+    };
+    fetchAllStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  type EngagementTableRow = {
+    dateLine1: string;
+    dateLine2: string;
+    period: string;
+    engagement: string;
+    workUndertaken: string;
+    behaviour: string;
+  };
+
+  type MonthlyReportSummary = {
+    attendance: { present: number; authorised: number; unauthorised: number; total: number };
+    engagement: { good: number; fair: number; average: number; poor: number; unmarked: number };
+  };
+
+  const generateMonthlyReportPdf = useCallback((engagementRows: EngagementTableRow[], summary: MonthlyReportSummary) => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const margin = MARGIN_MM;
+    const lineH = 5;
+    let y = margin;
+
+    const printDate = new Date().toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text(printDate, margin, y);
+    doc.text('Print Out', PAGE_W_MM / 2, y, { align: 'center' });
+    const logoW = 22;
+    const logoH = 12;
+    if (typeof logo === 'string' && logo) {
+      doc.addImage(logo, 'PNG', PAGE_W_MM - margin - logoW, y - logoH + 3, logoW, logoH);
+    }
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Student: ', margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(monthlyReportStudentName || '—', margin + doc.getTextWidth('Student: '), y);
+    doc.setFont('helvetica', 'normal');
+    y += lineH + 2;
+
+    doc.text('Teacher/Mentor: ', margin, y);
+    y += lineH + 4;
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 128);
+    doc.text('MONTHLY REPORT', PAGE_W_MM / 2, y, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    y += lineH + 4;
+
+    const monthRange = monthStartDate ? formatMonthRange(monthStartDate) : '';
+    const reportGen = monthStartDate ? formatMonthReportGenerated(monthStartDate) : '';
+    doc.text(`Month: ${monthRange}`, margin, y);
+    y += lineH;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Report Generated: ${reportGen}`, margin, y);
+    doc.setFont('helvetica', 'normal');
+    y += lineH + 6;
+
+    if (monthlyReportNotes.trim()) {
+      doc.setFontSize(10);
+      const lines = doc.splitTextToSize(monthlyReportNotes.trim(), PAGE_W_MM - 2 * margin);
+      lines.forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += lineH;
+      });
+      y += 6;
+    }
+
+    const boxGap = 8;
+    const boxWidth = (PAGE_W_MM - 2 * margin - boxGap) / 2;
+    const boxLeftX = margin;
+    const boxRightX = margin + boxWidth + boxGap;
+    const boxHeaderH = 8;
+    const rowH = 6;
+    const boxRadiusPct = 0.4;
+    const kappa = 0.5522847498;
+
+    const rectTopRounded = (xx: number, yy: number, w: number, h: number, r: number, style: 'F' | 'S') => {
+      const rad = Math.min(r, h / 2);
+      const k = rad * kappa;
+      doc.moveTo(xx + rad, yy);
+      doc.lineTo(xx + w - rad, yy);
+      doc.curveTo(xx + w - rad + k, yy, xx + w, yy + rad - k, xx + w, yy + rad);
+      doc.lineTo(xx + w, yy + h);
+      doc.lineTo(xx, yy + h);
+      doc.lineTo(xx, yy + rad);
+      doc.curveTo(xx, yy + rad - k, xx + rad - k, yy, xx + rad, yy);
+      if (style === 'F') doc.fill(); else doc.stroke();
+    };
+
+    const drawBox = (x: number, title: string, rows: [string, string][]) => {
+      const rowCount = rows.length;
+      const boxH = boxHeaderH + rowCount * rowH + 4;
+      const rFull = Math.min(boxWidth, boxH) * boxRadiusPct;
+      const rHeader = Math.min(rFull, boxHeaderH / 2);
+      doc.setFillColor(100, 149, 237);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      rectTopRounded(x, y, boxWidth, boxHeaderH, rHeader, 'F');
+      doc.text(title, x + 3, y + 5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const bodyTop = boxHeaderH;
+      rows.forEach(([label, value], i) => {
+        doc.setFontSize(7);
+        doc.text(label, x + 3, y + bodyTop + (i + 1) * rowH);
+        doc.text(value, x + boxWidth - 3, y + bodyTop + (i + 1) * rowH, { align: 'right' });
+      });
+      return boxH;
+    };
+
+    const drawEngagementBox = (x: number, title: string, eng: MonthlyReportSummary['engagement']) => {
+      const leftRows: [string, string][] = [
+        ['Good', String(eng.good)],
+        ['Fair', String(eng.fair)],
+        ['Average', String(eng.average)],
+        ['Poor', String(eng.poor)],
+      ];
+      const rightRows: [string, string][] = [
+        ['Refused', '—'],
+        ['Extra Points', '—'],
+        ['Total Points', '—'],
+        ['Unmarked', String(eng.unmarked)],
+      ];
+      const rowCount = Math.max(leftRows.length, rightRows.length);
+      const boxH = boxHeaderH + rowCount * rowH + 4;
+      const rFull = Math.min(boxWidth, boxH) * boxRadiusPct;
+      const rHeader = Math.min(rFull, boxHeaderH / 2);
+      doc.setFillColor(100, 149, 237);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      rectTopRounded(x, y, boxWidth, boxHeaderH, rHeader, 'F');
+      doc.text(title, x + 3, y + 5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const halfW = boxWidth / 2;
+      const bodyTop = boxHeaderH;
+      leftRows.forEach(([label, value], i) => {
+        doc.setFontSize(7);
+        doc.text(label, x + 3, y + bodyTop + (i + 1) * rowH);
+        doc.text(value, x + halfW - 3, y + bodyTop + (i + 1) * rowH, { align: 'right' });
+      });
+      rightRows.forEach(([label, value], i) => {
+        doc.setFontSize(7);
+        doc.text(label, x + halfW + 3, y + bodyTop + (i + 1) * rowH);
+        doc.text(value, x + boxWidth - 3, y + bodyTop + (i + 1) * rowH, { align: 'right' });
+      });
+      return boxH;
+    };
+
+    const att = summary.attendance;
+    const attendancePct = att.total > 0 ? ((att.present / att.total) * 100).toFixed(1) : '0';
+    const attendanceRows: [string, string][] = [
+      ['Present', String(att.present)],
+      ['Authorised Absences', String(att.authorised)],
+      ['Unauthorised Absences', String(att.unauthorised)],
+    ];
+
+    const h1 = drawBox(boxLeftX, `Attendance ${attendancePct}%`, attendanceRows);
+    const h2 = drawEngagementBox(boxRightX, 'Engagement', summary.engagement);
+    y += Math.max(h1, h2) + 6;
+
+    const engCols = ['Date', 'Period', 'Engagement', 'Work undertaken', 'Behaviour'] as const;
+    const tableW = PAGE_W_MM - 2 * margin;
+    const colW = tableW / engCols.length;
+    const tableHeaderH = 7;
+    const tableRowH = 6;
+    const rTable = Math.min(3, tableHeaderH / 2);
+    doc.setFillColor(100, 149, 237);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    rectTopRounded(margin, y, tableW, tableHeaderH, rTable, 'F');
+    engCols.forEach((col, i) => {
+      doc.text(col, margin + colW * i + 3, y + tableHeaderH / 2 + 1.5);
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    const greenBg = [220, 255, 220] as [number, number, number];
+    const beigeBg = [255, 250, 240] as [number, number, number];
+    const cellPadX = 4;
+    const cellPadY = 1;
+    engagementRows.forEach((row, idx) => {
+      const bg = idx % 2 === 0 ? greenBg : beigeBg;
+      doc.setFillColor(...bg);
+      doc.rect(margin, y + tableHeaderH + idx * tableRowH, tableW, tableRowH, 'F');
+      doc.setTextColor(0, 0, 0);
+      const rowY = y + tableHeaderH + idx * tableRowH;
+      doc.text(row.dateLine1 || '—', margin + cellPadX, rowY + cellPadY + 2.5);
+      doc.text(row.dateLine2 || '', margin + cellPadX, rowY + cellPadY + 5);
+      const periodStr = row.period || '—';
+      const engagementStr = row.engagement || '—';
+      const workStr = row.workUndertaken ?? '';
+      const behaviourStr = row.behaviour ?? '';
+      const cellCenterY = rowY + cellPadY + tableRowH / 2 + 1.5;
+      doc.text(periodStr, margin + colW + cellPadX, cellCenterY);
+      doc.text(engagementStr, margin + colW * 2 + cellPadX, cellCenterY);
+      doc.text(workStr, margin + colW * 3 + cellPadX, cellCenterY);
+      doc.text(behaviourStr, margin + colW * 4 + cellPadX, cellCenterY);
+    });
+    if (engagementRows.length === 0) {
+      doc.setFillColor(...beigeBg);
+      doc.rect(margin, y + tableHeaderH, tableW, tableRowH, 'F');
+      doc.text('No engagements recorded for this month.', margin + cellPadX, y + tableHeaderH + cellPadY + tableRowH / 2 + 1.5);
+    }
+    y += tableHeaderH + Math.max(engagementRows.length, 1) * tableRowH + 4;
+
+    const safeName = (monthlyReportStudentName || 'monthly-report').replace(/\s+/g, '-').replace(/,/g, '');
+    doc.save(`monthly-report-${safeName}.pdf`);
+    closeMonthlyReportPopup();
+  }, [monthlyReportStudentName, monthlyReportNotes, monthStartDate, closeMonthlyReportPopup]);
+
+  const handleGenerateMonthlyReportPdf = useCallback(async () => {
+    const studentId = monthlyReportStudentId;
+    const monthStr = monthStartDate;
+    let rows: EngagementTableRow[] = [];
+    if (studentId && monthStr) {
+      try {
+        const list = (await executeRequest('get', `/engagements/student/${studentId}`)) as Array<{
+          engagementDate?: string | Date;
+          session?: string;
+          attendance?: boolean;
+          absenceType?: string;
+          behaviour?: string;
+          comment?: string;
+          workUndertaken?: string;
+        }>;
+        if (Array.isArray(list)) {
+          const monthStart = new Date(monthStr + 'T00:00:00');
+          const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+          monthEnd.setHours(23, 59, 59, 999);
+          const inMonth = list.filter((e) => {
+            const d = e.engagementDate ? new Date(e.engagementDate) : new Date(0);
+            return d >= monthStart && d <= monthEnd;
+          });
+          const present = inMonth.filter((e) => e.attendance === true).length;
+          const authorised = inMonth.filter((e) => e.attendance === false && e.absenceType === 'authorized').length;
+          const unauthorised = inMonth.filter((e) => e.attendance === false && e.absenceType === 'unauthorized').length;
+          const summary: MonthlyReportSummary = {
+            attendance: {
+              present,
+              authorised,
+              unauthorised,
+              total: inMonth.length,
+            },
+            engagement: {
+              good: inMonth.filter((e) => e.behaviour === 'Good').length,
+              fair: inMonth.filter((e) => e.behaviour === 'Fair').length,
+              average: inMonth.filter((e) => e.behaviour === 'Average').length,
+              poor: inMonth.filter((e) => e.behaviour === 'Poor').length,
+              unmarked: inMonth.filter((e) => !e.behaviour || e.behaviour === 'Unmarked').length,
+            },
+          };
+          rows = inMonth
+            .sort((a, b) => {
+              const da = a.engagementDate ? new Date(a.engagementDate).getTime() : 0;
+              const db = b.engagementDate ? new Date(b.engagementDate).getTime() : 0;
+              if (da !== db) return da - db;
+              const sa = SESSION_ORDER[String(a.session || '').toLowerCase()] ?? 99;
+              const sb = SESSION_ORDER[String(b.session || '').toLowerCase()] ?? 99;
+              return sa - sb;
+            })
+            .map((e) => {
+              const { line1, line2 } = formatEngagementDateTwoLines(e.engagementDate ?? '');
+              return {
+                dateLine1: line1,
+                dateLine2: line2,
+                period: formatSessionName(e.session ?? ''),
+                engagement: e.behaviour ?? '—',
+                workUndertaken: e.workUndertaken ?? '',
+                behaviour: e.comment ?? '',
+              };
+            });
+          generateMonthlyReportPdf(rows, summary);
+          return;
+        }
+      } catch (error) {
+        console.error('Error generating monthly report:', error);
+      }
+    }
+    const defaultSummary: MonthlyReportSummary = {
+      attendance: { present: 0, authorised: 0, unauthorised: 0, total: 0 },
+      engagement: { good: 0, fair: 0, average: 0, poor: 0, unmarked: 0 },
+    };
+    generateMonthlyReportPdf(rows, defaultSummary);
+  }, [monthlyReportStudentId, monthStartDate, executeRequest, generateMonthlyReportPdf]);
+
+  // Filter logic (same as weekly)
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!location && !subject) {
+        setClassOptions([]);
+        setFilterClass('');
+        return;
+      }
+
+      try {
+        const response = await executeRequest('get', '/classes?perPage=1000');
+        if (Array.isArray(response)) {
+          const filtered = response.filter((cls: any) => {
+            const matchesLocation = !location || cls.location === location;
+            const matchesSubject = !subject || cls.subject === subject;
+            return matchesLocation && matchesSubject;
+          });
+          setClassOptions(filtered.map((cls: any) => ({
+            label: `${cls.subject} - ${cls.yeargroup}`,
+            value: cls._id,
+          })));
+          setFilterClass('');
+        }
+      } catch {
+        setClassOptions([]);
+      }
+    };
+
+    fetchClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, subject]);
+
+  useEffect(() => {
+    const fetchClassStudents = async () => {
+      if (!filterClass) {
+        setStudents([]);
+        setClassMeta({ subject: '', location: '' });
+        return;
+      }
+
+      try {
+        const response = await executeRequest('get', `/classes/${filterClass}`);
+        const classData = response as any;
+        const studentsList = Array.isArray(classData.students) ? classData.students : [];
+        setStudents(studentsList);
+        setClassMeta({ subject: classData.subject || '', location: classData.location || '' });
+      } catch (error) {
+        console.error('Error fetching class students:', error);
+        setStudents([]);
+      }
+    };
+
+    fetchClassStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterClass]);
+
+  const filterContent = (
+    <div className="reports-page__weekly-filters">
+      <div className="reports-page__weekly-filter-item">
+        <SearchableSelect
+          label="Student"
+          name="student"
+          value={filterStudent}
+          onChange={(v) => setFilterStudent(String(v))}
+          options={studentOptions}
+          disabled={studentOptions.length === 0}
+          onSearch={(term) => {
+            const trimmed = term.trim().toLowerCase();
+            const source = (students ?? []).length > 0 ? students : allStudents;
+            const base: DropdownOption[] = source.map((s) => {
+              const p = s.personalInfo ?? {};
+              const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim();
+              return { value: s._id, label: name || s._id };
+            });
+
+            if (!trimmed) {
+              setStudentOptions(base);
+              return;
+            }
+
+            const filtered = base.filter((o) => {
+              const l = o.label.toLowerCase();
+              return l.includes(trimmed) || String(o.value).includes(trimmed);
+            });
+
+            if (filterStudent) {
+              const selected = base.find((o) => o.value === filterStudent);
+              if (selected && !filtered.some((o) => o.value === selected.value)) {
+                setStudentOptions([selected, ...filtered]);
+                return;
+              }
+            }
+
+            setStudentOptions(filtered);
+          }}
+          placeholder="Search student..."
+        />
+      </div>
+      <div className="reports-page__weekly-filter-item">
+        <DateInput
+          label="Month"
+          name="month"
+          value={monthStartDate}
+          onChange={(e) => setMonthStartDate(getFirstOfMonth(e.target.value || ''))}
+        />
+        {monthStartDate && (
+          <p className="reports-page__weekly-week-range" aria-live="polite">
+            {formatMonthRange(monthStartDate)}
+          </p>
+        )}
+      </div>
+      <div className="reports-page__weekly-filter-item">
+        <Select
+          label="Location"
+          name="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          options={LOCATION_OPTIONS}
+          placeholder="Select Location"
+          icon={locationIcon}
+        />
+      </div>
+      <div className="reports-page__weekly-filter-item">
+        <Select
+          label="Subject"
+          name="subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          options={SUBJECT_OPTIONS}
+          placeholder="Select Subject"
+          icon={Subject}
+        />
+      </div>
+      <div className="reports-page__weekly-filter-item">
+        <Select
+          label="Class/Provision"
+          name="class"
+          value={filterClass}
+          onChange={(e) => setFilterClass(e.target.value)}
+          options={classOptions}
+          placeholder="Select Class/Provision"
+          icon={Class}
+          disabled={classOptions.length === 0}
+        />
+      </div>
+    </div>
+  );
+
+  const tableData = useMemo(() => {
+    const sub = classMeta.subject;
+    const loc = classMeta.location;
+    let visibleStudents: WeeklyReportStudent[];
+    if (filterStudent) {
+      const source = students.length > 0 ? students : allStudents;
+      visibleStudents = source.filter((s) => s._id === filterStudent);
+    } else {
+      visibleStudents = students;
+    }
+    return visibleStudents.map((s) => {
+      const p = s.personalInfo ?? {};
+      const name = [p.legalFirstName, p.middleName, p.lastName].filter(Boolean).join(' ').trim() || '—';
+      const dob = p.dateOfBirth;
+      let dateStr = '—';
+      if (dob) {
+        const isoDate = typeof dob === 'string' ? (dob.includes('T') ? dob.split('T')[0] : dob) : new Date(dob).toISOString().split('T')[0];
+        const [y, m, d] = isoDate.split('-');
+        dateStr = d && m && y ? `${d}/${m}/${y}` : isoDate;
+      }
+      return {
+        _id: s._id,
+        studentName: name,
+        yearGroup: p.yearGroup ?? '—',
+        sex: p.sex ?? '—',
+        dateOfBirth: dateStr,
+        subject: sub || '—',
+        location: (p.location ?? loc) || '—',
+        hasEHCP: s.medical?.ehcp?.hasEHCP === true,
+      };
+    });
+  }, [students, allStudents, classMeta, filterStudent]);
+
+  const columns = useMemo(
+    () => [
+      { header: 'Student name', accessor: 'studentName', sortable: true, type: 'string' as const },
+      { header: 'Year group', accessor: 'yearGroup', sortable: true, type: 'string' as const },
+      { header: 'Sex', accessor: 'sex', sortable: true, type: 'string' as const },
+      { header: 'Date of birth', accessor: 'dateOfBirth', sortable: true, type: 'string' as const },
+      { header: 'Subject', accessor: 'subject', sortable: false, type: 'string' as const },
+      { header: 'Location', accessor: 'location', sortable: false, type: 'string' as const },
+      {
+        header: 'EHCP',
+        accessor: 'hasEHCP',
+        sortable: false,
+        type: 'template' as const,
+        template: (row: Record<string, unknown>) =>
+          row.hasEHCP === true ? (
+            <FontAwesomeIcon icon={faCheck} style={{ color: '#22c55e' }} title="Has EHCP" />
+          ) : (
+            <FontAwesomeIcon icon={faTimes} style={{ color: '#ef4444' }} title="No EHCP" />
+          ),
+      },
+      ...(canDownload
+        ? [
+            {
+              header: '',
+              accessor: 'download',
+              sortable: false,
+              type: 'template' as const,
+              template: (row: Record<string, unknown>) => (
+                <button
+                  type="button"
+                  className="reports-page__download-row-btn"
+                  onClick={() => {
+                    if (!row._id) return;
+                    setMonthlyReportStudentName((row.studentName as string) ?? '');
+                    setMonthlyReportStudentId((row._id as string) ?? null);
+                    setMonthlyReportNotes('');
+                    setMonthlyReportPopupOpen(true);
+                  }}
+                  title="Download monthly report"
+                  aria-label="Download report"
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                </button>
+              ),
+            },
+          ]
+        : []),
+    ],
+    [canDownload]
+  );
+
+  return (
+    <div className="reports-page__panel reports-page__weekly">
+      <FilterSec secName="Students filter" content={filterContent} retractable />
+      {!filterClass && !filterStudent ? (
+        <p className="reports-page__incidents-empty">Select a student or choose a class to view students.</p>
+      ) : !tableData.length ? (
+        <p className="reports-page__incidents-empty">No student found.</p>
+      ) : (
+        <div className="reports-page__incidents-table-wrap">
+          <DataTable
+            columns={columns}
+            data={tableData}
+            title=""
+            onEdit={() => {}}
+            showActions={false}
+            addButton={false}
+            showSearch={true}
+          />
+        </div>
+      )}
+      <Popup
+        isOpen={monthlyReportPopupOpen}
+        onClose={closeMonthlyReportPopup}
+        onConfirm={handleGenerateMonthlyReportPdf}
+        title={`Monthly report – ${monthlyReportStudentName || 'Student'}`}
+        confirmText="OK (Generate PDF)"
+        cancelText="Cancel"
+        width="480px"
+      >
+        <div className="reports-page__weekly-report-popup-body">
+          <TextField
+            label="Notes"
+            name="monthlyReportNotes"
+            value={monthlyReportNotes}
+            onChange={(e) => setMonthlyReportNotes(e.target.value)}
+            placeholder="Add notes for the monthly report…"
+            rows={6}
+          />
+        </div>
+      </Popup>
+    </div>
+  );
+
+};
+
 const Reports: React.FC = () => {
   const { checkPermission } = usePermissions();
   const canReadIncidentReport = checkPermission('read_incident_report');
   const canReadSafeguardReport = checkPermission('read_safeguard_report');
   const canReadWeeklyReport = checkPermission('read_weekly_report');
+  const canReadMonthlyReport = checkPermission('read_monthly_report');
   const canDownloadIncidentReport = checkPermission('download_incident_report');
   const canDownloadSafeguardReport = checkPermission('download_safeguard_report');
   const canDownloadWeeklyReport = checkPermission('download_weekly_report');
+  const canDownloadMonthlyReport = checkPermission('download_monthly_report');
 
   const allowedTabIds = useMemo(() => {
     const ids: string[] = [];
     if (canReadIncidentReport) ids.push('incidents');
     if (canReadSafeguardReport) ids.push('safeguarding');
     if (canReadWeeklyReport) ids.push('weekly');
+    if (canReadMonthlyReport) ids.push('monthly');
     return ids;
-  }, [canReadIncidentReport, canReadSafeguardReport, canReadWeeklyReport]);
+  }, [canReadIncidentReport, canReadSafeguardReport, canReadWeeklyReport, canReadMonthlyReport]);
 
   const firstTabId = allowedTabIds[0] ?? 'incidents';
   const [activeTab, setActiveTab] = useState(firstTabId);
@@ -1119,6 +1863,9 @@ const Reports: React.FC = () => {
       : []),
     ...(canReadWeeklyReport
       ? [{ id: 'weekly', label: 'Weekly reports', content: <WeeklyReportTab canDownload={canDownloadWeeklyReport} /> }]
+      : []),
+    ...(canReadMonthlyReport
+      ? [{ id: 'monthly', label: 'Monthly reports', content: <MonthlyReportTab canDownload={canDownloadMonthlyReport} /> }]
       : []),
   ];
 

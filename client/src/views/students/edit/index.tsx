@@ -162,6 +162,9 @@ const EditStudent = () => {
     staff?: { name?: string };
     teacher?: { name?: string };
   }>>([]);
+  const [periodsFromDb, setPeriodsFromDb] = useState<
+    Array<{ _id?: string; name?: string; startTime?: string; endTime?: string }>
+  >([]);
   const isEditMode = !!id;
 
   // Fetch year groups from API (once on mount)
@@ -180,6 +183,25 @@ const EditStudent = () => {
     fetchYearGroups();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; executeRequest is not stable
+  }, []);
+
+  // Fetch periods for dynamic time-axis rendering.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await executeRequest("get", "/periods");
+        if (cancelled) return;
+        setPeriodsFromDb(Array.isArray(res) ? (res as any) : []);
+      } catch {
+        if (!cancelled) setPeriodsFromDb([]);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- executeRequest isn't stable
   }, []);
 
   // Fetch student's timetable (schedules for classes this student is enrolled in)
@@ -2845,6 +2867,7 @@ const EditStudent = () => {
               <div id="student-time-table-div" className="student-timetable-card">
                 <TimeTableComponent
                   propEvents={studentTimetableEvents}
+                  periods={periodsFromDb}
                 />
               </div>
               <button

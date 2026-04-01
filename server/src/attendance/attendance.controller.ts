@@ -74,6 +74,17 @@ export class AttendanceController {
     return this.attendanceService.remove(id);
   }
 
+  @Get('chart')
+  @UseGuards(JwtAuthGuard)
+  getDailyChart(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('student') student?: string,
+    @Query('class') classId?: string,
+  ) {
+    return this.attendanceService.getDailyChartData(startDate, endDate, student, classId);
+  }
+
   @Get('stats/monthly')
   @UseGuards(JwtAuthGuard)
   async getMonthlyStats(@Query('year') year?: string) {

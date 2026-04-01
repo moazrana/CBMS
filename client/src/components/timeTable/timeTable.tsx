@@ -9,6 +9,21 @@ moment.updateLocale(moment.locale(), { week: { dow: 1 } });
 
 const localizer = momentLocalizer(moment);
 
+// Mapping between known period/session labels and their corresponding time ranges.
+// Kept at module scope so React hook memoization doesn't need this object as a dependency.
+const PERIOD_NAME_TO_TIME: Record<string, [string, string]> = {
+  "Breakfast Club": ["09:30", "10:00"],
+  "Breakfast Club (AM Reg)": ["10:00", "10:15"],
+  "Achieve Training": ["10:15", "11:15"],
+  "Stanley House": ["11:30", "12:30"],
+  "Break": ["11:15", "11:30"],
+  "Lunch": ["12:30", "13:00"],
+  "Session 1": ["10:15", "11:15"],
+  "Session 2": ["11:30", "12:30"],
+  "Session 3": ["13:00", "14:00"],
+  "Session 3 - 13.00 - 14.00": ["13:00", "14:00"],
+};
+
 // Update your sampleEvents to have overlapping times for the same time slot
 type SchoolEvent = {
   id: number;
@@ -24,31 +39,7 @@ type Event = {
   end: Date;
   events?:SchoolEvent[]
 };
-// const addSlot = () => {
-//   console.log("addSlot");
-// }
-// const sampleEvents: Event[] = [
-//   {
-//     id: 0,
-//     start: new Date(2025, 8, 16, 9, 30, 0),
-//     end: new Date(2025, 8, 16, 10, 0, 0),
-//     events:[
-//       {
-//         id: 0,
-//         title: "Registration",
-//         category: "Registration",
-//         eventType: "Training - Classroom",
-//         source: "From Mathematics",
-//       },
-//       {
-//         id: 1,
-//         title: "Registration",
-//         category: "Registration",
-//         eventType: "Training - Classroom",
-//         source: "From Mathematics",
-//       }
-//     ]
-// }];
+
 type CalendarView = 'month' | 'week';
 
 interface TimeTableProps {
@@ -63,8 +54,26 @@ interface TimeTableProps {
   onViewChange?: (view: CalendarView) => void;
   /** Hide the month/week toggle buttons (use external toggle). */
   hideViewToggle?: boolean;
+  /** DB periods to render timetable sessions (labels + time axis). */
+  periods?: Array<{
+    _id?: string;
+    name?: string;
+    startTime?: string;
+    endTime?: string;
+  }>;
+  /** Background color for timetable event containers */
+  eventColor?: string;
 }
-const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onViewChange, hideViewToggle = false }: TimeTableProps) => {
+const TimeTable = ({
+  propEvents,
+  initialView = 'week',
+  displayDate,
+  view,
+  onViewChange,
+  hideViewToggle = false,
+  periods = [],
+  eventColor = "#27ae60",
+}: TimeTableProps) => {
   const events = propEvents ?? [];
   const [currentDate, setCurrentDate] = useState<Date>(displayDate ?? new Date());
   const [internalView, setInternalView] = useState<CalendarView>(initialView);
@@ -90,43 +99,129 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
   // Under the hood, show Mon–Fri only for "week" by using react-big-calendar's work_week view.
   const rbcView = effectiveView === 'week' ? Views.WORK_WEEK : Views.MONTH;
 
+  // Build timetable session slots from DB periods (fallback to hardcoded defaults).
+  // These slots drive the time-axis labels and the wrapper heights for each session.
+  const parseTimeToMinutes = (s?: string) => {
+    if (!s || typeof s !== "string") return null;
+    // Accept: HH:mm or HH.MM
+    const cleaned = s.trim();
+    const parts = cleaned.includes(":") ? cleaned.split(":") : cleaned.split(".");
+    if (parts.length < 2) return null;
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  type PeriodSlot = {
+    name: string;
+    startMinutes: number;
+    endMinutes: number;
+    durationMinutes: number;
+  };
+
+  const periodSlots: PeriodSlot[] = React.useMemo(() => {
+    const slots: PeriodSlot[] = [];
+
+    for (const p of periods ?? []) {
+      const name = (p?.name ?? '').toString().trim();
+
+      const startMinutes = parseTimeToMinutes(p?.startTime);
+      const endMinutes = parseTimeToMinutes(p?.endTime);
+
+      // If DB has explicit start/end times, trust them.
+      if (startMinutes != null && endMinutes != null && endMinutes > startMinutes) {
+        slots.push({
+          name: name || 'Session',
+          startMinutes,
+          endMinutes,
+          durationMinutes: endMinutes - startMinutes,
+        });
+        continue;
+      }
+
+      // Otherwise, fall back to known name-to-time mapping.
+      const mapped = name ? PERIOD_NAME_TO_TIME[name] : undefined;
+      if (mapped) {
+        const [startStr, endStr] = mapped;
+        const start = parseTimeToMinutes(startStr);
+        const end = parseTimeToMinutes(endStr);
+        if (start != null && end != null && end > start) {
+          slots.push({
+            name: name || 'Session',
+            startMinutes: start,
+            endMinutes: end,
+            durationMinutes: end - start,
+          });
+        }
+      }
+    }
+
+    // If nothing comes from DB, use fallback hardcoded slots.
+    if (slots.length === 0) {
+      const fallback: PeriodSlot[] = [
+        { name: "Breakfast Club", startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 + 0, durationMinutes: 30 },
+        { name: "Breakfast Club (AM Reg)", startMinutes: 10 * 60 + 0, endMinutes: 10 * 60 + 15, durationMinutes: 15 },
+        { name: "Achieve Training", startMinutes: 10 * 60 + 15, endMinutes: 11 * 60 + 15, durationMinutes: 60 },
+        { name: "Break", startMinutes: 11 * 60 + 15, endMinutes: 11 * 60 + 30, durationMinutes: 15 },
+        { name: "Stanley House", startMinutes: 11 * 60 + 30, endMinutes: 12 * 60 + 30, durationMinutes: 60 },
+        { name: "Lunch", startMinutes: 12 * 60 + 30, endMinutes: 13 * 60 + 0, durationMinutes: 30 },
+        { name: "Session 3", startMinutes: 13 * 60 + 0, endMinutes: 14 * 60 + 0, durationMinutes: 60 },
+      ];
+      return fallback;
+    }
+
+    // Ensure correct ordering for time-axis and label lookup.
+    slots.sort((a, b) => a.startMinutes - b.startMinutes);
+    return slots;
+  }, [periods]);
+
   // Day filter: add a class to Sundays so we can hide them via CSS
   const dayPropGetter = (date: Date) => {
     const isSunday = date.getDay() === 0; // 0=Sunday
     return isSunday ? { className: "hidden-day" } : {};
   };
 
-  // Define fixed time slot durations based on exact ranges
+  const slotsByStartMinutes = React.useMemo(() => {
+    const map = new Map<number, PeriodSlot>();
+    for (const slot of periodSlots) map.set(slot.startMinutes, slot);
+    return map;
+  }, [periodSlots]);
+
+  // Define time-axis slot duration/labels based on DB periods.
   const getTimeSlotDuration = (time: moment.Moment) => {
-    const hour = time.hour();
-    const minute = time.minute();
-
-    // Fixed slots: 09:30-10:00 (30m), 10:00-10:15 (15m), 10:15-11:15 (60m), 11:15-11:30 (15m),
-    // 11:30-12:30 (60m), 12:30-13:00 (30m), 13:00-14:00 (60m)
-    if (hour === 9 && minute === 30) return 30; // Breakfast Club start
-    if (hour === 10 && minute === 0) return 15; // transition to Session 1
-    if (hour === 10 && minute === 15) return 60; // Session 1
-    if (hour === 11 && minute === 15) return 15; // Break
-    if (hour === 11 && minute === 30) return 60; // Session 2
-    if (hour === 12 && minute === 30) return 30; // Lunch
-    if (hour === 13 && minute === 0) return 60; // Session 3
-
-    // Any other minute within range falls back to 15 to keep grid consistent
-    return 60;
+    const minutes = time.hour() * 60 + time.minute();
+    return slotsByStartMinutes.get(minutes)?.durationMinutes ?? 60;
   };
 
-  // Label for the exact slot starts only
+  // Label for the exact slot starts only.
   const getTimeSlotLabel = (time: moment.Moment) => {
-    const hour = time.hour();
-    const minute = time.minute();
-    if (hour === 9 && minute === 30) return "Breakfast Club";
-    if (hour === 10 && minute === 15) return "Session 1";
-    if (hour === 11 && minute === 15) return "Break";
-    if (hour === 11 && minute === 30) return "Session 2";
-    if (hour === 12 && minute === 30) return "Lunch";
-    if (hour === 13 && minute === 0) return "Session 3";
-    return "";
+    const minutes = time.hour() * 60 + time.minute();
+    return slotsByStartMinutes.get(minutes)?.name ?? "";
   };
+
+  const slotMinMax = React.useMemo(() => {
+    const fallback: PeriodSlot[] = [
+      { name: "Breakfast Club", startMinutes: 9 * 60 + 30, endMinutes: 10 * 60 + 0, durationMinutes: 30 },
+      { name: "Breakfast Club (AM Reg)", startMinutes: 10 * 60 + 0, endMinutes: 10 * 60 + 15, durationMinutes: 15 },
+      { name: "Achieve Training", startMinutes: 10 * 60 + 15, endMinutes: 11 * 60 + 15, durationMinutes: 60 },
+      { name: "Break", startMinutes: 11 * 60 + 15, endMinutes: 11 * 60 + 30, durationMinutes: 15 },
+      { name: "Stanley House", startMinutes: 11 * 60 + 30, endMinutes: 12 * 60 + 30, durationMinutes: 60 },
+      { name: "Lunch", startMinutes: 12 * 60 + 30, endMinutes: 13 * 60 + 0, durationMinutes: 30 },
+      { name: "Session 3", startMinutes: 13 * 60 + 0, endMinutes: 14 * 60 + 0, durationMinutes: 60 },
+    ];
+
+    const slots = periodSlots.length ? periodSlots : fallback;
+    const minSlot = slots.reduce((a, b) => (b.startMinutes < a.startMinutes ? b : a), slots[0]);
+    const maxSlot = slots.reduce((a, b) => (b.endMinutes > a.endMinutes ? b : a), slots[0]);
+
+    const base = new Date(currentDate);
+    const slotMin = new Date(base);
+    slotMin.setHours(Math.floor(minSlot.startMinutes / 60), minSlot.startMinutes % 60, 0, 0);
+    const slotMax = new Date(base);
+    slotMax.setHours(Math.floor(maxSlot.endMinutes / 60), maxSlot.endMinutes % 60, 0, 0);
+    return { slotMin, slotMax };
+  }, [periodSlots, currentDate]);
 
   // Custom Event Component to display structured data
   const EventComponent = ({ event }: { event: Event }) => (
@@ -144,15 +239,15 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
     >
       {event.events?.map((ev) => (
         <>
-          <div className="event-container">
-            <div style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "4px" }}>
+          <div className="event-container" style={{ backgroundColor: eventColor }}>
+            <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "1px" }}>
               {ev.category}
             </div>
-            <div style={{ borderTop: "1px dashed", paddingTop: "4px", marginBottom: "4px" }}>
+            <div style={{ borderTop: "1px dashed", paddingTop: "2px", marginBottom: "2px" }}>
               {ev.eventType}
             </div>
-            <div style={{ fontSize: "10px"}}>From</div>
-            <div style={{ fontSize: "11px", fontWeight: "500" }}>{ev.source}</div>
+            <div style={{ fontSize: "7px"}}>From</div>
+            <div style={{ fontSize: "9px", fontWeight: "500" }}>{ev.source}</div>
           </div>
         </>
       ))}
@@ -176,8 +271,8 @@ const TimeTable = ({ propEvents, initialView = 'week', displayDate, view, onView
         defaultView={initialView}
         views={{ month: true, work_week: true }}
         popup
-        min={new Date(2025, 8, 10, 9, 30, 0)}
-        max={new Date(2025, 8, 10, 14, 0, 0)}
+        min={slotMinMax.slotMin}
+        max={slotMinMax.slotMax}
         step={15}
         timeslots={1}
         dayPropGetter={dayPropGetter}

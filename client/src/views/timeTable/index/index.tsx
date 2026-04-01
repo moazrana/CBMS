@@ -41,6 +41,15 @@ const SUBJECT_OPTIONS: DropdownOption[] = [
   { value: "Outreach / Post 16", label: "Outreach / Post 16" },
 ];
 
+const EVENT_COLOR_OPTIONS: DropdownOption[] = [
+  { value: "#27ae60", label: "Green" },
+  { value: "#2e86de", label: "Blue" },
+  { value: "#e74c3c", label: "Red" },
+  { value: "#8e44ad", label: "Purple" },
+  { value: "#f39c12", label: "Orange" },
+  { value: "#95a5a6", label: "Gray" },
+];
+
 interface ClassData {
   _id: string;
   location?: string;
@@ -76,12 +85,16 @@ const Index = () => {
     const [staffOptions, setStaffOptions] = useState<DropdownOption[]>([]);
     const [filterStaff, setFilterStaff] = useState<string>("");
     const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
+    const [defaultClassOptions, setDefaultClassOptions] = useState<DropdownOption[]>([]);
     const [filterClass, setFilterClass] = useState<string>("");
     const [filterSite, setFilterSite] = useState<string>("");
     const [filterSubject, setFilterSubject] = useState<string>("");
     const [filterDateFrom, setFilterDateFrom] = useState<string>("");
     const [filterDateTo, setFilterDateTo] = useState<string>("");
     const [classIdsForFilterStudent, setClassIdsForFilterStudent] = useState<string[]>([]);
+    const [siteOptions, setSiteOptions] = useState<DropdownOption[]>(SITE_OPTIONS);
+    const [subjectOptions, setSubjectOptions] = useState<DropdownOption[]>([{ value: "", label: "All Subjects" }, ...SUBJECT_OPTIONS]);
+    const [studentClassOptions, setStudentClassOptions] = useState<DropdownOption[]>([]);
     const [addSlotShown, setAddSlotShown] = useState<boolean>(false);
     
     const [selectedClass, setSelectedClass] = useState<string>("");
@@ -94,9 +107,14 @@ const Index = () => {
     const [allClasses, setAllClasses] = useState<ClassData[]>([]);
     const [yearGroupOptions, setYearGroupOptions] = useState<DropdownOption[]>([]);
     const [periodOptions, setPeriodOptions] = useState<DropdownOption[]>([]);
+    const [periodsFromDb, setPeriodsFromDb] = useState<
+        Array<{ _id?: string; name?: string; startTime?: string; endTime?: string }>
+    >([]);
     const [slotStaffOptions, setSlotStaffOptions] = useState<DropdownOption[]>([]);
     const [timetableSchedules, setTimetableSchedules] = useState<TimetableSchedule[]>([]);
     const { executeRequest } = useApiRequest();
+
+    const [eventColor, setEventColor] = useState<string>("#27ae60");
 
     const [allocationLocation, setAllocationLocation] = useState<string>("");
     const [allocationStaff, setAllocationStaff] = useState<string>("");
@@ -268,7 +286,6 @@ const Index = () => {
                         value={filterStudent}
                         onChange={(v) => setFilterStudent(String(v))}
                         options={studentOptions}
-                        disabled={!!filterClass}
                         onSearch={async (term) => {
                             if (term.trim() === "" && studentOptions.length > 0) return;
                             try {
@@ -315,19 +332,63 @@ const Index = () => {
                         value={filterClass}
                         onChange={(v) => setFilterClass(String(v))}
                         options={classOptions}
-                        disabled={!!filterStudent}
+                        disabled={filterStudent ? studentClassOptions.length === 0 : false}
                         onSearch={async (term) => {
-                            if (term.trim() === "" && classOptions.length > 0) return;
+                            const trimmed = term.trim();
+
+                            // When a student is selected, keep options restricted to that student's enrolled classes.
+                            if (filterStudent) {
+                                const base = studentClassOptions;
+                                if (trimmed === "") {
+                                    setClassOptions(base);
+                                    return;
+                                }
+                                const lc = trimmed.toLowerCase();
+                                const filtered = base.filter(
+                                    (o) => o.label.toLowerCase().includes(lc) || String(o.value).includes(lc),
+                                );
+
+                                // Ensure the currently selected value stays visible.
+                                const selected = base.find((o) => String(o.value) === String(filterClass));
+                                if (selected && !filtered.some((o) => String(o.value) === String(selected.value))) {
+                                    setClassOptions([selected, ...filtered]);
+                                } else {
+                                    setClassOptions(filtered);
+                                }
+                                return;
+                            }
+
+                            // No student selected: search across all classes.
+                            if (trimmed === "") {
+                                setClassOptions(defaultClassOptions);
+                                return;
+                            }
+
                             try {
-                                const res = await executeRequest("get", `/classes?search=${encodeURIComponent(term)}&perPage=100`);
+                                const res = await executeRequest("get", `/classes?search=${encodeURIComponent(trimmed)}&perPage=100`);
                                 const list = Array.isArray(res) ? res : [];
-                                setClassOptions(list.map((c: ClassData) => ({ value: c._id, label: `${c.subject ?? ""} - ${c.yeargroup ?? ""}`.trim() || c._id })));
+                                setClassOptions(
+                                    list.map((c: ClassData) => ({
+                                        value: c._id,
+                                        label: `${c.subject ?? ""} - ${c.yeargroup ?? ""}`.trim() || c._id,
+                                    })),
+                                );
                             } catch {
                                 setClassOptions([]);
                             }
                         }}
                         placeholder="Search classes..."
                         icon={Class}
+                    />
+                </div>
+                <div className="input-div">
+                    <Select
+                        label="Event Color"
+                        name="eventColor"
+                        value={eventColor}
+                        onChange={(e) => setEventColor(e.target.value)}
+                        options={EVENT_COLOR_OPTIONS}
+                        placeholder="Event Color"
                     />
                 </div>
             </div>
@@ -338,7 +399,7 @@ const Index = () => {
                         name="filterSite"
                         value={filterSite}
                         onChange={(e) => setFilterSite(e.target.value)}
-                        options={SITE_OPTIONS}
+                        options={siteOptions}
                         placeholder="All Sites"
                         icon={Location}
                     />
@@ -349,7 +410,7 @@ const Index = () => {
                         name="filterSubject"
                         value={filterSubject}
                         onChange={(e) => setFilterSubject(e.target.value)}
-                        options={[{ value: "", label: "All Subjects" }, ...SUBJECT_OPTIONS]}
+                        options={subjectOptions}
                         placeholder="All Subjects"
                         icon={Subject}
                     />
@@ -501,10 +562,82 @@ const Index = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- load when selected class or popup visibility changes
     }, [addSlotShown, selectedClass]);
 
+    // Pre-populate timetable filter dropdowns on initial page load.
+    // (SearchableSelect only shows options that are already in `options`.)
     useEffect(() => {
-        setStudentOptions([]);
-        setStaffOptions([]);
-        setClassOptions([]);
+        let cancelled = false;
+        const loadInitialFilterOptions = async () => {
+            try {
+                const [studentsRes, staffRes, classesRes] = await Promise.all([
+                    executeRequest("get", "/students?search=&perPage=100"),
+                    executeRequest("get", "/staff?search=&perPage=100"),
+                    executeRequest("get", "/classes?search=&perPage=200"),
+                ]);
+
+                if (cancelled) return;
+
+                const studentsList = Array.isArray(studentsRes) ? studentsRes : [];
+                setStudentOptions(
+                    studentsList.map((s: { _id: string; personalInfo?: { legalFirstName?: string; lastName?: string; preferredName?: string } }) => {
+                        const p = s.personalInfo || {};
+                        const name = [p.preferredName || p.legalFirstName, p.lastName].filter(Boolean).join(" ") || s._id;
+                        return { value: s._id, label: name };
+                    })
+                );
+
+                const staffList = Array.isArray(staffRes) ? staffRes : [];
+                setStaffOptions(
+                    staffList.map((s: { _id: string; name?: string }) => ({
+                        value: s._id,
+                        label: s.name || s._id,
+                    }))
+                );
+
+                const classesList = Array.isArray(classesRes) ? classesRes : [];
+                const defaultClassesAsOptions = classesList.map((c: ClassData) => ({
+                    value: c._id,
+                    label: `${c.subject ?? ""} - ${c.yeargroup ?? ""}`.trim() || c._id,
+                }));
+                setDefaultClassOptions(defaultClassesAsOptions);
+                setClassOptions(defaultClassesAsOptions);
+            } catch {
+                if (!cancelled) {
+                    setStudentOptions([]);
+                    setStaffOptions([]);
+                    setClassOptions([]);
+                }
+            }
+        };
+
+        loadInitialFilterOptions();
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- executeRequest isn't stable
+    }, []);
+
+    // Fetch periods for dynamic time-axis rendering.
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const res = await executeRequest("get", "/periods");
+                if (cancelled) return;
+                if (Array.isArray(res)) {
+                    setPeriodsFromDb(
+                        res as Array<{ _id?: string; name?: string; startTime?: string; endTime?: string }>
+                    );
+                }
+                else setPeriodsFromDb([]);
+            } catch {
+                if (!cancelled) setPeriodsFromDb([]);
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- executeRequest isn't stable
     }, []);
 
     // Load all schedules for timetable (filtering is done client-side)
@@ -527,59 +660,117 @@ const Index = () => {
 
     // When student filter is set, fetch class IDs that contain this student (for schedule filtering)
     useEffect(() => {
-        if (!filterStudent) {
+        let cancelled = false;
+
+        const resetDerivedFilterOptions = () => {
             setClassIdsForFilterStudent([]);
+            setStudentClassOptions([]);
+            setClassOptions(defaultClassOptions);
+            setSiteOptions(SITE_OPTIONS);
+            setSubjectOptions([{ value: "", label: "All Subjects" }, ...SUBJECT_OPTIONS]);
+            setFilterSite("");
+            setFilterSubject("");
+            setFilterClass("");
+        };
+
+        if (!filterStudent) {
+            resetDerivedFilterOptions();
             return;
         }
-        let cancelled = false;
+
         const load = async () => {
             try {
                 const list = await executeRequest("get", `/classes/student/${filterStudent}`);
                 if (cancelled) return;
-                const arr = Array.isArray(list) ? list : [];
-                setClassIdsForFilterStudent(arr.map((c: { _id: string }) => c._id));
+                const arr = Array.isArray(list) ? (list as ClassData[]) : [];
+
+                setClassIdsForFilterStudent(arr.map((c) => c._id));
+
+                const siteSet = new Set(arr.map((c) => (c.location ?? "").trim()).filter(Boolean));
+                const subjectSet = new Set(arr.map((c) => (c.subject ?? "").trim()).filter(Boolean));
+
+                const derivedSiteOptions: DropdownOption[] = [
+                    { value: "", label: "All Sites" },
+                    ...Array.from(siteSet).map((s) => ({ value: s, label: s })),
+                ];
+                const derivedSubjectOptions: DropdownOption[] = [
+                    { value: "", label: "All Subjects" },
+                    ...Array.from(subjectSet).map((s) => ({ value: s, label: s })),
+                ];
+
+                const derivedClassOptions: DropdownOption[] = arr.map((c) => ({
+                    value: c._id,
+                    label: `${c.subject ?? ""} - ${c.yeargroup ?? ""}`.trim() || c._id,
+                }));
+
+                setStudentClassOptions(derivedClassOptions);
+                setClassOptions(derivedClassOptions);
+                setSiteOptions(derivedSiteOptions);
+                setSubjectOptions(derivedSubjectOptions);
+
+                // Sensible defaults: pick the only option if there is exactly one; otherwise keep "All".
+                const derivedSiteValues = derivedSiteOptions.map((o) => o.value).filter(Boolean);
+                if (derivedSiteValues.length === 1) setFilterSite(derivedSiteValues[0]);
+                else if (filterSite && derivedSiteValues.includes(filterSite)) setFilterSite(filterSite);
+                else setFilterSite("");
+
+                const derivedSubjectValues = derivedSubjectOptions.map((o) => o.value).filter(Boolean);
+                if (derivedSubjectValues.length === 1) setFilterSubject(derivedSubjectValues[0]);
+                else if (filterSubject && derivedSubjectValues.includes(filterSubject)) setFilterSubject(filterSubject);
+                else setFilterSubject("");
+
+                const derivedClassValues = new Set(derivedClassOptions.map((o) => o.value));
+                if (filterClass && derivedClassValues.has(filterClass)) {
+                    setFilterClass(filterClass);
+                } else {
+                    setFilterClass(derivedClassOptions[0]?.value ?? "");
+                }
             } catch {
-                if (!cancelled) setClassIdsForFilterStudent([]);
+                if (!cancelled) resetDerivedFilterOptions();
             }
         };
+
         load();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- when filter student changes
     }, [filterStudent]);
 
     // Apply filters to schedules, then build calendar events (only for class plan dates: fromDate–toDate, by day and session)
     const timetableEvents = useMemo((): CalendarEvent[] => {
         const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-        // Map period name to [startTime, endTime] when DB has no startTime/endTime (matches calendar slots in timeTable.tsx)
-        const PERIOD_NAME_TO_TIME: Record<string, [string, string]> = {
-            "Breakfast Club": ["09:30", "10:00"],
-            "Breakfast Club (AM Reg)": ["10:00", "10:15"],
-            "Achieve Training": ["10:15", "11:15"],
-            "Stanley House": ["11:30", "12:30"],
-            "Break": ["11:15", "11:30"],
-            "Lunch": ["12:30", "13:00"],
-            "Session 1": ["10:15", "11:15"],
-            "Session 2": ["11:30", "12:30"],
-            "Session 3": ["13:00", "14:00"],
-            "Session 3 - 13.00 - 14.00": ["13:00", "14:00"],
-        };
+
+        // Build a lookup from period _id → { startTime, endTime } using the DB periods already fetched
+        const periodTimesById: Record<string, { startTime: string; endTime: string }> = {};
+        for (const p of periodsFromDb) {
+            if (p._id && p.startTime && p.endTime) {
+                periodTimesById[p._id] = { startTime: p.startTime, endTime: p.endTime };
+            }
+        }
+
         const parseTime = (s: string | undefined): [number, number] => {
             if (!s || typeof s !== "string") return [9, 30];
             const [h, m] = s.trim().split(/[:\s.]/).map(Number);
             return [isNaN(h) ? 9 : h, isNaN(m) ? 0 : m];
         };
-        const getPeriodTimes = (period: { name?: string; startTime?: string; endTime?: string }): [number, number, number, number] => {
+        const getPeriodTimes = (period: { _id?: string; name?: string; startTime?: string; endTime?: string }): [number, number, number, number] => {
+            // Prefer the times already on the populated period object
             const hasTimes = period.startTime != null && period.startTime !== "" && period.endTime != null && period.endTime !== "";
             if (hasTimes) {
                 const [startH, startM] = parseTime(period.startTime);
                 const [endH, endM] = parseTime(period.endTime);
                 return [startH, startM, endH, endM];
             }
-            const name = (period.name || "").trim();
-            const mapped = PERIOD_NAME_TO_TIME[name] ?? (name.includes("13") && name.includes("14") ? ["13:00", "14:00"] : ["10:15", "11:15"]);
-            const [startH, startM] = parseTime(mapped[0]);
-            const [endH, endM] = parseTime(mapped[1]);
-            return [startH, startM, endH, endM];
+            // Fall back to the periodsFromDb lookup by _id
+            if (period._id && periodTimesById[period._id]) {
+                const { startTime, endTime } = periodTimesById[period._id];
+                const [startH, startM] = parseTime(startTime);
+                const [endH, endM] = parseTime(endTime);
+                return [startH, startM, endH, endM];
+            }
+            // Last resort: use a generic default so the event still renders
+            return [9, 30, 10, 30];
         };
         const classId = (c: unknown) => (c && typeof c === "object" && "_id" in c ? String((c as { _id: string })._id) : "");
         const staffId = (x: unknown) => (x && typeof x === "object" && "_id" in x ? String((x as { _id: string })._id) : "");
@@ -640,7 +831,7 @@ const Index = () => {
             }
         }
         return events;
-    }, [timetableSchedules, filterClass, filterStaff, classIdsForFilterStudent, filterSite, filterSubject, filterDateFrom, filterDateTo]);
+    }, [timetableSchedules, periodsFromDb, filterClass, filterStaff, classIdsForFilterStudent, filterSite, filterSubject, filterDateFrom, filterDateTo]);
 
     const [pdfGenerating, setPdfGenerating] = useState(false);
     const [calendarView, setCalendarView] = useState<"week" | "month">("week");
@@ -702,28 +893,6 @@ const Index = () => {
         setPdfGenerating(true);
         try {
             const logoDataUrl = await loadLogoAsDataUrl();
-            const canvas = await html2canvas(el, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: "#ffffff",
-                onclone: (_, clonedEl) => {
-                    const el = clonedEl as HTMLElement;
-                    el.style.backgroundColor = "#ffffff";
-                    el.style.color = "#000000";
-                    [el, ...Array.from(el.querySelectorAll("*"))].forEach((n) => {
-                        const node = n as HTMLElement;
-                        node.style.color = "#000000";
-                        node.style.backgroundColor = "#ffffff";
-                        node.style.borderColor = "#000000";
-                        if (node.tagName === "svg" || node.closest?.("svg")) {
-                            node.style.fill = "#000000";
-                            node.style.stroke = "#000000";
-                        }
-                    });
-                },
-            });
-            const imgData = canvas.toDataURL("image/png", 1.0);
             const pdf = new jsPDF({
                 orientation: "landscape",
                 unit: "mm",
@@ -733,56 +902,105 @@ const Index = () => {
             const pageH = pdf.internal.pageSize.getHeight();
             const margin = 8;
             const logoSize = 18;
-            let y = margin;
-            pdf.setDrawColor(0, 0, 0);
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(10);
-            if (logoDataUrl) {
-                pdf.addImage(logoDataUrl, "PNG", pageW - margin - logoSize, margin, logoSize, logoSize);
-            }
+
             const todayStr = new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-            pdf.text(`Printed: ${todayStr}`, margin, y);
-            y += 6;
-            if (filterStudent) {
-                const studentName = studentOptions.find((o) => o.value === filterStudent)?.label ?? "—";
-                const firstClassId = classIdsForFilterStudent[0];
-                const schedule = timetableSchedules.find((s) => (s.class && typeof s.class === "object" && (s.class as { _id: string })._id === firstClassId));
-                const cls = schedule?.class && typeof schedule.class === "object" ? schedule.class as { location?: string; subject?: string; yeargroup?: string } : null;
-                const location = schedule?.location ?? cls?.location ?? "—";
-                const subject = cls?.subject ?? "—";
-                const classLabel = cls ? [cls.subject, cls.yeargroup].filter(Boolean).join(" - ") || "—" : "—";
-                pdf.text(`Student: ${studentName}`, margin, y);
-                y += 5;
-                pdf.text(`Location: ${location}  |  Class: ${classLabel}  |  Subject: ${subject}`, margin, y);
-                y += 5;
-                pdf.text(`Date from: ${filterDateFrom || "—"}  |  Date to: ${filterDateTo || "—"}`, margin, y);
-                y += 5;
-            }
-            y += 4;
-            const imgW = canvas.width;
-            const imgH = canvas.height;
-            const maxW = pageW - 2 * margin;
-            const maxH = pageH - y - margin;
-            const ratio = Math.min(maxW / imgW, maxH / imgH) * 0.98;
-            const w = imgW * ratio;
-            const h = imgH * ratio;
 
-            // Add first page
-            let posY = y;
-            let heightLeft = h;
-            pdf.addImage(imgData, "PNG", (pageW - w) / 2, posY, w, h);
-            heightLeft -= (pageH - y - margin);
+            const calendarElements: HTMLElement[] =
+                weekSegments.length > 1
+                    ? (Array.from(el.querySelectorAll<HTMLElement>(".tt-week-block")) ?? []).filter(Boolean)
+                    : [el as HTMLElement];
 
-            // Additional pages if the timetable is taller than one page
-            while (heightLeft > 0) {
-                pdf.addPage();
+            for (let i = 0; i < calendarElements.length; i++) {
+                if (i > 0) pdf.addPage();
+
+                const calendarEl = calendarElements[i];
+                const canvas = await html2canvas(calendarEl, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: "#ffffff",
+                    onclone: (_, clonedEl) => {
+                        const el = clonedEl as HTMLElement;
+                        el.style.backgroundColor = "#ffffff";
+                        el.style.color = "#000000";
+                        [el, ...Array.from(el.querySelectorAll("*"))].forEach((n) => {
+                            const node = n as HTMLElement;
+                            const isEventContainer = !!node.matches?.(".event-container");
+                            const isInsideEventContainer = !isEventContainer && !!node.closest?.(".event-container");
+                            node.style.color = "#000000";
+                            if (isEventContainer) {
+                                // Preserve the user-selected eventColor background (do not override).
+                            } else if (!isInsideEventContainer) {
+                                node.style.backgroundColor = "#ffffff";
+                            } else {
+                                node.style.backgroundColor = "";
+                            }
+                            node.style.borderColor = "#000000";
+                            if (node.tagName === "svg" || node.closest?.("svg")) {
+                                node.style.fill = "#000000";
+                                node.style.stroke = "#000000";
+                            }
+                        });
+                    },
+                });
+
+                const imgData = canvas.toDataURL("image/png", 1.0);
+                const imgW = canvas.width;
+                const imgH = canvas.height;
+
+                let y = margin;
+                pdf.setDrawColor(0, 0, 0);
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFontSize(10);
+
                 if (logoDataUrl) {
-                    pdf.addImage(logoDataUrl, "PNG", pageW - margin - logoSize, margin, logoSize, logoSize);
+                    pdf.addImage(
+                        logoDataUrl,
+                        "PNG",
+                        pageW - margin - logoSize,
+                        margin,
+                        logoSize,
+                        logoSize,
+                    );
                 }
-                posY = margin;
-                pdf.addImage(imgData, "PNG", (pageW - w) / 2, posY, w, h);
-                heightLeft -= (pageH - 2 * margin);
+
+                pdf.text(`Printed: ${todayStr}`, margin, y);
+                y += 6;
+
+                if (filterStudent) {
+                    const studentName = studentOptions.find((o) => o.value === filterStudent)?.label ?? "—";
+                    const firstClassId = classIdsForFilterStudent[0];
+                    const schedule = timetableSchedules.find(
+                        (s) => s.class && typeof s.class === "object" && (s.class as { _id: string })._id === firstClassId,
+                    );
+                    const cls =
+                        schedule?.class && typeof schedule.class === "object"
+                            ? (schedule.class as { location?: string; subject?: string; yeargroup?: string })
+                            : null;
+                    const location = schedule?.location ?? cls?.location ?? "—";
+                    const subject = cls?.subject ?? "—";
+                    const classLabel = cls ? [cls.subject, cls.yeargroup].filter(Boolean).join(" - ") || "—" : "—";
+
+                    pdf.text(`Student: ${studentName}`, margin, y);
+                    y += 5;
+                    pdf.text(`Location: ${location}  |  Class: ${classLabel}  |  Subject: ${subject}`, margin, y);
+                    y += 5;
+                    pdf.text(`Date from: ${filterDateFrom || "—"}  |  Date to: ${filterDateTo || "—"}`, margin, y);
+                    y += 5;
+                }
+
+                // Extra spacing so the calendar starts a bit lower.
+                y += 10;
+
+                const maxW = pageW - 2 * margin;
+                const maxH = pageH - y - margin;
+                const ratio = Math.min(maxW / imgW, maxH / imgH) * 0.98;
+                const w = imgW * ratio;
+                const h = imgH * ratio;
+
+                pdf.addImage(imgData, "PNG", (pageW - w) / 2, y, w, h);
             }
+
             pdf.save("timetable.pdf");
         } catch (err) {
             console.error(err);
@@ -804,6 +1022,7 @@ const Index = () => {
                             secName="Time Table Filter"
                             content={filterContent}
                             retractable={true}
+                            defaultRetracted={true}
                         />
                     </div>
                     <div className="tt-filter-actions">
@@ -854,6 +1073,8 @@ const Index = () => {
                                                     displayDate={seg.displayDate}
                                                     view={calendarView}
                                                     onViewChange={setCalendarView}
+                                                    periods={periodsFromDb}
+                                                    eventColor={eventColor}
                                                     hideViewToggle={true}
                                                 />
                                             </div>
@@ -865,6 +1086,8 @@ const Index = () => {
                                         initialView={calendarView}
                                         view={calendarView}
                                         onViewChange={setCalendarView}
+                                        periods={periodsFromDb}
+                                        eventColor={eventColor}
                                         hideViewToggle={true}
                                     />
                                 )}

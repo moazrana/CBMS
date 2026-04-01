@@ -1,6 +1,7 @@
-#time-table-div {
-    width: 100%;
-    max-width: 100%;
+#time-table-div,
+#student-time-table-div {
+    width: 99%;
+    max-width: 99%;
     min-height: 200px;
     height: 100%;
     background: var(--main-bg);
