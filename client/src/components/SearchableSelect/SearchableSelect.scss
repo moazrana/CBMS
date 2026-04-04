@@ -51,6 +51,25 @@
   }
 }
 
+.searchable-select-spinner {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color, #e5e7eb);
+  border-top-color: var(--primary-color, #6786FB);
+  border-radius: 50%;
+  animation: ss-spin 0.75s linear infinite;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+@keyframes ss-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
 .searchable-select-clear {
   position: absolute;
   right: 0.5rem;

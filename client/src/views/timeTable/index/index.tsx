@@ -82,6 +82,7 @@ interface CalendarEvent {
 const Index = () => {
     const [studentOptions, setStudentOptions] = useState<DropdownOption[]>([]);
     const [filterStudent, setFilterStudent] = useState<string>("");
+    const [filterOptionsLoading, setFilterOptionsLoading] = useState(false);
     const [staffOptions, setStaffOptions] = useState<DropdownOption[]>([]);
     const [filterStaff, setFilterStaff] = useState<string>("");
     const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
@@ -286,10 +287,11 @@ const Index = () => {
                         value={filterStudent}
                         onChange={(v) => setFilterStudent(String(v))}
                         options={studentOptions}
+                        loading={filterOptionsLoading}
                         onSearch={async (term) => {
                             if (term.trim() === "" && studentOptions.length > 0) return;
                             try {
-                                const res = await executeRequest("get", `/students?search=${encodeURIComponent(term)}&perPage=100`);
+                                const res = await executeRequest("get", `/students?search=${encodeURIComponent(term)}&perPage=100`, undefined, { silent: true });
                                 const list = Array.isArray(res) ? res : [];
                                 setStudentOptions(list.map((s: { _id: string; personalInfo?: { legalFirstName?: string; lastName?: string; preferredName?: string } }) => {
                                     const p = s.personalInfo || {};
@@ -311,10 +313,11 @@ const Index = () => {
                         value={filterStaff}
                         onChange={(v) => setFilterStaff(String(v))}
                         options={staffOptions}
+                        loading={filterOptionsLoading}
                         onSearch={async (term) => {
                             if (term.trim() === "" && staffOptions.length > 0) return;
                             try {
-                                const res = await executeRequest("get", `/staff?search=${encodeURIComponent(term)}&perPage=100`);
+                                const res = await executeRequest("get", `/staff?search=${encodeURIComponent(term)}&perPage=100`, undefined, { silent: true });
                                 const list = Array.isArray(res) ? res : [];
                                 setStaffOptions(list.map((s: { _id: string; name?: string }) => ({ value: s._id, label: s.name || s._id })));
                             } catch {
@@ -333,6 +336,7 @@ const Index = () => {
                         onChange={(v) => setFilterClass(String(v))}
                         options={classOptions}
                         disabled={filterStudent ? studentClassOptions.length === 0 : false}
+                        loading={filterOptionsLoading}
                         onSearch={async (term) => {
                             const trimmed = term.trim();
 
@@ -567,11 +571,12 @@ const Index = () => {
     useEffect(() => {
         let cancelled = false;
         const loadInitialFilterOptions = async () => {
+            setFilterOptionsLoading(true);
             try {
                 const [studentsRes, staffRes, classesRes] = await Promise.all([
-                    executeRequest("get", "/students?search=&perPage=100"),
-                    executeRequest("get", "/staff?search=&perPage=100"),
-                    executeRequest("get", "/classes?search=&perPage=200"),
+                    executeRequest("get", "/students?search=&perPage=100", undefined, { silent: true }),
+                    executeRequest("get", "/staff?search=&perPage=100", undefined, { silent: true }),
+                    executeRequest("get", "/classes?search=&perPage=200", undefined, { silent: true }),
                 ]);
 
                 if (cancelled) return;
@@ -606,6 +611,8 @@ const Index = () => {
                     setStaffOptions([]);
                     setClassOptions([]);
                 }
+            } finally {
+                if (!cancelled) setFilterOptionsLoading(false);
             }
         };
 

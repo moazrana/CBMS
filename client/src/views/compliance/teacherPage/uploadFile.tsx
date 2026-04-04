@@ -20,16 +20,21 @@ const TeacherUploadFile=()=>{
     const [certificate,setCertificate]=useState<File | undefined>()
     const [certificates, setCertificates] = useState<Record<string, unknown>[]>([]);
     const { executeRequest } = useApiRequest<Record<string, unknown>[]>();
+    const [tableLoading, setTableLoading] = useState(false);
 
     const fetchCertificates = async () => {
+        setTableLoading(true);
         try {
-            const res = await executeRequest('get', '/users/certificates/my');// await api.get('/users/certificates');
-            res.forEach((element: Record<string, unknown>, index: number) => {
+            const res = await api.get('/users/certificates/my');
+            const data: Record<string, unknown>[] = res.data;
+            data.forEach((element: Record<string, unknown>, index: number) => {
                element.count= index+1;
             });
-            setCertificates(res);
+            setCertificates(data);
         } catch {
             setCertificates([]);
+        } finally {
+            setTableLoading(false);
         }
     };
 
@@ -167,6 +172,7 @@ const TeacherUploadFile=()=>{
                 onDelete={() => {}}
                 showActions={false}
                 addButton={false}
+                loading={tableLoading}
             />
         </Layout>
     )

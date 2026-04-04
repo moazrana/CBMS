@@ -19,6 +19,7 @@ interface SelectProps {
     disabled?: boolean;
     className?: string;
     icon?: string; // SVG or image path
+    loading?: boolean;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -33,7 +34,8 @@ const Select: React.FC<SelectProps> = ({
     required = false,
     disabled = false,
     className = '',
-    icon
+    icon,
+    loading = false,
 }) => {
     return (
         <div className={`select-container ${className}`}>
@@ -45,13 +47,14 @@ const Select: React.FC<SelectProps> = ({
                 </label>
             )}
             
+                <div className="select-field-wrap">
                 <select
                     id={name}
                     name={name}
                     value={value}
                     onChange={onChange}
                     onBlur={onBlur}
-                    disabled={disabled}
+                    disabled={disabled || loading}
                     className={`select-field ${error ? 'error' : ''}`}
                 >
                     {placeholder && (
@@ -65,6 +68,8 @@ const Select: React.FC<SelectProps> = ({
                         </option>
                     ))}
                 </select>
+                {loading && <span className="select-spinner" />}
+                </div>
             {error && <span className="error-message">{error}</span>}
         </div>
     );

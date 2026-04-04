@@ -1,4 +1,4 @@
-import { IsMongoId, IsEnum, IsBoolean, IsString, IsOptional, IsDateString, IsIn } from 'class-validator';
+import { IsMongoId, IsEnum, IsBoolean, IsString, IsOptional, IsDateString, IsIn, IsNumber, Min } from 'class-validator';
 import { Session, Behaviour } from '../engagement.schema';
 
 export class CreateEngagementDto {
@@ -36,5 +36,10 @@ export class CreateEngagementDto {
   @IsOptional()
   @IsBoolean()
   submitted?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  lateMinutes?: number;
 }
 

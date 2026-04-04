@@ -45,11 +45,14 @@ const New = ({ embedded = false, onSaved }: NewIncidentProps) => {
     const [statuses]=useState<any[]>([{value:'1',label:'Open'},{value:'0',label:'Close'}])
     const [status,setStatus]=useState<any>()
 
-    const locationOptions = [
-        { value: 'Warrington', label: 'Warrington' },
-        { value: 'Bury', label: 'Bury' },
-        {value:'off site',label:'Off site'}
-    ];
+    const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+    useEffect(() => {
+        api.get('/locations').then((res) => {
+            if (Array.isArray(res.data)) {
+                setLocationOptions(res.data.map((loc: { name: string }) => ({ value: loc.name, label: loc.name })));
+            }
+        }).catch(() => {});
+    }, []);
     const [location, setLocation] = useState<string>('');
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [period, setPeriod] = useState<string>('');

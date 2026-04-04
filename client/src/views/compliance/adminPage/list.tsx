@@ -11,18 +11,22 @@ import DateInput from '../../../components/dateInput/DateInput';
 const AdminPageList = () => {
   const { executeRequest } = useApiRequest<Record<string, unknown>[]>();
   const [certificates, setCertificates] = useState<Record<string, unknown>[]>([]);
+  const [tableLoading, setTableLoading] = useState(false);
   const [isPopupOpen,setIsPopupOpen]=useState<boolean>(false);
-  
+
   const [rejectionReason,setRejectionReason]=useState<string>('');
   const [expiry,setExpiry]=useState<string>('');
 
   const fetchCompliances = async () => {
+    setTableLoading(true);
     try {
-      const response = await executeRequest('get', '/users/certificates/all');
-      setCertificates(response);
+      const res = await api.get('/users/certificates/all');
+      setCertificates(res.data);
     } catch (error) {
       console.error('Failed to fetch certificates:', error);
       setCertificates([]);
+    } finally {
+      setTableLoading(false);
     }
   };
   const handleDownload=async(userId: string,fileId:string,fileName:string)=>{
@@ -157,6 +161,7 @@ const AdminPageList = () => {
         onDelete={() => {}}
         showActions={false}
         addButton={false}
+        loading={tableLoading}
       />
     </Layout>
     <Popup

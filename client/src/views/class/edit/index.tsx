@@ -38,6 +38,7 @@ const EditClass = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof ClassData, string>> & { daysOfWeek?: string }>({});
   const [hasFetched, setHasFetched] = useState(false);
   const [yearGroupOptions, setYearGroupOptions] = useState<{ value: string; label: string }[]>([]);
+  const [yearGroupsLoading, setYearGroupsLoading] = useState(false);
 
   // Refs for autosave
   const classDataRef = useRef<ClassData>(classData);
@@ -56,25 +57,32 @@ const EditClass = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchYearGroups = async () => {
+      setYearGroupsLoading(true);
       try {
-        const list = await executeRequest('get', '/year-groups');
+        const res = await api.get('/year-groups');
+        const list = res.data;
         if (!cancelled && Array.isArray(list)) {
           setYearGroupOptions(list.map((yg: { _id: string; name: string }) => ({ value: yg.name, label: yg.name })));
         }
       } catch {
         if (!cancelled) setYearGroupOptions([]);
+      } finally {
+        if (!cancelled) setYearGroupsLoading(false);
       }
     };
     fetchYearGroups();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; executeRequest is not stable
   }, []);
 
-  // Location options
-  const locationOptions = [
-    { value: 'Warrington', label: 'Warrington' },
-    { value: 'Bury', label: 'Bury' },
-  ];
+  // Location options — fetched from API
+  const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+  useEffect(() => {
+    api.get('/locations').then((res) => {
+      if (Array.isArray(res.data)) {
+        setLocationOptions(res.data.map((loc: { name: string }) => ({ value: loc.name, label: loc.name })));
+      }
+    }).catch(() => {});
+  }, []);
 
   // Subject options
   const subjectOptions = [
@@ -324,6 +332,7 @@ const EditClass = () => {
                 placeholder="Select Year Group"
                 required
                 error={errors.yeargroup}
+                loading={yearGroupsLoading}
               />
             </div>
 

@@ -60,6 +60,9 @@ export class Engagement {
 
   @Prop({ type: Boolean, default: false })
   submitted?: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  lateMinutes?: number;
 }
 
 export const EngagementSchema = SchemaFactory.createForClass(Engagement);

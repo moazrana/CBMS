@@ -132,12 +132,18 @@ const AllocateStudents = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter options
-  const locationOptions = [
-    { value: '', label: 'All Locations' },
-    { value: 'Warrington', label: 'Warrington' },
-    { value: 'Bury', label: 'Bury' },
-  ];
+  // Filter options — fetched from API
+  const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+  useEffect(() => {
+    api.get('/locations').then((res) => {
+      if (Array.isArray(res.data)) {
+        setLocationOptions([
+          { value: '', label: 'All Locations' },
+          ...res.data.map((loc: { name: string }) => ({ value: loc.name, label: loc.name })),
+        ]);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Base available students: all students minus students already in class
   const baseAvailableStudents = allStudents.filter(

@@ -4,6 +4,7 @@ import { faUsers } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 
 interface Class {
   _id: string;
@@ -27,6 +28,7 @@ interface Class {
 const ClassList = () => {
   const [classes, setClasses] = React.useState<Class[]>([]);
   const { executeRequest } = useApiRequest<Class[]>();
+  const [tableLoading, setTableLoading] = React.useState(false);
   const [sort, setSort] = React.useState('createdAt');
   const [order, setOrder] = React.useState('DESC');
   const [search, setSearch] = React.useState('');
@@ -34,12 +36,14 @@ const ClassList = () => {
   const [perPage, setPerPage] = React.useState(10);
 
   const fetchClasses = async () => {
+    setTableLoading(true);
     try {
-      const response = await executeRequest('get', `/classes?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
-      console.log({ ...response });
-      setClasses(response);
+      const res = await api.get(`/classes?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
+      setClasses(res.data);
     } catch (error) {
       console.error('Error fetching classes:', error);
+    } finally {
+      setTableLoading(false);
     }
   };
 
@@ -184,6 +188,7 @@ const ClassList = () => {
             onView={handleView}
             onAdd={onAdd}
             addPermission='create_class'
+            loading={tableLoading}
             customActions={[
               {
                 icon: faUsers,

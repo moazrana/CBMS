@@ -2,6 +2,7 @@ import React from 'react';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 
 const RolesList = () => {
   const [roles, setRoles] = React.useState([]);
@@ -17,13 +18,17 @@ const RolesList = () => {
     { header: 'Created', accessor: 'createdAt', sortable: true, type: 'date' as const },
   ];
   const { executeRequest } = useApiRequest<any>();
+  const [tableLoading, setTableLoading] = React.useState(false);
 
   const fetchRoles = async () => {
+    setTableLoading(true);
     try {
-      const response = await executeRequest('get', `/roles?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
-      setRoles(response);
+      const res = await api.get(`/roles?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
+      setRoles(res.data);
     } catch (err: any) {
       console.log(err);
+    } finally {
+      setTableLoading(false);
     }
   };
   const handleDelete = async (id:any) => {
@@ -70,6 +75,7 @@ const RolesList = () => {
               PerPage={setPerPage}
               onAdd={handleAdd}
               onEdit={handleEdit}
+              loading={tableLoading}
             />
         </div>
       </div>

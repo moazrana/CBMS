@@ -18,6 +18,7 @@ interface SearchableSelectProps {
   className?: string;
   icon?: string;
   required?: boolean;
+  loading?: boolean;
 }
 
 const DEBOUNCE_MS = 300;
@@ -34,6 +35,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   className = '',
   icon,
   required = false,
+  loading = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -117,13 +119,15 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             setIsOpen(true);
           }}
           onFocus={handleInputFocus}
-          placeholder={placeholder}
-          disabled={disabled}
+          placeholder={loading ? 'Loading...' : placeholder}
+          disabled={disabled || loading}
           className="searchable-select-input"
           autoComplete="off"
           readOnly={!isOpen && !!value}
         />
-        {value && (
+        {loading ? (
+          <span className="searchable-select-spinner" />
+        ) : value && (
           <button
             type="button"
             className="searchable-select-clear"

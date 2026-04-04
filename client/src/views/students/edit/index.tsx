@@ -2543,12 +2543,18 @@ const EditStudent = () => {
     const [filterEndDate, setFilterEndDate] = useState<string>('');
     const [isFilterOpen, setIsFilterOpen] = useState<boolean>(true);
 
-    // Filter options
-    const locationOptions = [
-      { value: '', label: 'All Locations' },
-      { value: 'Warrington', label: 'Warrington' },
-      { value: 'Bury', label: 'Bury' },
-    ];
+    // Filter options — fetched from API
+    const [locationOptions, setLocationOptions] = useState<{ value: string; label: string }[]>([]);
+    useEffect(() => {
+      api.get('/locations').then((res) => {
+        if (Array.isArray(res.data)) {
+          setLocationOptions([
+            { value: '', label: 'All Locations' },
+            ...res.data.map((loc: { name: string }) => ({ value: loc.name, label: loc.name })),
+          ]);
+        }
+      }).catch(() => {});
+    }, []);
 
     const subjectOptions = [
       { value: '', label: 'All Subjects' },

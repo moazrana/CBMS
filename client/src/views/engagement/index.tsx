@@ -33,6 +33,7 @@ interface EngagementRow {
   session?: string; // Session for single session view
   attendance: boolean;
   absenceType?: 'authorized' | 'unauthorized';
+  lateMinutes?: number;
   behaviour: string;
   comment: string;
   workUndertaken: string;
@@ -42,6 +43,7 @@ interface EngagementRow {
 interface SessionEngagement {
   attendance: boolean;
   absenceType?: 'authorized' | 'unauthorized';
+  lateMinutes?: number;
   behaviour: string;
   comment: string;
   workUndertaken: string;
@@ -62,6 +64,7 @@ interface ExistingEngagement {
   student: string;
   attendance: boolean;
   absenceType?: string;
+  lateMinutes?: number;
   behaviour: string;
   comment?: string;
   workUndertaken?: string;
@@ -86,6 +89,7 @@ interface MarkedEngagementRecord {
   session: string;
   attendance: boolean;
   absenceType?: string;
+  lateMinutes?: number;
   behaviour: string;
   comment?: string;
   workUndertaken?: string;
@@ -108,7 +112,7 @@ const Engagement: React.FC = () => {
   const [engagementDate, setEngagementDate] = useState<string>(today);
   const [location, setLocation] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
-  const [locationOptions] = useState<DropdownOption[]>([{"label":"Warrington","value":"Warrington"},{"label":"Bury","value":"Bury"}]);
+  const [locationOptions, setLocationOptions] = useState<DropdownOption[]>([]);
   const [subjectOptions] = useState<DropdownOption[]>([
     { value: 'Construction', label: 'Construction' },
     { value: 'Motor Vehicle', label: 'Motor Vehicle' },
@@ -117,9 +121,11 @@ const Engagement: React.FC = () => {
     { value: 'Outreach / Post 16', label: 'Outreach / Post 16' },
   ]);
   const [classOptions, setClassOptions] = useState<DropdownOption[]>([]);
+  const [classOptionsLoading, setClassOptionsLoading] = useState(false);
   const [filterClass, setFilterClass] = useState<string>("");
   const [filterStudent, setFilterStudent] = useState<string>("");
   const [filterStudentOptions, setFilterStudentOptions] = useState<DropdownOption[]>([]);
+  const [filterStudentOptionsLoading, setFilterStudentOptionsLoading] = useState(false);
   const [allMarkStudents, setAllMarkStudents] = useState<StudentData[]>([]);
   const [students, setStudents] = useState<StudentData[]>([]);
   const [engagementData, setEngagementData] = useState<Record<string, EngagementRow>>({});
@@ -132,9 +138,11 @@ const Engagement: React.FC = () => {
   const [markedFilterSubject, setMarkedFilterSubject] = useState<string>('');
   const [markedFilterClassId, setMarkedFilterClassId] = useState<string>('');
   const [markedClassOptions, setMarkedClassOptions] = useState<DropdownOption[]>([]);
+  const [markedClassOptionsLoading, setMarkedClassOptionsLoading] = useState(false);
   const [markedListExpanded, setMarkedListExpanded] = useState<Set<string>>(new Set());
   const [markedFilterStudent, setMarkedFilterStudent] = useState<string>('');
   const [markedStudentOptions, setMarkedStudentOptions] = useState<DropdownOption[]>([]);
+  const [markedStudentOptionsLoading, setMarkedStudentOptionsLoading] = useState(false);
   const [markedAllStudents, setMarkedAllStudents] = useState<StudentData[]>([]);
   // Universal list: students in selected class with engagement status (green/red dot)
   const [universalListStudents, setUniversalListStudents] = useState<StudentData[]>([]);
@@ -150,6 +158,15 @@ const Engagement: React.FC = () => {
   // Ref so autoSaveEngagement can call autoSaveAllSessionsEngagement without a forward-reference issue
   const autoSaveAllSessionsEngagementRef = useRef<(studentId: string, sessionValue: string) => Promise<void>>(() => Promise.resolve());
   
+  // Fetch locations from API
+  useEffect(() => {
+    api.get('/locations').then((res) => {
+      if (Array.isArray(res.data)) {
+        setLocationOptions(res.data.map((loc: { name: string }) => ({ value: loc.name, label: loc.name })));
+      }
+    }).catch(() => {});
+  }, []);
+
   // Toggle row expansion
   const toggleRowExpansion = useCallback((studentId: string) => {
     setExpandedRows(prev => {
@@ -231,6 +248,7 @@ const Engagement: React.FC = () => {
               value={filterStudent}
               onChange={(v) => setFilterStudent(String(v))}
               options={filterStudentOptions}
+              loading={filterStudentOptionsLoading}
               onSearch={(term) => {
                 const trimmed = term.trim().toLowerCase();
                 const base: DropdownOption[] = allMarkStudents.map((s) => {
@@ -286,7 +304,7 @@ const Engagement: React.FC = () => {
             />
           </div>
           <div className="input-div-engagement">
-            <Select 
+            <Select
               label="Class/Provision"
               name="class"
               value={filterClass}
@@ -295,6 +313,7 @@ const Engagement: React.FC = () => {
               placeholder="Select Class/Provision"
               icon={Class}
               disabled={classOptions.length === 0}
+              loading={classOptionsLoading}
             />
           </div>
         </div>
@@ -309,10 +328,12 @@ const Engagement: React.FC = () => {
         return;
       }
 
+      setClassOptionsLoading(true);
       try {
         // Fetch all classes (with a high perPage to get all)
-        const response = await executeRequest('get', '/classes?perPage=1000');
-        
+        const res = await api.get('/classes?perPage=1000');
+        const response = res.data;
+
         if (Array.isArray(response)) {
           // Filter classes by location and/or subject
           const filteredClasses = response.filter((cls: ClassData) => {
@@ -320,13 +341,13 @@ const Engagement: React.FC = () => {
             const matchesSubject = !subject || cls.subject === subject;
             return matchesLocation && matchesSubject;
           });
-          
+
           // Transform to DropdownOption format
           const options: DropdownOption[] = filteredClasses.map((cls: ClassData) => ({
             label: `${cls.subject} - ${cls.yeargroup}`,
-            value: cls._id
+            value: cls._id,
           }));
-          
+
           setClassOptions(options);
           // Reset selected class when filters change
           setFilterClass("");
@@ -335,6 +356,8 @@ const Engagement: React.FC = () => {
         console.error('Error fetching classes:', error);
         setClassOptions([]);
         setFilterClass("");
+      } finally {
+        setClassOptionsLoading(false);
       }
     };
 
@@ -350,8 +373,10 @@ const Engagement: React.FC = () => {
       return;
     }
     const fetchMarkedClasses = async () => {
+      setMarkedClassOptionsLoading(true);
       try {
-        const response = await executeRequest('get', '/classes?perPage=1000');
+        const res = await api.get('/classes?perPage=1000');
+        const response = res.data;
         if (Array.isArray(response)) {
           const filtered = response.filter((cls: ClassData) => {
             const matchesLocation = !markedFilterLocation || cls.location === markedFilterLocation;
@@ -367,6 +392,8 @@ const Engagement: React.FC = () => {
       } catch {
         setMarkedClassOptions([]);
         setMarkedFilterClassId('');
+      } finally {
+        setMarkedClassOptionsLoading(false);
       }
     };
     fetchMarkedClasses();
@@ -456,6 +483,7 @@ const Engagement: React.FC = () => {
                     updated[studentId].sessions[eng.session] = {
                       attendance: eng.attendance,
                       absenceType: eng.absenceType === 'authorized' || eng.absenceType === 'unauthorized' ? eng.absenceType : undefined,
+                      lateMinutes: eng.lateMinutes ?? 0,
                       behaviour: eng.behaviour,
                       comment: eng.comment || '',
                       workUndertaken: eng.workUndertaken || '',
@@ -560,6 +588,7 @@ const Engagement: React.FC = () => {
                     updated[studentId].sessions[eng.session] = {
                       attendance: eng.attendance,
                       absenceType: eng.absenceType === 'authorized' || eng.absenceType === 'unauthorized' ? eng.absenceType : undefined,
+                      lateMinutes: eng.lateMinutes ?? 0,
                       behaviour: eng.behaviour,
                       comment: eng.comment || '',
                       workUndertaken: eng.workUndertaken || '',
@@ -596,6 +625,7 @@ const Engagement: React.FC = () => {
                         ...studentEngagement,
                         attendance: matchingEngagement.attendance,
                         absenceType: matchingEngagement.absenceType === 'authorized' || matchingEngagement.absenceType === 'unauthorized' ? matchingEngagement.absenceType : undefined,
+                        lateMinutes: matchingEngagement.lateMinutes ?? 0,
                         behaviour: matchingEngagement.behaviour,
                         comment: matchingEngagement.comment || '',
                         workUndertaken: matchingEngagement.workUndertaken || '',
@@ -752,6 +782,7 @@ const Engagement: React.FC = () => {
       student: studentId,
       attendance: currentEngagement.attendance,
       absenceType: currentEngagement.attendance ? undefined : (currentEngagement.absenceType ?? undefined),
+      lateMinutes: currentEngagement.attendance ? (currentEngagement.lateMinutes ?? 0) : 0,
       behaviour: currentEngagement.behaviour,
       comment: currentEngagement.comment || '',
       workUndertaken: currentEngagement.workUndertaken ?? '',
@@ -764,11 +795,9 @@ const Engagement: React.FC = () => {
       // If no engagementId, check if an engagement already exists for this class, student, and session
       if (!engagementId) {
         try {
-          const existingEngagement = await executeRequest(
-            'get',
-            `/engagements/class/${filterClassRef.current}/student/${studentId}/session/${currentEngagement.session}?date=${engagementDate}`
-          ) as ExistingEngagement | null;
-          
+          const res = await api.get(`/engagements/class/${filterClassRef.current}/student/${studentId}/session/${currentEngagement.session}?date=${engagementDate}`);
+          const existingEngagement = res.data as ExistingEngagement | null;
+
           if (existingEngagement && existingEngagement._id) {
             engagementId = existingEngagement._id;
             // Update the engagementId in state and ref
@@ -811,7 +840,7 @@ const Engagement: React.FC = () => {
     } catch (error) {
       console.error('Error auto-saving engagement:', error);
     }
-  }, [executeRequest, engagementDate, canEditEngagement]);
+  }, [engagementDate, canEditEngagement]);
 
   // Auto-save function for all sessions
   const autoSaveAllSessionsEngagement = useCallback(async (studentId: string, sessionValue: string) => {
@@ -831,6 +860,7 @@ const Engagement: React.FC = () => {
       student: studentId,
       attendance: sessionData.attendance,
       absenceType: sessionData.attendance ? undefined : (sessionData.absenceType ?? undefined),
+      lateMinutes: sessionData.attendance ? (sessionData.lateMinutes ?? 0) : 0,
       behaviour: sessionData.behaviour,
       comment: sessionData.comment || '',
       workUndertaken: sessionData.workUndertaken ?? '',
@@ -843,11 +873,9 @@ const Engagement: React.FC = () => {
       // If no engagementId, check if an engagement already exists for this class, student, and session
       if (!engagementId) {
         try {
-          const existingEngagement = await executeRequest(
-            'get',
-            `/engagements/class/${filterClassRef.current}/student/${studentId}/session/${sessionValue}?date=${engagementDate}`
-          ) as ExistingEngagement | null;
-          
+          const res = await api.get(`/engagements/class/${filterClassRef.current}/student/${studentId}/session/${sessionValue}?date=${engagementDate}`);
+          const existingEngagement = res.data as ExistingEngagement | null;
+
           if (existingEngagement && existingEngagement._id) {
             engagementId = existingEngagement._id;
             // Update the engagementId in state and ref
@@ -902,7 +930,7 @@ const Engagement: React.FC = () => {
     } catch (error) {
       console.error('Error auto-saving all sessions engagement:', error);
     }
-  }, [executeRequest, engagementDate, canEditEngagement]);
+  }, [engagementDate, canEditEngagement]);
 
   // Keep the ref in sync so autoSaveEngagement can call it without a forward-reference issue
   useEffect(() => {
@@ -917,6 +945,7 @@ const Engagement: React.FC = () => {
         ...prev[studentId],
         attendance: present,
         absenceType: present ? undefined : (prev[studentId].absenceType ?? 'unauthorized'),
+        lateMinutes: present ? (prev[studentId].lateMinutes ?? 0) : 0,
       },
     }));
 
@@ -924,6 +953,7 @@ const Engagement: React.FC = () => {
       ...engagementDataRef.current[studentId],
       attendance: present,
       absenceType: present ? undefined : (engagementDataRef.current[studentId].absenceType ?? 'unauthorized'),
+      lateMinutes: present ? (engagementDataRef.current[studentId].lateMinutes ?? 0) : 0,
     };
 
     const currentSession = engagementDataRef.current[studentId]?.session;
@@ -940,10 +970,12 @@ const Engagement: React.FC = () => {
               ...updatedSessions[sess],
               attendance: present,
               absenceType: present ? undefined : (updatedSessions[sess].absenceType ?? 'unauthorized'),
+              lateMinutes: present ? (updatedSessions[sess].lateMinutes ?? 0) : 0,
             };
             if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
               allSessionsEngagementDataRef.current[studentId].sessions[sess].attendance = present;
               allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType = present ? undefined : (allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType ?? 'unauthorized');
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].lateMinutes = present ? (allSessionsEngagementDataRef.current[studentId].sessions[sess].lateMinutes ?? 0) : 0;
             }
           }
         });
@@ -974,6 +1006,35 @@ const Engagement: React.FC = () => {
             updatedSessions[sess] = { ...updatedSessions[sess], absenceType: value };
             if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
               allSessionsEngagementDataRef.current[studentId].sessions[sess].absenceType = value;
+            }
+          }
+        });
+        return { ...prev, [studentId]: { ...student, sessions: updatedSessions } };
+      });
+    }
+    if (!isInitialMount.current && filterClass && currentSession) {
+      setTimeout(() => autoSaveEngagement(studentId), 500);
+    }
+  }, [autoSaveEngagement, filterClass]);
+
+  const handleLateMinutesChange = useCallback((studentId: string, minutes: number) => {
+    setEngagementData(prev => ({
+      ...prev,
+      [studentId]: { ...prev[studentId], lateMinutes: minutes },
+    }));
+    engagementDataRef.current[studentId] = { ...engagementDataRef.current[studentId], lateMinutes: minutes };
+    const currentSession = engagementDataRef.current[studentId]?.session;
+    const sessionsToSync = currentSession === 'all day' ? REAL_SESSIONS : (currentSession ? [currentSession] : []);
+    if (sessionsToSync.length > 0) {
+      setAllSessionsEngagementData(prev => {
+        const student = prev[studentId];
+        if (!student) return prev;
+        const updatedSessions = { ...student.sessions };
+        sessionsToSync.forEach(sess => {
+          if (updatedSessions[sess]) {
+            updatedSessions[sess] = { ...updatedSessions[sess], lateMinutes: minutes };
+            if (allSessionsEngagementDataRef.current[studentId]?.sessions[sess]) {
+              allSessionsEngagementDataRef.current[studentId].sessions[sess].lateMinutes = minutes;
             }
           }
         });
@@ -1169,6 +1230,30 @@ const Engagement: React.FC = () => {
     }
   }, [autoSaveAllSessionsEngagement, filterClass]);
 
+  const handleAllSessionsLateMinutesChange = useCallback((studentId: string, sessionValue: string, minutes: number) => {
+    setAllSessionsEngagementData(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        sessions: {
+          ...prev[studentId].sessions,
+          [sessionValue]: { ...prev[studentId].sessions[sessionValue], lateMinutes: minutes },
+        },
+      },
+    }));
+    allSessionsEngagementDataRef.current[studentId].sessions[sessionValue].lateMinutes = minutes;
+    setEngagementData(prev => {
+      const row = prev[studentId];
+      if (!row || row.session !== sessionValue) return prev;
+      const next = { ...prev, [studentId]: { ...row, lateMinutes: minutes } };
+      engagementDataRef.current[studentId] = next[studentId];
+      return next;
+    });
+    if (!isInitialMount.current && filterClass) {
+      setTimeout(() => autoSaveAllSessionsEngagement(studentId, sessionValue), 500);
+    }
+  }, [autoSaveAllSessionsEngagement, filterClass]);
+
   const handleAllSessionsBehaviourChange = useCallback((studentId: string, sessionValue: string, value: string) => {
     setAllSessionsEngagementData(prev => ({
       ...prev,
@@ -1318,6 +1403,7 @@ const Engagement: React.FC = () => {
           byStudentBySession[sid][sess] = {
             attendance: eng.attendance,
             absenceType: eng.absenceType === 'authorized' || eng.absenceType === 'unauthorized' ? eng.absenceType : undefined,
+            lateMinutes: eng.lateMinutes ?? 0,
             behaviour: eng.behaviour || 'Unmarked',
             comment: eng.comment || '',
             workUndertaken: eng.workUndertaken || '',
@@ -1333,8 +1419,8 @@ const Engagement: React.FC = () => {
           const sessions: Record<string, SessionEngagement> = {};
           allSessionValues.forEach((sval) => {
             sessions[sval] = sessMap[sval]
-              ? { attendance: sessMap[sval].attendance, absenceType: sessMap[sval].absenceType, behaviour: sessMap[sval].behaviour, comment: sessMap[sval].comment, workUndertaken: sessMap[sval].workUndertaken ?? '', engagementId: sessMap[sval].engagementId }
-              : { attendance: false, absenceType: undefined, behaviour: 'Unmarked', comment: '', workUndertaken: '', engagementId: undefined };
+              ? { attendance: sessMap[sval].attendance, absenceType: sessMap[sval].absenceType, lateMinutes: sessMap[sval].lateMinutes ?? 0, behaviour: sessMap[sval].behaviour, comment: sessMap[sval].comment, workUndertaken: sessMap[sval].workUndertaken ?? '', engagementId: sessMap[sval].engagementId }
+              : { attendance: false, absenceType: undefined, lateMinutes: 0, behaviour: 'Unmarked', comment: '', workUndertaken: '', engagementId: undefined };
           });
           const isComplete = allSessionValues.every((sval) => sessMap[sval] != null);
           data[sid] = { sessions, isComplete };
@@ -1360,6 +1446,7 @@ const Engagement: React.FC = () => {
     if (activeTab !== 'marked' || !canViewMarkedEngagement) return;
     let cancelled = false;
     const fetchStudents = async () => {
+      if (!cancelled) setMarkedStudentOptionsLoading(true);
       try {
         const response = await api.get<StudentData[]>('/students?perPage=1000');
         if (!cancelled && Array.isArray(response.data)) {
@@ -1373,6 +1460,8 @@ const Engagement: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching students for filter:', error);
+      } finally {
+        if (!cancelled) setMarkedStudentOptionsLoading(false);
       }
     };
     fetchStudents();
@@ -1383,6 +1472,7 @@ const Engagement: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     const fetchStudents = async () => {
+      if (!cancelled) setFilterStudentOptionsLoading(true);
       try {
         const response = await api.get<StudentData[]>('/students?perPage=1000');
         if (!cancelled && Array.isArray(response.data)) {
@@ -1396,6 +1486,8 @@ const Engagement: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching students for filter:', error);
+      } finally {
+        if (!cancelled) setFilterStudentOptionsLoading(false);
       }
     };
     fetchStudents();
@@ -1502,6 +1594,56 @@ const Engagement: React.FC = () => {
               sessions: {
                 ...prev[studentId].sessions,
                 [sessionValue]: { ...prev[studentId].sessions[sessionValue], absenceType: value, engagementId: newId },
+              },
+            },
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to update engagement', e);
+    }
+  }, [markedFilterClassId, universalListData, universalListEngagementDate]);
+
+  const handleUniversalListLateMinutesChange = useCallback(async (studentId: string, sessionValue: string, minutes: number) => {
+    const session = universalListData[studentId]?.sessions[sessionValue];
+    const engagementId = session?.engagementId;
+    const classId = markedFilterClassId;
+    if (!classId) return;
+    setUniversalListData(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        sessions: {
+          ...prev[studentId].sessions,
+          [sessionValue]: { ...prev[studentId].sessions[sessionValue], lateMinutes: minutes },
+        },
+      },
+    }));
+    try {
+      if (engagementId) {
+        await api.patch(`/engagements/${engagementId}`, { lateMinutes: minutes });
+      } else {
+        const res = await api.post<{ _id: string }>('/engagements', {
+          class: classId,
+          student: studentId,
+          session: sessionValue,
+          engagementDate: universalListEngagementDate,
+          attendance: session?.attendance ?? true,
+          absenceType: session?.absenceType,
+          behaviour: session?.behaviour || 'Unmarked',
+          comment: session?.comment || '',
+          workUndertaken: session?.workUndertaken ?? '',
+          lateMinutes: minutes,
+        });
+        const newId = res.data?._id;
+        if (newId) {
+          setUniversalListData(prev => ({
+            ...prev,
+            [studentId]: {
+              ...prev[studentId],
+              sessions: {
+                ...prev[studentId].sessions,
+                [sessionValue]: { ...prev[studentId].sessions[sessionValue], lateMinutes: minutes, engagementId: newId },
               },
             },
           }));
@@ -1734,6 +1876,40 @@ const Engagement: React.FC = () => {
     }
   }, [markedEngagements, canUpdateEngagement]);
 
+  const handleMarkedListLateMinutesChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, minutes: number) => {
+    if (!canUpdateEngagement) return;
+    const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
+    const group = markedEngagements.filter((e) => {
+      const sid = typeof e.student === 'object' && e.student !== null ? (e.student as { _id: string })._id : String(e.student);
+      const cid = typeof e.class === 'object' && e.class !== null ? (e.class as { _id: string })._id : String(e.class);
+      const d = e.engagementDate ? new Date(e.engagementDate).toISOString().split('T')[0] : '';
+      return `${sid}|${d}|${cid}` === groupKey;
+    });
+    const sessionEng = group.find((e) => e.session === sessionValue);
+    const engagementId = sessionEng?._id;
+    try {
+      if (engagementId) {
+        const res = await api.patch<MarkedEngagementRecord>(`/engagements/${engagementId}`, { lateMinutes: minutes });
+        if (res.data) setMarkedEngagements(prev => prev.map(eng => eng._id === engagementId ? (res.data as MarkedEngagementRecord) : eng));
+      } else {
+        const res = await api.post<MarkedEngagementRecord>('/engagements', {
+          class: classId,
+          student: studentId,
+          session: sessionValue,
+          attendance: true,
+          lateMinutes: minutes,
+          behaviour: 'Unmarked',
+          comment: '',
+          workUndertaken: '',
+          engagementDate: engagementDateStr,
+        });
+        if (res.data) setMarkedEngagements(prev => [...prev, res.data as MarkedEngagementRecord]);
+      }
+    } catch (e) {
+      console.error('Failed to update engagement', e);
+    }
+  }, [markedEngagements, canUpdateEngagement]);
+
   const handleMarkedListBehaviourChange = useCallback(async (studentId: string, classId: string, engagementDateStr: string, sessionValue: string, value: string) => {
     if (!canUpdateEngagement) return;
     const groupKey = `${studentId}|${engagementDateStr}|${classId}`;
@@ -1849,6 +2025,7 @@ const Engagement: React.FC = () => {
           const sessionData = data.sessions[sessionOpt.value];
           const present = sessionData?.attendance ?? false;
           const absenceType = sessionData?.absenceType;
+          const lateMinutes = sessionData?.lateMinutes ?? 0;
           const currentBehaviour = sessionData?.behaviour || 'Unmarked';
           const comment = sessionData?.comment || '';
           const workUndertaken = sessionData?.workUndertaken ?? '';
@@ -1877,6 +2054,19 @@ const Engagement: React.FC = () => {
                       Absent
                     </label>
                   </div>
+                  {present && (
+                    <div className="late-minutes-box">
+                      <input
+                        type="number"
+                        min={0}
+                        value={lateMinutes}
+                        onChange={(e) => handleUniversalListLateMinutesChange(studentId, sessionOpt.value, Math.max(0, parseInt(e.target.value) || 0))}
+                        className="late-minutes-input"
+                        placeholder="0"
+                      />
+                      <span className="late-minutes-label">min late</span>
+                    </div>
+                  )}
                   {!present && (
                     <div className="engagement-absence-type-radios">
                       <label className="engagement-radio-label">
@@ -1946,7 +2136,7 @@ const Engagement: React.FC = () => {
         })}
       </div>
     );
-  }, [universalListData, sessionOptions, behaviourOptions, handleUniversalListAttendanceChange, handleUniversalListAbsenceTypeChange, handleUniversalListBehaviourChange, handleUniversalListCommentChange, handleUniversalListWorkUndertakenChange]);
+  }, [universalListData, sessionOptions, behaviourOptions, handleUniversalListAttendanceChange, handleUniversalListAbsenceTypeChange, handleUniversalListLateMinutesChange, handleUniversalListBehaviourChange, handleUniversalListCommentChange, handleUniversalListWorkUndertakenChange]);
 
   // Build expanded content (div) for a student - one row per session: session name | attendance | behaviour | comment | work undertaken
   const renderExpandedContent = useCallback((studentId: string) => {
@@ -1965,6 +2155,7 @@ const Engagement: React.FC = () => {
           const sessionData = studentData.sessions[sessionOpt.value];
           const present = sessionData?.attendance ?? false;
           const absenceType = sessionData?.absenceType;
+          const lateMinutes = sessionData?.lateMinutes ?? 0;
           const currentBehaviour = sessionData?.behaviour || 'Unmarked';
           const comment = sessionData?.comment || '';
           const workUndertaken = sessionData?.workUndertaken ?? '';
@@ -1993,6 +2184,19 @@ const Engagement: React.FC = () => {
                       Absent
                     </label>
                   </div>
+                  {present && (
+                    <div className="late-minutes-box">
+                      <input
+                        type="number"
+                        min={0}
+                        value={lateMinutes}
+                        onChange={(e) => handleAllSessionsLateMinutesChange(studentId, sessionOpt.value, Math.max(0, parseInt(e.target.value) || 0))}
+                        className="late-minutes-input"
+                        placeholder="0"
+                      />
+                      <span className="late-minutes-label">min late</span>
+                    </div>
+                  )}
                   {!present && (
                     <div className="engagement-absence-type-radios">
                       <label className="engagement-radio-label">
@@ -2062,7 +2266,7 @@ const Engagement: React.FC = () => {
         })}
       </div>
     );
-  }, [allSessionsEngagementData, sessionOptions, behaviourOptions, handleAllSessionsAttendanceChange, handleAllSessionsAbsenceTypeChange, handleAllSessionsBehaviourChange, handleAllSessionsCommentChange, handleAllSessionsWorkUndertakenChange]);
+  }, [allSessionsEngagementData, sessionOptions, behaviourOptions, handleAllSessionsAttendanceChange, handleAllSessionsAbsenceTypeChange, handleAllSessionsLateMinutesChange, handleAllSessionsBehaviourChange, handleAllSessionsCommentChange, handleAllSessionsWorkUndertakenChange]);
 
   // Prepare data for DataTable - one row per student; expanded content in a div
   const tableData = useMemo(() => {
@@ -2086,6 +2290,7 @@ const Engagement: React.FC = () => {
         session: engagement.session || '',
         attendance: engagement.attendance,
         absenceType: engagement.absenceType,
+        lateMinutes: engagement.lateMinutes ?? 0,
         behaviour: engagement.behaviour,
         comment: engagement.comment,
         workUndertaken: engagement.workUndertaken ?? '',
@@ -2145,8 +2350,8 @@ const Engagement: React.FC = () => {
       if (!filterClass || !sessionValue) return;
       
       try {
-        const response = await executeRequest('get', `/engagements/class/${filterClass}/student/${studentId}/session/${sessionValue}?date=${engagementDate}`);
-        const existingEngagement = response as ExistingEngagement | null;
+        const res = await api.get(`/engagements/class/${filterClass}/student/${studentId}/session/${sessionValue}?date=${engagementDate}`);
+        const existingEngagement = res.data as ExistingEngagement | null;
         
         if (existingEngagement && existingEngagement._id) {
           setEngagementData(prev => ({
@@ -2177,7 +2382,7 @@ const Engagement: React.FC = () => {
     };
     
     fetchEngagementForSession();
-  }, [filterClass, executeRequest, engagementDate]);
+  }, [filterClass, engagementDate]);
 
   // Define columns for DataTable
   const columns = useMemo(() => [
@@ -2233,6 +2438,7 @@ const Engagement: React.FC = () => {
         const studentId = row.studentId as string;
         const attendance = row.attendance as boolean;
         const absenceType = row.absenceType as 'authorized' | 'unauthorized' | undefined;
+        const lateMinutes = (row.lateMinutes as number) ?? 0;
         return (
           <div className="engagement-attendance-cell">
             <div className="engagement-attendance-radios">
@@ -2257,6 +2463,20 @@ const Engagement: React.FC = () => {
                 Absent
               </label>
             </div>
+            {attendance && (
+              <div className="late-minutes-box">
+                <input
+                  type="number"
+                  min={0}
+                  value={lateMinutes}
+                  onChange={(e) => handleLateMinutesChange(studentId, Math.max(0, parseInt(e.target.value) || 0))}
+                  disabled={!canEditEngagement}
+                  className="late-minutes-input"
+                  placeholder="0"
+                />
+                <span className="late-minutes-label">min late</span>
+              </div>
+            )}
             {!attendance && (
               <div className="engagement-absence-type-radios">
                 <label className="engagement-radio-label">
@@ -2368,11 +2588,11 @@ const Engagement: React.FC = () => {
         );
       },
     },
-  ], [behaviorSelectOptions, canCreateEngagement, canEditEngagement, handleAbsenceTypeChange, handleAttendanceChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionSelectOptions, toggleRowExpansion]);
+  ], [behaviorSelectOptions, canCreateEngagement, canEditEngagement, handleAbsenceTypeChange, handleAttendanceChange, handleLateMinutesChange, handleBehaviourChange, handleCommentChange, handleSessionChange, handleSubmitStudent, handleWorkUndertakenChange, sessionSelectOptions, toggleRowExpansion]);
 
   // Editable expanded content for initial marked list (one row per session)
   const renderMarkedListExpandedContent = useCallback((rowData: {
-    sessions: Record<string, { attendance: boolean; absenceType?: 'authorized' | 'unauthorized'; behaviour: string; comment: string; workUndertaken: string; engagementId?: string }>;
+    sessions: Record<string, { attendance: boolean; absenceType?: 'authorized' | 'unauthorized'; lateMinutes?: number; behaviour: string; comment: string; workUndertaken: string; engagementId?: string }>;
     studentId: string;
     classId: string;
     engagementDateStr: string;
@@ -2391,6 +2611,7 @@ const Engagement: React.FC = () => {
           const sessionData = sessions[sessionOpt.value];
           const present = sessionData?.attendance ?? false;
           const absenceType = sessionData?.absenceType;
+          const lateMinutes = sessionData?.lateMinutes ?? 0;
           const currentBehaviour = sessionData?.behaviour ?? 'Unmarked';
           const comment = sessionData?.comment ?? '';
           const workUndertaken = sessionData?.workUndertaken ?? '';
@@ -2421,6 +2642,20 @@ const Engagement: React.FC = () => {
                       Absent
                     </label>
                   </div>
+                  {present && (
+                    <div className="late-minutes-box">
+                      <input
+                        type="number"
+                        min={0}
+                        value={lateMinutes}
+                        onChange={(e) => handleMarkedListLateMinutesChange(studentId, classId, engagementDateStr, sessionOpt.value, Math.max(0, parseInt(e.target.value) || 0))}
+                        disabled={!canUpdateEngagement}
+                        className="late-minutes-input"
+                        placeholder="0"
+                      />
+                      <span className="late-minutes-label">min late</span>
+                    </div>
+                  )}
                   {!present && (
                     <div className="engagement-absence-type-radios">
                       <label className="engagement-radio-label">
@@ -2495,7 +2730,7 @@ const Engagement: React.FC = () => {
         })}
       </div>
     );
-  }, [sessionOptions, behaviourOptions, canUpdateEngagement, handleMarkedListAttendanceChange, handleMarkedListAbsenceTypeChange, handleMarkedListBehaviourChange, handleMarkedListCommentChange, handleMarkedListWorkUndertakenChange]);
+  }, [sessionOptions, behaviourOptions, canUpdateEngagement, handleMarkedListAttendanceChange, handleMarkedListAbsenceTypeChange, handleMarkedListLateMinutesChange, handleMarkedListBehaviourChange, handleMarkedListCommentChange, handleMarkedListWorkUndertakenChange]);
 
   // Marked engagements table: columns and data (grouped by student+date+class, with expand)
   const markedEngagementsColumns = useMemo(() => [
@@ -2754,6 +2989,7 @@ const Engagement: React.FC = () => {
           value={markedFilterStudent}
           onChange={(v) => setMarkedFilterStudent(String(v))}
           options={markedStudentOptions}
+          loading={markedStudentOptionsLoading}
           onSearch={(term) => {
             const trimmed = term.trim().toLowerCase();
             const base: DropdownOption[] = markedAllStudents.map((s) => {
@@ -2826,6 +3062,7 @@ const Engagement: React.FC = () => {
           placeholder="All Classes"
           icon={Class}
           disabled={markedClassOptions.length === 0}
+          loading={markedClassOptionsLoading}
         />
       </div>
     </div>

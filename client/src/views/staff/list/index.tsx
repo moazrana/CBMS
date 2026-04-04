@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import StaffView from '../view/StaffView';
 import { formatDateDisplay } from '../../../functions/formatDate';
@@ -158,6 +159,7 @@ interface Staff {
 const StaffList = () => {
   const [staff, setStaff] = React.useState<Staff[]>([]);
   const { executeRequest } = useApiRequest<Staff[]>();
+  const [tableLoading, setTableLoading] = React.useState(false);
   const [sort, setSort] = React.useState('createdAt');
   const [order, setOrder] = React.useState('DESC');
   const [search, setSearch] = React.useState('');
@@ -167,12 +169,14 @@ const StaffList = () => {
   const [viewingStaff, setViewingStaff] = React.useState<Staff | null>(null);
 
   const fetchStaff = async () => {
+    setTableLoading(true);
     try {
-      const response = await executeRequest('get', `/staff?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
-      console.log({ ...response });
-      setStaff(response);
+      const res = await api.get(`/staff?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
+      setStaff(res.data);
     } catch (error) {
       console.error('Error fetching staff:', error);
+    } finally {
+      setTableLoading(false);
     }
   };
 
@@ -360,6 +364,7 @@ const StaffList = () => {
               onView={handleView}
               onAdd={onAdd}
               addPermission='create_staff'
+              loading={tableLoading}
             />
           </div>
         </div>

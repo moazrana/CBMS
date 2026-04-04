@@ -39,14 +39,15 @@ interface DataTableProps {
   showSearch?:boolean;
   addPermission?:string;
   customActions?: CustomAction[];
+  loading?: boolean;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ 
+const DataTable: React.FC<DataTableProps> = ({
   columns,
   data,
   title,
-  onDelete, 
-  onSort, 
+  onDelete,
+  onSort,
   onSearch,
   PerPage,
   onAdd,
@@ -56,7 +57,8 @@ const DataTable: React.FC<DataTableProps> = ({
   addButton = true,
   showSearch=true,
   addPermission='',
-  customActions = []
+  customActions = [],
+  loading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -169,6 +171,11 @@ const DataTable: React.FC<DataTableProps> = ({
           </div>
         </div>
         <div className="table-container">
+          {loading && (
+            <div className="dt-loading-overlay">
+              <div className="dt-loading-spinner" />
+            </div>
+          )}
           <table>
             <thead>
               <tr>

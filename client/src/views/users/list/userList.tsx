@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 import Popup from '../../../components/Popup/Popup';
 import Input from '../../../components/input/Input';
 import Select from '../../../components/Select/Select';
@@ -52,20 +53,27 @@ const UserList = () => {
   // Sample data - replace with actual API call
   const [users, setUsers] = React.useState<User[]>([]);
   const { executeRequest} = useApiRequest<User[]>();
+  const [tableLoading, setTableLoading] = React.useState(false);
+  const [rolesLoading, setRolesLoading] = React.useState(false);
   const [sort, setSort] = React.useState('createdAt');
   const [order, setOrder] = React.useState('DESC');
   const [search, setSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
   const fetchUsers = async () => {
-   const response = await executeRequest('get', `/users?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
-   console.log({...response});
-   response.forEach((user: User) => {
-    if (user.role && typeof user.role === 'object' && 'name' in user.role) {
-      user.role = user.role.name;
+    setTableLoading(true);
+    try {
+      const res = await api.get(`/users?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
+      const data: User[] = res.data;
+      data.forEach((user: User) => {
+        if (user.role && typeof user.role === 'object' && 'name' in user.role) {
+          user.role = user.role.name;
+        }
+      });
+      setUsers(data);
+    } finally {
+      setTableLoading(false);
     }
-   });
-   setUsers(response);
   };
 
   const handleDelete = async (row: Record<string, any>) => {
@@ -192,13 +200,18 @@ const UserList = () => {
   });
   const [roles,setRoles]=useState<RoleOption[]>([]);
   const fetchRoles = async () => {
-    const response = await executeRequest('get', `/roles`);
-    const roleOptions = response.map((role: Role) => ({
-      value: role.name,
-      label: role.name
-    }));
-    setRoles(roleOptions);
-   };
+    setRolesLoading(true);
+    try {
+      const res = await api.get(`/roles`);
+      const roleOptions = res.data.map((role: Role) => ({
+        value: role.name,
+        label: role.name,
+      }));
+      setRoles(roleOptions);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
 
    
 
@@ -218,6 +231,7 @@ const UserList = () => {
               onEdit={handleEdit}
               onAdd={onAdd}
               addPermission='create_user'
+              loading={tableLoading}
             />
           </div>
         </div>
@@ -235,13 +249,14 @@ const UserList = () => {
               {/* Your form fields go here */}
               <Input label='Name' name='name' value={userData.name} onChange={(e) => setUserData({...userData, name: e.target.value})} />
               <Input label='Email' name='email' value={userData.email} onChange={(e) => setUserData({...userData, email: e.target.value})} />
-              <Select 
-                label='Role' 
-                name='role' 
-                value={userData.role} 
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUserData({...userData, role: e.target.value})} 
+              <Select
+                label='Role'
+                name='role'
+                value={userData.role}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setUserData({...userData, role: e.target.value})}
                 options={roles}
                 placeholder='Select Role'
+                loading={rolesLoading}
               />
               <Input type='password' label={isEditMode ? 'Password (optional)' : 'Password'} name='password' value={userData.password} onChange={(e) => setUserData({...userData, password: e.target.value})} />
               <Input type='password' label={isEditMode ? 'Pin (optional)' : 'Pin'} name='pin' value={userData.pin} onChange={(e) => setUserData({...userData, pin: e.target.value})} />

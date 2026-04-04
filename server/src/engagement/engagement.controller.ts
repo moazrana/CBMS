@@ -117,6 +117,27 @@ export class EngagementController {
     }
   }
 
+  @Get('location/attendance-stats')
+  @HasPermission('read_engagement')
+  getLocationAttendanceStats(
+    @Query('location') locationName: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.engagementService.getLocationAttendanceStats(locationName, startDate, endDate);
+  }
+
+  @Get('student/:studentId/attendance-stats')
+  @HasPermission('read_engagement')
+  getStudentAttendanceStats(
+    @Param('studentId') studentId: string,
+    @Query('classId') classId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.engagementService.getStudentAttendanceStats(studentId, classId, startDate, endDate);
+  }
+
   @Get('student/:studentId')
   @HasPermission('read_engagement')
   findByStudent(@Param('studentId') studentId: string) {

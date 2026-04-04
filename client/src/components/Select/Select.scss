@@ -58,4 +58,27 @@
     margin-top: 0.25rem;
     font-size: 0.75rem;
     color: #dc3545;
+}
+
+.select-field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .select-spinner {
+        position: absolute;
+        right: 2.2rem;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--border-color, #e5e7eb);
+        border-top-color: var(--primary-color, #6786FB);
+        border-radius: 50%;
+        animation: select-spin 0.75s linear infinite;
+        pointer-events: none;
+        flex-shrink: 0;
+    }
+}
+
+@keyframes select-spin {
+    to { transform: rotate(360deg); }
 } 

@@ -25,7 +25,7 @@ export default function Sidebar() {
     <aside className="sidebar" style={{ backgroundColor: 'var(--sidebar-bg)' }}>
       <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', marginLeft: '25px' }}>
         <img src={logo} alt="logo" style={{ width: 50, height: 50 }} />
-        <span style={{ marginLeft: 0, color: 'var(--sidebar-text)' }}>Tracklio</span>
+        <span style={{ marginLeft: 0, color: 'var(--sidebar-text)' }}>Achieve Group</span>
       </div>
       <nav className="sidebar-nav">
         <h4 className="sidebar-text" style={{ color: 'var(--sidebar-heading)' }}>CORE OPERATIONS</h4>

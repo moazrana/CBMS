@@ -11,19 +11,12 @@ export class LocationSeeder {
 
   async seed() {
     const locations = [
-      { name: 'Achieve Warrington' },
-      { name: 'Training - Motor Vehicle' },
-      { name: 'Training - Common Room' },
-      { name: 'Training - Classroom' },
-      { name: 'Training - Office' },
-      { name: 'Off-Site' },
-      { name: 'N/A' },
+      { name: 'Warrington' },
+      { name: 'Bury' },
     ];
+    await this.locationModel.deleteMany({});
     for (const loc of locations) {
-      const exists = await this.locationModel.findOne({ name: loc.name });
-      if (!exists) {
-        await this.locationModel.create(loc);
-      }
+      await this.locationModel.create(loc);
     }
     return 'Locations seeded';
   }

@@ -6,6 +6,7 @@ import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import SearchableSelect from '../../../components/SearchableSelect/SearchableSelect';
 import { useApiRequest } from '../../../hooks/useApiRequest';
+import api from '../../../services/api';
 import SidebarPopup from '../../../components/SidebarPopup/SidebarPopup';
 import StudentView, { StudentViewProps } from '../view/StudentView';
 import { DropdownOption } from '../../../types/DropDownOption';
@@ -41,6 +42,8 @@ interface Student {
 const StudentList = () => {
   const [students, setStudents] = React.useState<Student[]>([]);
   const { executeRequest } = useApiRequest<Student[]>();
+  const [tableLoading, setTableLoading] = React.useState(false);
+  const [filterLoading, setFilterLoading] = React.useState(false);
   const [sort, setSort] = React.useState('createdAt');
   const [order, setOrder] = React.useState('DESC');
   const [search, setSearch] = React.useState('');
@@ -53,12 +56,14 @@ const StudentList = () => {
   const [allStudents, setAllStudents] = React.useState<Student[]>([]);
 
   const fetchStudents = async () => {
+    setTableLoading(true);
     try {
-      const response = await executeRequest('get', `/students?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
-      console.log({ ...response });
-      setStudents(response);
+      const res = await api.get(`/students?sort=${sort}&order=${order}&search=${search}&page=${page}&perPage=${perPage}`);
+      setStudents(res.data);
     } catch (error) {
       console.error('Error fetching students:', error);
+    } finally {
+      setTableLoading(false);
     }
   };
 
@@ -121,9 +126,10 @@ const StudentList = () => {
   }, []);
 
   const fetchAllStudentsForFilter = async () => {
+    setFilterLoading(true);
     try {
-      const response = await executeRequest('get', '/students?perPage=1000');
-      const list: Student[] = Array.isArray(response) ? response : [];
+      const res = await api.get('/students?perPage=1000');
+      const list: Student[] = Array.isArray(res.data) ? res.data : [];
       setAllStudents(list);
       const options: DropdownOption[] = list.map((s) => {
         const p = s.personalInfo ?? {};
@@ -133,6 +139,8 @@ const StudentList = () => {
       setStudentFilterOptions(options);
     } catch (error) {
       console.error('Error fetching students for filter:', error);
+    } finally {
+      setFilterLoading(false);
     }
   };
 
@@ -228,6 +236,7 @@ const StudentList = () => {
               value={selectedStudentFilter}
               onChange={(v) => setSelectedStudentFilter(String(v))}
               options={studentFilterOptions}
+              loading={filterLoading}
               onSearch={(term) => {
                 const trimmed = term.trim().toLowerCase();
                 const base: DropdownOption[] = allStudents.map((s) => {
@@ -271,6 +280,7 @@ const StudentList = () => {
             onEdit={handleEdit}
             onAdd={onAdd}
             addPermission='create_student'
+            loading={tableLoading}
           />
         </div>
       </div>

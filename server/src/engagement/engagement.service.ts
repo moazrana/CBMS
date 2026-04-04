@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Engagement, EngagementDocument } from './engagement.schema';
+import { Class, ClassDocument } from '../class/class.schema';
 import { CreateEngagementDto } from './dto/create-engagement.dto';
 import { UpdateEngagementDto } from './dto/update-engagement.dto';
 
@@ -9,6 +10,7 @@ import { UpdateEngagementDto } from './dto/update-engagement.dto';
 export class EngagementService {
   constructor(
     @InjectModel(Engagement.name) private engagementModel: Model<EngagementDocument>,
+    @InjectModel(Class.name) private classModel: Model<ClassDocument>,
   ) {}
 
   async create(createEngagementDto: CreateEngagementDto): Promise<Engagement> {
@@ -207,6 +209,84 @@ export class EngagementService {
     const filtered = this.filterToMarkedVisible(all);
     const start = (page - 1) * perPage;
     return filtered.slice(start, start + perPage);
+  }
+
+  async getStudentAttendanceStats(
+    studentId: string,
+    classId?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{ session: string; present: number; absent: number; late: number; authorizedAbsent: number; unauthorizedAbsent: number }[]> {
+    const query: any = { student: studentId };
+    if (classId) query.class = classId;
+    if (startDate || endDate) {
+      query.engagementDate = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.engagementDate.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.engagementDate.$lte = end;
+      }
+    }
+
+    const records = await this.engagementModel.find(query).lean().exec();
+    const sessions = ['breakfast club', 'session1', 'break', 'session2', 'lunch', 'session3'];
+
+    return sessions.map((session) => {
+      const sessionRecords = records.filter((r) => r.session === session);
+      const late = sessionRecords.filter((r) => (r.lateMinutes ?? 0) > 0).length;
+      const present = sessionRecords.filter((r) => r.attendance === true && !((r.lateMinutes ?? 0) > 0)).length;
+      const absent = sessionRecords.filter((r) => r.attendance === false).length;
+      const authorizedAbsent = sessionRecords.filter((r) => r.attendance === false && r.absenceType === 'authorized').length;
+      const unauthorizedAbsent = sessionRecords.filter((r) => r.attendance === false && r.absenceType === 'unauthorized').length;
+      return { session, present, late, absent, authorizedAbsent, unauthorizedAbsent };
+    });
+  }
+
+  async getLocationAttendanceStats(
+    locationName: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{ session: string; present: number; absent: number; late: number; authorizedAbsent: number; unauthorizedAbsent: number }[]> {
+    const classes = await this.classModel.find({ location: locationName }).select('_id').lean().exec();
+    const classIds = classes.map((c) => c._id);
+
+    if (classIds.length === 0) {
+      const sessions = ['breakfast club', 'session1', 'break', 'session2', 'lunch', 'session3'];
+      return sessions.map((session) => ({ session, present: 0, absent: 0, late: 0, authorizedAbsent: 0, unauthorizedAbsent: 0 }));
+    }
+
+    const query: any = { class: { $in: classIds } };
+    if (startDate || endDate) {
+      query.engagementDate = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.engagementDate.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.engagementDate.$lte = end;
+      }
+    }
+
+    const records = await this.engagementModel.find(query).lean().exec();
+    const sessions = ['breakfast club', 'session1', 'break', 'session2', 'lunch', 'session3'];
+
+    return sessions.map((session) => {
+      const sessionRecords = records.filter((r) => r.session === session);
+      const late = sessionRecords.filter((r) => (r.lateMinutes ?? 0) > 0).length;
+      const present = sessionRecords.filter((r) => r.attendance === true && !((r.lateMinutes ?? 0) > 0)).length;
+      const absent = sessionRecords.filter((r) => r.attendance === false).length;
+      const authorizedAbsent = sessionRecords.filter((r) => r.attendance === false && r.absenceType === 'authorized').length;
+      const unauthorizedAbsent = sessionRecords.filter((r) => r.attendance === false && r.absenceType === 'unauthorized').length;
+      return { session, present, late, absent, authorizedAbsent, unauthorizedAbsent };
+    });
   }
 
   async findByClassMarked(classId: string, engagementDate?: string): Promise<Engagement[]> {
