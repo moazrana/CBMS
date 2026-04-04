@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faHourglassHalf,faDownload } from '@fortawesome/free-solid-svg-icons';
 import './uploadFile.scss'
 import api from '../../../services/api';
-import { useApiRequest } from '../../../hooks/useApiRequest';
 
 interface Column {
   header: string;
@@ -19,7 +18,6 @@ interface Column {
 const TeacherUploadFile=()=>{
     const [certificate,setCertificate]=useState<File | undefined>()
     const [certificates, setCertificates] = useState<Record<string, unknown>[]>([]);
-    const { executeRequest } = useApiRequest<Record<string, unknown>[]>();
     const [tableLoading, setTableLoading] = useState(false);
 
     const fetchCertificates = async () => {

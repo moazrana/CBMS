@@ -1389,7 +1389,7 @@ const Engagement: React.FC = () => {
         const engagements = Array.isArray(engRes.data) ? engRes.data : [];
         const studentsList: StudentData[] = classData && Array.isArray(classData.students) ? classData.students : [];
         const studentIdsWithEngagement = new Set<string>();
-        const byStudentBySession: Record<string, Record<string, { attendance: boolean; absenceType?: 'authorized' | 'unauthorized'; behaviour: string; comment: string; workUndertaken: string; engagementId?: string }>> = {};
+        const byStudentBySession: Record<string, Record<string, { attendance: boolean; absenceType?: 'authorized' | 'unauthorized'; lateMinutes: number; behaviour: string; comment: string; workUndertaken: string; engagementId?: string }>> = {};
         const dateStr = markedFilterDate || null;
         engagements.forEach((eng: MarkedEngagementRecord) => {
           const sid = typeof eng.student === 'object' && eng.student !== null ? (eng.student as { _id: string })._id : String(eng.student);

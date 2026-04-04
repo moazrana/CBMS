@@ -3,13 +3,11 @@ import Layout from '../../../layouts/layout';
 import DataTable from '../../../components/DataTable/DataTable';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faHourglassHalf,faDownload } from '@fortawesome/free-solid-svg-icons';
-import { useApiRequest } from '../../../hooks/useApiRequest';
 import api from '../../../services/api';
 import Popup from '../../../components/Popup/Popup';
 import Input from '../../../components/input/Input';
 import DateInput from '../../../components/dateInput/DateInput';
 const AdminPageList = () => {
-  const { executeRequest } = useApiRequest<Record<string, unknown>[]>();
   const [certificates, setCertificates] = useState<Record<string, unknown>[]>([]);
   const [tableLoading, setTableLoading] = useState(false);
   const [isPopupOpen,setIsPopupOpen]=useState<boolean>(false);
